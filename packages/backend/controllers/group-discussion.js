@@ -1,8 +1,8 @@
-const GroupDiscussion = require('../models/group-discussion');
-const Participant = require('../models/participant');
+const GroupDiscussion = require("../models/group-discussion");
+const Participant = require("../models/participant");
 
 const generateAiParticipants = (n) => {
-  const aiNames = ['AI-Alpha', 'AI-Beta', 'AI-Gamma', 'AI-Delta', 'AI-Epsilon']; // Example AI names
+  const aiNames = ["AI-Alpha", "AI-Beta", "AI-Gamma", "AI-Delta", "AI-Epsilon"]; // Example AI names
   const aiParticipants = [];
   for (let i = 0; i < n; i++) {
     aiParticipants.push({ name: aiNames[i % aiNames.length] });
@@ -11,56 +11,71 @@ const generateAiParticipants = (n) => {
 };
 
 const createGroupDiscussion = async (req, res) => {
-  const { topic, noOfAiModels, noOfUsers, aiParticipants, participants, createdBy } = req.body;
+  const { aiModelsCount, participants = [], ...rest } = req.body;
 
   try {
-    const generatedAiParticipants = generateAiParticipants(noOfAiModels);
-    const allAiParticipants = [...aiParticipants, ...generatedAiParticipants];
+    // Generate AI participants
+    const aiParticipants = generateAiParticipants(aiModelsCount);
 
+    // Create the new group discussion
     const newGroupDiscussion = new GroupDiscussion({
-      topic,
-      noOfAiModels,
-      noOfUsers,
-      aiParticipants: allAiParticipants,
-      participants,
-      createdBy,
+      ...rest,
+      aiModelsCount,
+      aiParticipants,
+      createdBy: req.user.userId,
     });
 
     await newGroupDiscussion.save();
 
-    participants.forEach(async (userId) => {
+    const discussionId = newGroupDiscussion?._id;
+
+    // Update participants list by adding the creator (user who made the request)
+    const updatedParticipants = [...participants, req.user.userId];
+
+    // Create participant entries in the Participant model
+    const createParticipants = await Promise.all(updatedParticipants.map(async (userId) => {
       const newParticipant = new Participant({
         userId,
-        groupDiscussionId: newGroupDiscussion._id,
+        groupDiscussionId: discussionId,
       });
       await newParticipant.save();
-    });
+      return newParticipant._id;  // Return the participant ID
+    }));
 
-    res.status(201).json(newGroupDiscussion);
+    // Update the group discussion with the participant IDs
+   await GroupDiscussion.findByIdAndUpdate(
+      discussionId,
+      { participants: createParticipants },
+      { new: true }  // Return the updated document
+    );
+
+    // Respond with the discussion ID
+    res.status(201).json({result : discussionId});
   } catch (error) {
-    res.status(500).json({ msg: 'Server Error' });
+    res.status(500).json({ msg: "Server Error", error });
   }
 };
+
 
 const getGroupDiscussion = async (req, res) => {
   const groupDiscussionId = req.params.groupDiscussionId;
 
   try {
     const groupDiscussion = await GroupDiscussion.findById(groupDiscussionId)
-      .populate('participants')
-      .populate('conversationId');
+      .populate("participants")
+      .populate("conversationId");
 
     if (!groupDiscussion) {
-      return res.status(404).json({ msg: 'Group Discussion not found' });
+      return res.status(404).json({ msg: "Group Discussion not found" });
     }
 
     res.json(groupDiscussion);
   } catch (error) {
-    res.status(500).json({ msg: 'Server Error' });
+    res.status(500).json({ msg: "Server Error" });
   }
 };
 
-module.exports =  {
-    createGroupDiscussion,
-    getGroupDiscussion
-}
+module.exports = {
+  createGroupDiscussion,
+  getGroupDiscussion,
+};

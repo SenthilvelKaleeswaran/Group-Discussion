@@ -16,8 +16,8 @@ const Signup = () => {
     }
 
     try {
-      const data = registerUser({ email, password });
-      login(data.token);
+      const data = await registerUser({ email, password });
+      login(data?.token);
     } catch (error) {
       alert(error.message); // Handle the error
     }

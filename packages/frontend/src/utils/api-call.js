@@ -54,4 +54,13 @@ const apiCall = async ({ endpoint, method = "GET", body = null }) => {
       body: data,
     });
   };
+
+  export const createDiscussion = async (data) => {
+    return await apiCall({
+      endpoint: "/group-discussion/create",
+      method: "POST",
+      body: data,
+    });
+  };
+  
   

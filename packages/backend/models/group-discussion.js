@@ -5,7 +5,7 @@ const GroupDiscussionSchema = new mongoose.Schema({
     type: String, 
     required: true 
   }, 
-  noOfAiModels: { 
+  aiModelsCount: { 
     type: Number, 
     default: 0
   }, 
@@ -33,7 +33,7 @@ const GroupDiscussionSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Conversation', 
   },
-  timestamp: { 
+  createdAt: { 
     type: Date, 
     default: Date.now 
   } 

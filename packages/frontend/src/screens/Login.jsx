@@ -13,8 +13,8 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const data = loginUser({ email, password });
-      login(data.token);
+      const data = await loginUser({ email, password });
+      login(data?.token);
     } catch (error) {
       alert(error.message); // Handle the error
     }
