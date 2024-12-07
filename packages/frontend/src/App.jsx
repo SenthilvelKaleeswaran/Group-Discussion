@@ -17,6 +17,7 @@ import Home from "./screens/Home";
 import NonAuthWrapper from "./routes/NonAuthWrapper";
 import { AuthProvider } from "./context/auth";
 import { QueryClient, QueryClientProvider } from 'react-query';
+import Profile from "./screens/Profile";
 
 function App() {
   const queryClient = new QueryClient();
@@ -36,6 +37,8 @@ function App() {
                 <Route path=":id" element={<AudioRecorder />} />
                 <Route path="" element={<DiscussionDetails />} />
               </Route>
+              <Route path="/profile" element={<Profile />} />
+
             </Route>
           </Routes>
         </AuthProvider>

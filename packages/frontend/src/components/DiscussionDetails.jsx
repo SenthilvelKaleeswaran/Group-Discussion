@@ -1,4 +1,4 @@
-import { useMutation } from "react-query"; 
+import { useMutation } from "react-query";
 import { createDiscussion } from "../utils/api-call";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom"; // Import useNavigate from react-router-dom
@@ -27,7 +27,8 @@ export const DiscussionDetails = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    mutate(discussionDetails);   };
+    mutate(discussionDetails);
+  };
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-blue-500 to-indigo-600">
@@ -73,12 +74,12 @@ export const DiscussionDetails = () => {
           <button
             type="submit"
             className="w-full py-4 bg-blue-600 text-white font-semibold text-lg rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 ease-in-out"
-            disabled={isLoading} 
+            disabled={isLoading}
           >
             {isLoading ? "Creating Discussion..." : "Start Discussion"}
           </button>
 
-          {isError && <p className="text-red-500">{error?.message}</p>} 
+          {isError && <p className="text-red-500">{error?.message}</p>}
         </form>
       </div>
     </div>

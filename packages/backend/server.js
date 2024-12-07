@@ -13,11 +13,12 @@ app.use(cors());
 app.use(express.json()); 
 
 // Import routes
+const authRoutes = require('./routes/auth');
 const groupDiscussionRoutes = require('./routes/group-discussion');
 const conversationRoutes = require('./routes/conversation');
 const participantRoutes = require('./routes/participant');
 const generateRoutes = require('./routes/generate');
-const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/user');
 
 const connectDB = require("./config/db");
 const authMiddleware = require("./middleare/auth");
@@ -32,6 +33,7 @@ app.use('/api/group-discussion', groupDiscussionRoutes);
 app.use('/api/conversation', conversationRoutes);
 app.use('/api/participants', participantRoutes);
 app.use('/api/generate', generateRoutes);
+app.use('/api/user', userRoutes);
 
 // Default route for errors or undefined routes
 app.use((req, res) => {
