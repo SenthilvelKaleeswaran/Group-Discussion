@@ -1,30 +1,41 @@
-import { useState } from "react";
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom"; // Import Router components
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
+import React from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import "./App.css";
 import "./index.css";
 import AudioRecorder from "./components/AudioRecorder";
-import { MemberProvider } from "./context/member";
-import { ConversationProvider } from "./context/conversation";
-import { DiscussionProvider } from "./context/details";
 import { DiscussionDetails } from "./components/DiscussionDetails";
+import Signup from "./screens/SignUp";
+import Login from "./screens/Login";
+import DiscussionWrapper from "./routes/DiscussionWrapper";
+import ProtectedWrapper from "./routes/ProtectedWrapper";
+import Home from "./screens/Home";
+import NonAuthWrapper from "./routes/NonAuthWrapper";
+import { AuthProvider } from "./context/auth";
 
 function App() {
-  const [count, setCount] = useState(0);
-
   return (
-    <Router>  {/* Wrapping the entire app with Router */}
-      <DiscussionProvider>
-        <MemberProvider>
-          <ConversationProvider>
-            <Routes> {/* Define Routes */}
-              <Route path="/" element={<DiscussionDetails />} /> {/* Root route */}
-              <Route path="/gd" element={<AudioRecorder />} /> {/* /gd route */}
-            </Routes>
-          </ConversationProvider>
-        </MemberProvider>
-      </DiscussionProvider>
+    <Router>
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/" element={<NonAuthWrapper />}>
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/login" element={<Login />} />
+          </Route>
+
+          <Route element={<ProtectedWrapper />}>
+            <Route path="/gd" element={<DiscussionWrapper />}>
+              <Route path=":id" element={<AudioRecorder />} />
+              <Route path="" element={<DiscussionDetails />} />
+            </Route>
+          </Route>
+        </Routes>
+      </AuthProvider>
     </Router>
   );
 }

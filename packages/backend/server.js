@@ -6,6 +6,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const PORT = process.env.PORT || 5000;
+const ENDPOINT = process.env.ENDPOINT  || "http://localhost:"
 const app = express();
 
 app.use(cors());
@@ -39,7 +40,7 @@ app.use((req, res) => {
 
 connectDB().then(() => {
   app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server running on ${ENDPOINT}${PORT}`);
   });
 }).catch((err) => {
   console.error('Failed to connect to MongoDB:', err);
