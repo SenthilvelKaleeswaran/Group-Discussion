@@ -19,10 +19,14 @@ const generateRoutes = require('./routes/generate');
 const authRoutes = require('./routes/auth');
 
 const connectDB = require("./config/db");
+const authMiddleware = require("./middleare/auth");
 
 
 // Define routes
 app.use('/api/auth', authRoutes);
+
+// Protected Routes
+app.use(authMiddleware);
 app.use('/api/group-discussion', groupDiscussionRoutes);
 app.use('/api/conversation', conversationRoutes);
 app.use('/api/participants', participantRoutes);
