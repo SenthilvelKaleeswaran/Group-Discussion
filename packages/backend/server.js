@@ -16,14 +16,17 @@ const groupDiscussionRoutes = require('./routes/group-discussion');
 const conversationRoutes = require('./routes/conversation');
 const participantRoutes = require('./routes/participant');
 const generateRoutes = require('./routes/generate');
+const authRoutes = require('./routes/auth');
+
 const connectDB = require("./config/db");
 
 
 // Define routes
-app.use('/group-discussion', groupDiscussionRoutes);
-app.use('/conversation', conversationRoutes);
-app.use('/participants', participantRoutes);
-app.use('/generate', generateRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/group-discussion', groupDiscussionRoutes);
+app.use('/api/conversation', conversationRoutes);
+app.use('/api/participants', participantRoutes);
+app.use('/api/generate', generateRoutes);
 
 // Default route for errors or undefined routes
 app.use((req, res) => {
