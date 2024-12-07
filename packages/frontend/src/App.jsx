@@ -16,27 +16,31 @@ import ProtectedWrapper from "./routes/ProtectedWrapper";
 import Home from "./screens/Home";
 import NonAuthWrapper from "./routes/NonAuthWrapper";
 import { AuthProvider } from "./context/auth";
+import { QueryClient, QueryClientProvider } from 'react-query';
 
 function App() {
+  const queryClient = new QueryClient();
   return (
-    <Router>
-      <AuthProvider>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/" element={<NonAuthWrapper />}>
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/login" element={<Login />} />
-          </Route>
-
-          <Route element={<ProtectedWrapper />}>
-            <Route path="/gd" element={<DiscussionWrapper />}>
-              <Route path=":id" element={<AudioRecorder />} />
-              <Route path="" element={<DiscussionDetails />} />
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/" element={<NonAuthWrapper />}>
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/login" element={<Login />} />
             </Route>
-          </Route>
-        </Routes>
-      </AuthProvider>
-    </Router>
+
+            <Route element={<ProtectedWrapper />}>
+              <Route path="/gd" element={<DiscussionWrapper />}>
+                <Route path=":id" element={<AudioRecorder />} />
+                <Route path="" element={<DiscussionDetails />} />
+              </Route>
+            </Route>
+          </Routes>
+        </AuthProvider>
+      </Router>
+    </QueryClientProvider>
   );
 }
 

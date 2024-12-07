@@ -24,6 +24,7 @@
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.11.0",
-    "mongoose": "^8.8.4"
+    "mongoose": "^8.8.4",
+    "react-query": "^3.39.3"
   }
 }
