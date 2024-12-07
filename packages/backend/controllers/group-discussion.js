@@ -1,4 +1,5 @@
-const GroupDiscussion = require('../models/GroupDiscussion');
+const GroupDiscussion = require('../models/group-discussion');
+const Participant = require('../models/participant');
 
 const generateAiParticipants = (n) => {
   const aiNames = ['AI-Alpha', 'AI-Beta', 'AI-Gamma', 'AI-Delta', 'AI-Epsilon']; // Example AI names

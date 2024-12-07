@@ -1,4 +1,3 @@
-const GroupDiscussion = require("../models/GroupDiscussion");
 
 const HF_API_TOKEN = process.env.HF_API_TOKEN;
 const HF_GENERATOR_URL =
