@@ -59,7 +59,7 @@ const getGroupDiscussion = async (req, res) => {
   }
 };
 
-export {
+module.exports =  {
     createGroupDiscussion,
     getGroupDiscussion
 }

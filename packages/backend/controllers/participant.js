@@ -28,7 +28,7 @@ const createParticipant = async (req, res) => {
 };
 
 
-exports {
+module.exports = {
     createParticipant,
     getParticipants
 }
