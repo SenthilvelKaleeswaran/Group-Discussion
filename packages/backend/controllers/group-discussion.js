@@ -2,6 +2,8 @@ const { default: mongoose } = require("mongoose");
 const GroupDiscussion = require("../models/group-discussion");
 const Participant = require("../models/participant");
 const Conversation = require("../models/conversation");
+const { generateAIResponse } = require("../utils");
+const { DiscussionTopicPrompt } = require("../prompts");
 
 const generateAiParticipants = (n) => {
   const aiNames = ["AI-Alpha", "AI-Beta", "AI-Gamma", "AI-Delta", "AI-Epsilon"]; // Example AI names
@@ -13,17 +15,32 @@ const generateAiParticipants = (n) => {
 };
 
 const createGroupDiscussion = async (req, res) => {
-  const { aiModelsCount, participants = [], ...rest } = req.body;
+  const {
+    aiModelsCount,
+    participants = [],
+    isTopicAiGenerated,
+    ...rest
+  } = req.body;
 
   try {
     // Generate AI participants
     const aiParticipants = generateAiParticipants(aiModelsCount);
+
+    let topic = rest?.topic || ''
+
+    // Generate topic by AI
+    if (isTopicAiGenerated) {
+      topic = await generateAIResponse({ prompt: DiscussionTopicPrompt });
+    }
+
 
     // Create the new group discussion
     const newGroupDiscussion = new GroupDiscussion({
       ...rest,
       aiModelsCount,
       aiParticipants,
+      isTopicAiGenerated,
+      topic,
       createdBy: req.user.userId,
     });
 
@@ -46,25 +63,27 @@ const createGroupDiscussion = async (req, res) => {
       })
     );
 
-    const createConversation =  new Conversation({
+    const createConversation = new Conversation({
       groupDiscussionId,
     });
 
     await createConversation.save();
 
-    console.log({createConversation})
+    console.log({ createConversation });
     // Update the group discussion with the participant IDs
     await GroupDiscussion.findByIdAndUpdate(
       groupDiscussionId,
       {
         conversationId: createConversation._id,
-        participants: createParticipants,      },
-      { new: true } 
+        participants: createParticipants,
+      },
+      { new: true }
     );
 
     // Respond with the discussion ID
     res.status(201).json({ result: groupDiscussionId });
   } catch (error) {
+    console.error({error})
     res.status(500).json({ msg: "Server Error", error });
   }
 };
