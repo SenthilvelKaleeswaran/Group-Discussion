@@ -22,20 +22,19 @@ const updateConversation = async (req, res) => {
   const { groupDiscussionId, message } = req.body;
 
   try {
-    const conversation = await Conversation.findOne({ groupDiscussionId });
-
-    if (!conversation) {
-      return res.status(404).json({ msg: 'Conversation not found' });
-    }
-
-    conversation.messages.push(message);
-    await conversation.save();
+    const conversation = await Conversation.findOneAndUpdate(
+      { groupDiscussionId }, 
+      { $push: { messages: message } },
+      { new: true, upsert: true }
+    );
 
     res.json(conversation);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ msg: 'Server Error' });
   }
 };
+
 
 // Get all messages of a conversation
 const getConversation = async (req, res) => {

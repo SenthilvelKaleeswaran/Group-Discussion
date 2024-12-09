@@ -1,81 +1,145 @@
+const GroupDiscussion = require("../models/group-discussion");
+const Conversation = require("../models/conversation");
+const { extractPropertiesFromJson } = require("../utils/extract-metrics");
+const { AIConversationPrompt, PerformanceMetricsPrompt, generateConversationTemplate } = require("../prompts");
 
 const HF_API_TOKEN = process.env.HF_API_TOKEN;
-const HF_GENERATOR_URL =
-  "https://api-inference.huggingface.co/models/mistralai/Mixtral-8x7B-Instruct-v0.1";
-
+const HF_GENERATOR_URL = "https://api-inference.huggingface.co/models/mistralai/Mixtral-8x7B-Instruct-v0.1";
 
 const generateConversation = async (req, res) => {
-  //   if (!req.file || !req.body.topic) {
-  //     return res.status(400).json({ error: 'Audio file and topic are required.' });
-  //   }
+  const { id, participant, conversation: receivedConversation } = req.body;
 
-  const { topic, user, conversation, transcript } = req.body;
-  console.log({ topic, user, conversation, transcript }, conversation);
-  const updatedConversation = [...conversation, { [user]: transcript }];
-  console.log({ updatedConversation });
+  if (!id) {
+    return res.status(400).json({ error: "Id not found" });
+  }
 
   try {
-    // Step 3: Generate AI Response
-    const aiResponse = await fetch(HF_GENERATOR_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${HF_API_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        inputs: `Topic: ${topic}\n
-  Point: ${transcript}\n
-  Instructions: This is a structured group discussion involving both the user and AI members. 
-  The provided point is the most recent contribution from the user. Analyze the point in the context of the topic (${topic}). 
-  - If the point is relevant to the topic, respond professionally by either agreeing or disagreeing with it. Provide a detailed explanation and generate a new point that aligns with the topic to continue the discussion constructively. 
-  - If the point is irrelevant to the topic, do not critique or elaborate on it. Instead, generate a new and well-aligned point relevant to the topic (${topic}) that drives the discussion forward. 
-  
-  Your response should be concise, engaging, and focused solely on the topic (${topic}). Avoid introducing unrelated ideas or personal thoughts. Ensure the response is suitable for real-time delivery to another AI member in the discussion and helps maintain the flow of the conversation.\n
-  AI Response:`,
-      }),
-    });
-
-    const aiResponseResult = await aiResponse.json();
-    if (!aiResponse.ok) {
-      return res.status(500).json({
-        error: "Error generating AI response.",
-        details: aiResponseResult,
-      });
+    // Step 1: Retrieve Group Discussion
+    const groupDiscussion = await GroupDiscussion.findById(id).populate("conversationId");
+    if (!groupDiscussion) {
+      return res.status(404).json({ error: "Group discussion not found" });
     }
 
-    // Extracting only the generated text
-    // Extract and clean the generated response
-    const rawText = aiResponseResult[0].generated_text || aiResponseResult.text;
+    const { topic, conversationId: { messages = [] } = {}, aiParticipants } = groupDiscussion;
 
-    // Remove the prompt if it is included
-    const separator = "AI Response:";
-    const responseText = rawText?.includes(separator)
-      ? rawText.split(separator)[1].trim()
-      : rawText;
+    const promptTemplate =generateConversationTemplate(topic,receivedConversation);
+
+  
+    // Step 2: Make Hugging Face API calls in parallel
+    const [aiResponseResult, performanceMetricsResult] = await Promise.all([
+      fetch(HF_GENERATOR_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${HF_API_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          inputs: promptTemplate + AIConversationPrompt,
+        }),
+      }).then(response => response.json()),
+
+      // Make performance metrics API call only if participant is not AI
+      participant?.type !== "AI"
+        ? fetch(HF_GENERATOR_URL, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${HF_API_TOKEN}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              inputs: promptTemplate + PerformanceMetricsPrompt,
+            }),
+          }).then(response => response.json())
+        : Promise.resolve(null), // Return null if it's an AI participant
+    ]);
+
+    // Extract AI response and performance metrics
+
+
+    const rawText = aiResponseResult?.[0]?.generated_text || aiResponseResult?.text;
+    const rawMetricsText = performanceMetricsResult?.[0]?.generated_text || performanceMetricsResult?.text;
+
+    const responseText = (rawText?.split("AI Response:")[1] || rawText)?.trim();
+    const responseMetricsText = (rawMetricsText?.split("AI Response:")[1] || rawMetricsText)?.trim();
+    console.log({responseMetricsText})
 
     if (!responseText) {
       return res.status(500).json({
-        error: "No valid generated text found in AI response.",
+        error: "No valid response text generated.",
         details: aiResponseResult,
       });
     }
 
-    console.log("Cleaned AI Response:", responseText);
+    // Extract performance metrics if available
+    const metadata = responseMetricsText ? extractPropertiesFromJson(responseMetricsText) : {};
+console.log({metadata})
+    // Step 3: Update Messages
+    const randomIndex = Math.floor(Math.random() * aiParticipants.length);
+    const randomMember = aiParticipants[randomIndex];
 
-    // Return only the cleaned response
+    let newMessages = [];
+
+    if (participant?.type !== "AI") {
+      newMessages.push({
+        _id: participant?._id,
+        name: participant?.name,
+        conversation: receivedConversation,
+        metadata,
+      });
+    }
+
+    newMessages.push({
+      name: randomMember?.name,
+      conversation: responseText,
+      status: "GENERATED",
+    });
+
+    // Update last message's status to "SPOKEN"
+    const conversation = await Conversation.findOne({ groupDiscussionId: id });
+
+    if (conversation && conversation.messages.length > 0) {
+      const lastMessage = conversation.messages[conversation.messages.length - 1];
+      if (lastMessage?.status) {
+        await Conversation.findOneAndUpdate(
+          { groupDiscussionId: id },
+          {
+            $set: {
+              [`messages.${conversation.messages.length - 1}.status`]: "SPOKEN", // Set status of last message
+            },
+          }
+        );
+      }
+    }
+
+    // Push new messages into the conversation
+    const updatedConversation = await Conversation.findOneAndUpdate(
+      { groupDiscussionId: id },
+      {
+        $push: {
+          messages: {
+            $each: newMessages, // Push multiple new messages
+          },
+        },
+      },
+      { new: true, upsert: true }
+    );
+
+    console.log({updatedConversation : updatedConversation?.messages})
+
     return res.status(200).json({
       generatedText: responseText,
-      transcript,
+      randomMember: randomMember?._id,
+      conversation: updatedConversation?.messages,
     });
   } catch (error) {
     console.error("Server Error:", error);
-    return res
-      .status(500)
-      .json({ error: "Internal Server Error", details: error });
+    res.status(500).json({
+      error: "Internal Server Error",
+      details: error.message || error,
+    });
   }
 };
 
-
 module.exports = {
-    generateConversation
+  generateConversation,
 };

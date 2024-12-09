@@ -6,7 +6,7 @@ const ConversationSchema = new mongoose.Schema({
     ref: 'GroupDiscussion', 
     required: true 
   },
-  
+
   messages: [
     { 
       name: { 
@@ -16,21 +16,27 @@ const ConversationSchema = new mongoose.Schema({
 
       _id: { 
         type: mongoose.Schema.Types.ObjectId, 
-        ref: 'Participant', 
+        ref: 'UserDetails', 
         required: false 
       },
 
-      content: { 
+      conversation: { 
         type: String, 
         required: true 
       },
 
-      timestamp: { 
-        type: Date, 
-        default: Date.now 
+      status: {
+        type: String,
+        enum: ["GENERATED", "SPOKEN"]
+      },
+
+      metadata: { 
+        type: mongoose.Schema.Types.Mixed, 
+        default: {}
       }
     }
-  ], 
+  ],
+
   timestamp: { 
     type: Date, 
     default: Date.now 

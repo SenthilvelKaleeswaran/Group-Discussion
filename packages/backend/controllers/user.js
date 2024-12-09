@@ -29,7 +29,6 @@ const updateUserDetails = async (req, res) => {
       {
         new: true, // Return the updated document
         upsert: true, // Create a new document if one doesn't exist
-        runValidators: true, // Run validation on the input data
       }
     );
 

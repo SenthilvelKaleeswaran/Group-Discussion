@@ -1,16 +1,18 @@
 import { useState, useRef, useEffect } from "react";
 import { THREE_SECOND_TIME_INTERVAL, TIME_INTERVAL } from "../constants";
-import { useMembers } from "../context/member";
 
 const SpeechRecognition =
   window.SpeechRecognition || window.webkitSpeechRecognition;
 
-const useSpeechRecognition = ({ isSpeaking = false }) => {
+const useSpeechRecognization = ({
+  isSpeaking = false,
+  selectMember,
+  resetCurrentMember,
+}) => {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const timeoutRef = useRef(null);
   const recognition = useRef(new SpeechRecognition()).current;
-  const { members, selectMember } = useMembers();
 
   // Initialize SpeechRecognition settings
   useEffect(() => {
@@ -20,11 +22,18 @@ const useSpeechRecognition = ({ isSpeaking = false }) => {
 
     recognition.onresult = handleResult;
     recognition.onerror = handleError;
+    recognition.onstart = () => {
+      selectMember();
+    };
+    console.log({ recognition });
     recognition.onend = () => {
       if (isListening && !isSpeaking) {
         console.log("Restarting recognition...");
         recognition.start();
         recognition.started = true;
+      }
+      if (transcript?.length === 0) {
+        resetCurrentMember();
       }
     };
 
@@ -42,11 +51,11 @@ const useSpeechRecognition = ({ isSpeaking = false }) => {
   // Start listening
   const startListening = () => {
     if (!isListening && !isSpeaking) {
-      selectMember("User");
       setIsListening(true);
       resetTranscript(); // Reset transcript when starting
       recognition.start();
       resetAutoStopTimer();
+      selectMember();
     }
   };
 
@@ -98,6 +107,7 @@ const useSpeechRecognition = ({ isSpeaking = false }) => {
               stopListening();
             } else {
               startListening();
+              selectMember();
             }
           }
         }
@@ -125,4 +135,4 @@ const useSpeechRecognition = ({ isSpeaking = false }) => {
   };
 };
 
-export default useSpeechRecognition;
+export default useSpeechRecognization;

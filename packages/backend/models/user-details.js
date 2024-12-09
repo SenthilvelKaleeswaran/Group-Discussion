@@ -2,15 +2,15 @@ const mongoose = require('mongoose');
 
 // Define the User schema
 const UserDetailsSchema = new mongoose.Schema({
+  _id: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User', 
+    required: true 
+  },
   name: {
     type: String,
     required: true,
     trim: true, // Removes leading/trailing whitespace
-  },
-  userId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', 
-    required: false 
   },
   updatedAt: {
     type: Date,

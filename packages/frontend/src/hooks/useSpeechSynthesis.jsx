@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 
 const useSpeechSynthesis = ({ text, voice, pitch = 1, rate = 1, volume = 1 }) => {
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [currentWord, setCurrentWord] = useState("");
+  const [spokenText, setSpokenText] = useState(""); // Collect spoken words in real-time
 
   useEffect(() => {
     const synth = window.speechSynthesis;
@@ -19,10 +19,12 @@ const useSpeechSynthesis = ({ text, voice, pitch = 1, rate = 1, volume = 1 }) =>
         utterance.rate = rate;
         utterance.volume = volume;
 
-        // Track the currently spoken word
+        // Update spoken text in real-time
         utterance.onboundary = (event) => {
-          const spokenText = chunk.slice(event.charIndex, event.charIndex + event.charLength);
-          setCurrentWord(spokenText);
+          if (event.name === "word") {
+            const currentWord = chunk.slice(event.charIndex, event.charIndex + event.charLength);
+            setSpokenText((prev) => `${prev} ${currentWord}`.trim()); // Append spoken words
+          }
         };
 
         return utterance;
@@ -40,12 +42,14 @@ const useSpeechSynthesis = ({ text, voice, pitch = 1, rate = 1, volume = 1 }) =>
         } else {
           // All chunks spoken
           setIsSpeaking(false);
-          setCurrentWord(""); // Clear current word after speech ends
         }
       };
 
       // Set up event handlers for the first utterance
-      utterances[0].onstart = () => setIsSpeaking(true);
+      utterances[0].onstart = () => {
+        setIsSpeaking(true);
+        setSpokenText(""); // Reset spoken text when new speech starts
+      };
       utterances[0].onend = handleEnd;
 
       // Add end handler to subsequent utterances
@@ -66,13 +70,13 @@ const useSpeechSynthesis = ({ text, voice, pitch = 1, rate = 1, volume = 1 }) =>
     return () => {
       synth.cancel();
       setIsSpeaking(false);
-      setCurrentWord("");
+      setSpokenText("");
     };
   }, [text, voice, pitch, rate, volume]);
 
   return {
     isSpeaking,
-    currentWord,
+    currentWord : spokenText, // Real-time updates of spoken text
   };
 };
 

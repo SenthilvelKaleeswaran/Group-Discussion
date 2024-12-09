@@ -7,7 +7,6 @@ import {
 } from "react-router-dom";
 import "./App.css";
 import "./index.css";
-import AudioRecorder from "./components/AudioRecorder";
 import { DiscussionDetails } from "./components/DiscussionDetails";
 import Signup from "./screens/SignUp";
 import Login from "./screens/Login";
@@ -18,6 +17,7 @@ import NonAuthWrapper from "./routes/NonAuthWrapper";
 import { AuthProvider } from "./context/auth";
 import { QueryClient, QueryClientProvider } from 'react-query';
 import Profile from "./screens/Profile";
+import DiscussionSpace from "./components/DiscussionSpace";
 
 function App() {
   const queryClient = new QueryClient();
@@ -34,7 +34,7 @@ function App() {
 
             <Route element={<ProtectedWrapper />}>
               <Route path="/gd" element={<DiscussionWrapper />}>
-                <Route path=":id" element={<AudioRecorder />} />
+                <Route path=":id" element={<DiscussionSpace />} />
                 <Route path="" element={<DiscussionDetails />} />
               </Route>
               <Route path="/profile" element={<Profile />} />

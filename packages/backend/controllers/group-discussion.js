@@ -1,5 +1,7 @@
+const { default: mongoose } = require("mongoose");
 const GroupDiscussion = require("../models/group-discussion");
 const Participant = require("../models/participant");
+const Conversation = require("../models/conversation");
 
 const generateAiParticipants = (n) => {
   const aiNames = ["AI-Alpha", "AI-Beta", "AI-Gamma", "AI-Delta", "AI-Epsilon"]; // Example AI names
@@ -27,51 +29,81 @@ const createGroupDiscussion = async (req, res) => {
 
     await newGroupDiscussion.save();
 
-    const discussionId = newGroupDiscussion?._id;
+    const groupDiscussionId = newGroupDiscussion?._id;
 
     // Update participants list by adding the creator (user who made the request)
     const updatedParticipants = [...participants, req.user.userId];
 
     // Create participant entries in the Participant model
-    const createParticipants = await Promise.all(updatedParticipants.map(async (userId) => {
-      const newParticipant = new Participant({
-        userId,
-        groupDiscussionId: discussionId,
-      });
-      await newParticipant.save();
-      return newParticipant._id;  // Return the participant ID
-    }));
+    const createParticipants = await Promise.all(
+      updatedParticipants.map(async (userId) => {
+        const newParticipant = new Participant({
+          userId,
+          groupDiscussionId,
+        });
+        await newParticipant.save();
+        return newParticipant._id; // Return the participant ID
+      })
+    );
 
+    const createConversation =  new Conversation({
+      groupDiscussionId,
+    });
+
+    await createConversation.save();
+
+    console.log({createConversation})
     // Update the group discussion with the participant IDs
-   await GroupDiscussion.findByIdAndUpdate(
-      discussionId,
-      { participants: createParticipants },
-      { new: true }  // Return the updated document
+    await GroupDiscussion.findByIdAndUpdate(
+      groupDiscussionId,
+      {
+        conversationId: createConversation._id,
+        participants: createParticipants,      },
+      { new: true } 
     );
 
     // Respond with the discussion ID
-    res.status(201).json({result : discussionId});
+    res.status(201).json({ result: groupDiscussionId });
   } catch (error) {
     res.status(500).json({ msg: "Server Error", error });
   }
 };
-
 
 const getGroupDiscussion = async (req, res) => {
   const groupDiscussionId = req.params.groupDiscussionId;
 
   try {
     const groupDiscussion = await GroupDiscussion.findById(groupDiscussionId)
-      .populate("participants")
+      .populate({
+        path: "participants",
+        select: "userId",
+        populate: {
+          path: "userId",
+          select: "_id name",
+        },
+      })
       .populate("conversationId");
 
     if (!groupDiscussion) {
       return res.status(404).json({ msg: "Group Discussion not found" });
     }
 
-    res.json(groupDiscussion);
+    // Convert Mongoose document to plain JavaScript object
+    const groupDiscussionObj = groupDiscussion.toObject();
+
+    // Format participants
+    const formattedParticipants =
+      groupDiscussionObj.participants?.map(
+        (participant) => participant?.userId
+      ) || [];
+
+    // Replace participants with the formatted version
+    groupDiscussionObj.participants = formattedParticipants;
+
+    res.json(groupDiscussionObj);
   } catch (error) {
-    res.status(500).json({ msg: "Server Error" });
+    console.error("Error fetching group discussion:", error);
+    res.status(500).json({ msg: "Server Error", error });
   }
 };
 

@@ -76,3 +76,18 @@ export const updateUser = async (data) => {
 export const getUserDetails = async () => {
   return await apiCall({ endpoint: `/user/get` });
 };
+
+export const getGroupDiscussion = async (data) => {
+  return await apiCall({
+    endpoint: `/group-discussion/${data}`,
+    method: "GET",
+  });
+};
+
+export const generateConversation = async (data) => {
+  return await apiCall({
+    endpoint: `/generate/conversation`,
+    method: "POST",
+    body : data
+  });
+};
