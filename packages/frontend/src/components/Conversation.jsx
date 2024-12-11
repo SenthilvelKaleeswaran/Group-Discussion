@@ -10,17 +10,22 @@ const Conversion = ({
   data,
   streamData,
   currentMember,
+  conclusionBy,
   isListening,
   isSpeaking,
   isLoading,
   transcript,
   currentWord,
   currentSpeech,
+  conclusionPoints,
+  discussionLength,
+  conversation,
 }) => {
   const containerRef = useRef(null); // Reference to the container
 
   const userId = localStorage.getItem("userId");
 
+  console.log({ conversation });
   const countUserPoints = (array) => {
     const userPoints = {};
     const updatedArray = array?.map((item) => {
@@ -38,17 +43,20 @@ const Conversion = ({
   };
 
   const getConverstionData = () => {
-    if (!data?.length) return { updatedArray: [], userPoints: {} };
+    if (!conversation?.length) return { updatedArray: [], userPoints: {} };
 
-    const lastItem = data[data.length - 1];
-    const array = lastItem?.status === "SPOKEN" ? data : data.slice(0, -1);
+    const lastItem = conversation[conversation.length - 1];
+    const array =
+      lastItem?.status === "SPOKEN" || data?.status === "COMPLETED"
+        ? conversation
+        : conversation.slice(0, -1);
 
     return countUserPoints(array);
   };
 
   const { updatedArray: reversedConversation, userPoints } = useMemo(
     getConverstionData,
-    [data]
+    [conversation]
   );
 
   useEffect(() => {
@@ -91,7 +99,7 @@ const Conversion = ({
   };
 
   const renderText = () => {
-    if (!currentMember && data?.length === 0)
+    if (!currentMember && conversation?.length === 0)
       return `🌟 Be the Pioneer! Start the discussion and set the tone for greatness! ✨`;
     if (!currentMember)
       return `🎙️ Ready to make your point? Double-tap 👉 S 👈 to take the stage! 🚀`;
@@ -105,6 +113,50 @@ const Conversion = ({
     if (isLoading && currentMember?.type === "User")
       return `⏳ Analyzing inputs... Hang tight, brilliance takes a moment! 🧠`;
     return `💡 Got another brilliant point? Hold the mic by tapping 👉 S 👈`;
+  };
+
+  const getConclusionText = () => {
+    switch (conclusionBy) {
+      case "You":
+        return "🎤 The stage is yours! The discussion has wrapped up, and now it's your moment to deliver the grand finale. Make it count! 🚀";
+      case "User":
+        return "✨ The discussion has reached its climax! One of the brilliant participants will now deliver the final word. Stay tuned for a powerful conclusion! 💡";
+      case "AI":
+        return "🤖 The discussion has ended, but the story isn’t over. Our AI mastermind is crafting a conclusion you won’t want to miss. Stand by for insights! 🔮";
+      case "Random":
+        return "🎲 The discussion is over, but the suspense isn’t! Anyone could step up to deliver the conclusion. Who will it be? Stay sharp! 🕵️‍♂️";
+      default:
+        return "🌟 The discussion has concluded, but the best is yet to come. The finale is on its way—get ready to be inspired! 🚀";
+    }
+  };
+
+  const renderStatusCard = ({ index, isDiscussionEnd }) => {
+    console.log({ index });
+    if (index === 0 && data?.status === "COMPLETED")
+      return (
+        <div className="relative flex items-center justify-center pb-8 pt-4">
+          <div className="relative z-10 p-6 bg-gray-900 border border-gray-500 rounded-lg shadow-lg text-center">
+            <h3 className="text-lg font-bold text-blue-500">
+              📌 Discussion Completed 📌
+            </h3>
+            <p className="text-sm text-gray-300 mt-2">
+              Hurray discussion was completed
+            </p>
+          </div>
+        </div>
+      );
+    if (isDiscussionEnd) {
+      return (
+        <div className="relative flex items-center justify-center py-8">
+          <div className="relative z-10 p-6 bg-gray-900 border border-gray-500 rounded-lg shadow-lg text-center">
+            <h3 className="text-lg font-bold text-blue-500">
+              📌 Discussion Finished 📌
+            </h3>
+            <p className="text-sm text-gray-300 mt-2">{getConclusionText()}</p>
+          </div>
+        </div>
+      );
+    } else return null;
   };
 
   return (
@@ -156,70 +208,92 @@ const Conversion = ({
         {reversedConversation?.map((item, index) => {
           const isUser = item?._id === userId;
           const isAnotherUser = !!item?._id && !isUser;
+          const conversationLength = reversedConversation?.length;
 
-          const totalPoints = reversedConversation?.length || 0;
-          const currentPointNumber = reversedConversation?.length - index;
+          const totalPoints = conversationLength || 0;
+          const currentPointNumber = conversationLength - index;
+          const conclusionPointNumber = currentPointNumber - discussionLength;
+          const isConclusionStarted = currentPointNumber > discussionLength;
+
           const userName = item?.name;
           const userPointCount = userPoints[userName] || 0;
           const metadata = item?.metadata || {};
 
+          const isDiscussionEnd =
+            conversationLength >= discussionLength &&
+            index === conversationLength - discussionLength;
+
           return (
-            <div
-              key={item?.name + index}
-              className="p-2 text-center space-y-2 shadow-lg rounded-lg transition transform hover:-translate-y-1"
-            >
-              <div className="flex gap-4 items-center justify-between w-full">
-                <div className="flex gap-2 items-center">
-                  <div
-                    className={`w-8 h-8 flex items-center justify-center rounded-full shadow-inner ${
-                      isUser
-                        ? "bg-blue-500"
-                        : isAnotherUser
-                        ? "bg-green-500"
-                        : "bg-gray-500"
-                    }`}
-                  >
-                    <span className="font-bold">
-                      {item?.name.slice(0, 1).toUpperCase()}
+            <div key={item?.name + index} className="space-y-4">
+              {renderStatusCard({ index, isDiscussionEnd })}
+              <div className="p-2 text-center space-y-2 shadow-lg rounded-lg transition transform hover:-translate-y-1">
+                <div className="flex gap-4 items-center justify-between w-full">
+                  <div className="flex gap-2 items-center">
+                    <div
+                      className={`w-8 h-8 flex items-center justify-center rounded-full shadow-inner ${
+                        isUser
+                          ? "bg-blue-500"
+                          : isAnotherUser
+                          ? "bg-green-500"
+                          : "bg-gray-500"
+                      }`}
+                    >
+                      <span className="font-bold">
+                        {item?.name.slice(0, 1).toUpperCase()}
+                      </span>
+                    </div>
+                    <span
+                      className={`font-bold ${
+                        isUser
+                          ? "text-blue-500"
+                          : isAnotherUser
+                          ? "text-green-300"
+                          : "text-gray-300"
+                      }`}
+                    >
+                      {item?.name}
                     </span>
                   </div>
-                  <span
-                    className={`font-bold ${
-                      isUser
-                        ? "text-blue-500"
-                        : isAnotherUser
-                        ? "text-green-300"
-                        : "text-gray-300"
-                    }`}
-                  >
-                    {item?.name}
-                  </span>
+
+                  <div className="flex gap-2 items-center">
+                    <p className="text-xs rounded-full bg-green-500 px-1.5 py-0.5">
+                      {item?.point} / {userPointCount} Points
+                    </p>
+                    <p className="text-xs rounded-full bg-blue-500 px-1.5 py-0.5">
+                      {isConclusionStarted
+                        ? conclusionPointNumber
+                        : currentPointNumber}
+                      /
+                      {isConclusionStarted
+                        ? conclusionPoints
+                        : discussionLength}
+                    </p>
+
+                    {item?.isConclusion ? (
+                      <p className="text-xs rounded-full bg-purple-500 px-1.5 py-0.5">
+                        Conclusion
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
-                <div className="flex gap-2 items-center">
-                  <p className="text-xs rounded-full bg-blue-500 px-1.5 py-0.5">
-                    {currentPointNumber}/{totalPoints}
-                  </p>
-                  <p className="text-xs rounded-full bg-green-500 px-1.5 py-0.5">
-                    {item?.point} / {userPointCount} Points
-                  </p>
+
+                <p
+                  className={`text-sm p-2 rounded-md ${
+                    isUser
+                      ? "bg-blue-800 text-right"
+                      : isAnotherUser
+                      ? "bg-green-800 text-left"
+                      : "bg-gray-800 text-left"
+                  }`}
+                >
+                  {item?.conversation || "No conversation available"}
+                </p>
+                <div className="mt-2 space-y-1 text-sm text-gray-400">
+                  <MessageBadges data={metadata} />
                 </div>
               </div>
 
-              <p
-                className={`text-sm p-2 rounded-md ${
-                  isUser
-                    ? "bg-blue-800 text-right"
-                    : isAnotherUser
-                    ? "bg-green-800 text-left"
-                    : "bg-gray-800 text-left"
-                }`}
-              >
-                {item?.conversation || "No conversation available"}
-              </p>
-              <div className="mt-2 space-y-1 text-sm text-gray-400">
-              
-               <MessageBadges data={metadata} />
-              </div>
+              {/* Line indicating discussion end */}
             </div>
           );
         })}

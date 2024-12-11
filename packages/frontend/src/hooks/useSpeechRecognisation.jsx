@@ -8,6 +8,7 @@ const useSpeechRecognization = ({
   isSpeaking = false,
   selectMember,
   resetCurrentMember,
+  grantPermission = true,
 }) => {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
@@ -99,27 +100,26 @@ const useSpeechRecognization = ({
     let lastPressTime = 0;
 
     const handleKeyDown = (event) => {
-      if (event.code === "KeyS") {
+      if (event.code === "KeyS" && grantPermission) {
+        // Check if grantPermission is false
         const now = Date.now();
         if (now - lastPressTime < 300 && !isSpeaking) {
-          if (!isSpeaking) {
-            if (isListening) {
-              stopListening();
-            } else {
-              startListening();
-              selectMember();
-            }
+          if (isListening) {
+            stopListening();
+          } else {
+            startListening();
+            selectMember();
           }
         }
         lastPressTime = now;
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
+    if (grantPermission) window.addEventListener("keydown", handleKeyDown);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isListening, isSpeaking]);
+  }, [isListening, isSpeaking, grantPermission]); // Dependency added for grantPermission
 
   const resetTranscript = () => {
     setTranscript("");

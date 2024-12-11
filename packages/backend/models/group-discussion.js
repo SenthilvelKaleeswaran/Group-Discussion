@@ -58,6 +58,11 @@ const GroupDiscussionSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  status : {
+    type :String,
+    enum : ["NOT_STARTED","IN_PROGRESS","COMPLETED","HOLDED","ARCHIVED"],
+    default : "NOT_STARTED"
+  }
 });
 
 module.exports = mongoose.model("GroupDiscussion", GroupDiscussionSchema);

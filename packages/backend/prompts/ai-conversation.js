@@ -4,5 +4,5 @@ AI Response:
 `;
 
 module.exports = {
-    AIConversationPrompt
-}
+  AIConversationPrompt,
+};

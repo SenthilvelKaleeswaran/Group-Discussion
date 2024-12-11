@@ -13,12 +13,10 @@ import {
   useSpeechRecognization,
   useSpeechSynthesis,
 } from "../hooks";
-
-
+import DiscussionIndicator from "./DiscussionIndicator";
 
 const DiscussionSpace = () => {
   const { id } = useParams();
-  
 
   const [conversation, setConversation] = useState([]);
 
@@ -32,25 +30,36 @@ const DiscussionSpace = () => {
     },
   });
 
+  const isConclusion = useMemo(() => {
+    return conversation?.length > data?.discussionLength;
+  }, [conversation]);
+
+  const allowConclusion = useMemo(() => {
+    return isConclusion && data?.conclusionBy !== "AI";
+  }, []);
+
   // Hooks
-  const { members, currentMember, selectMember,resetCurrentMember } = useMembers(data);
+  const { members, currentMember, selectMember, resetCurrentMember } =
+    useMembers(data);
 
   const { mutate, isLoading } = useMutation(generateConversation, {
     onSuccess: (data) => {
-      if (data?.generatedText) {
-        setCurrentSpeech(data?.generatedText.slice(0, 200));
-      }
-      if (data?.randomMember) {
-        selectMember(data?.randomMember);
-      }
-      if (data?.conversation) {
-        setConversation(data?.conversation);
-      }
+      console.log({ dataaaaa: data });
+      if (data?.generatedText)
+        setCurrentSpeech(data?.generatedText.slice(0, 100));
+      else setCurrentSpeech("");
+
+      if (data?.randomMember) selectMember(data?.randomMember);
+
+      if (data?.conversation) setConversation(data?.conversation);
+
+      if (data?.completed) setStatus("Completed");
     },
     onError: (error) => {
       console.error("Error generating conversation:", error.message);
     },
   });
+  console.log({ dataaaa: conversation });
 
   const [currentSpeech, setCurrentSpeech] = useState("");
 
@@ -61,13 +70,48 @@ const DiscussionSpace = () => {
   });
   const [status, setStatus] = useState("");
 
+  const userId = localStorage.getItem("userId");
+
+  const strictPermission = () => {
+    const lastPoint = conversation?.length === data?.discussionLength - 1;
+    const conclusionBy = data?.conclusionBy;
+
+    // Last point should speaken by user
+    if (lastPoint && conclusionBy === "AI")
+      return (conversation || [])?.pop()?._id !== userId;
+
+    // You need to conclude and only one conclusion point
+    if (data?.conclusionPoint === 1 && conclusionBy === "You") return true;
+
+    return false;
+  };
+
+  const strictUserPermission = strictPermission();
+  const isCompleted = data?.status === "COMPLETED";
+
+  const checkPermission = () => {
+    if (strictUserPermission) return true;
+    if (conversation?.length === data?.discussionLength - 1) {
+      return false;
+    }
+    return !isSpeaking || allowConclusion || !isCompleted;
+  };
+
+  const grantPermission = checkPermission();
+  console.log({ grantPermission, strictUserPermission });
+
   const {
     transcript,
     isListening,
     startListening,
     stopListening,
     resetTranscript,
-  } = useSpeechRecognization({ isSpeaking, selectMember,resetCurrentMember });
+  } = useSpeechRecognization({
+    isSpeaking,
+    grantPermission,
+    selectMember,
+    resetCurrentMember,
+  });
 
   const isListeningRef = useRef(isListening);
 
@@ -93,6 +137,16 @@ const DiscussionSpace = () => {
       resetTranscript();
     }
   }, [isSpeaking]);
+  // const isReadyToConclude =
+  //   conversation?.length > 0 &&
+  //   conversation?.length === data?.discussionLength &&
+  //   (transcript?.length > 0 || currentSpeech?.length > 0) &&
+  //   !isLoading &&
+  //   !isSpeaking &&
+  //   !isListening;
+
+  // const [isConclusionStarted, setIsConclusionStarted] =
+  //   useState(isReadyToConclude);
 
   useEffect(() => {
     if (currentSpeech.length > 0 && !isSpeaking) {
@@ -108,11 +162,28 @@ const DiscussionSpace = () => {
     }
   }, [isListening, isSpeaking]);
 
+  // useEffect(() => {
+  //   if (
+  //     conversation?.length &&
+  //     conversation?.length === data?.discussionLength &&
+  //     !isLoading &&
+  //     !isSpeaking &&
+  //     !isListening
+  //   ) {
+  //     console.log("status i came da check");
+  //     setIsConclusionStarted(true);
+  //     setTimeout(() => {
+  //       setIsConclusionStarted(false);
+  //     }, TIME_INTERVAL);
+  //   }
+  // }, [conversation, isSpeaking, isListening, isLoading]);
 
-  console.log({transcript})
+  console.log({ transcript });
 
   const getStatus = () => {
     switch (true) {
+      case strictUserPermission:
+        return "You only need to speak";
       case issLoading:
         return "Fetching Data";
       case isLoading:
@@ -133,13 +204,59 @@ const DiscussionSpace = () => {
   };
   console.log({ currentWord });
 
+  const getConclusionBy = () => {
+    const conclusionBy = data?.conclusionBy;
+
+    switch (conclusionBy) {
+      case "AI":
+        return (
+          <div>
+            <p>🤖 The AI showdown begins now!</p>{" "}
+            <button>⏭️ Skip discussion</button>
+          </div>
+        );
+      case "User":
+        return (
+          <div>
+            <p>👤 It's your moment to take the reins and conclude.</p>
+          </div>
+        );
+      case "Random":
+        return (
+          <div>
+            <p>🎲 The ultimate showdown starts here!</p>{" "}
+            <p>🎯 Prepare to focus as the discussion intensifies.</p>
+          </div>
+        );
+      case "You":
+        return (
+          <div>
+            <p>👋 The final verdict rests in your hands.</p>
+            <p>🖱️ Tap 'S' to bring the discussion to its conclusion.</p>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+  console.log({
+    // isConclusionStarted,
+    a: !isCompleted && !isLoading && !isListening && status?.length > 0,
+    status,
+  });
+
   return (
     <div className="flex  gap-4 min-h-screen w-full bg-green-500 text-gray-200 p-4">
       <div className="max-w-3xl w-full flex-1.5  bg-gray-800 shadow-lg rounded-lg p-8">
         <p className="font-bold">{data?.topic}</p>
-        {!isLoading && !isListening && status?.length > 0 ? (
+
+        <DiscussionIndicator data={data} conversation={conversation} currentMember={currentMember} />
+
+        {(!isCompleted && !isLoading && !isListening && status?.length > 0)  ? (
           <TimeProgressBar duration={TIME_INTERVAL} />
         ) : null}
+
+       
 
         <div className="text-blue-600">{getStatus()}</div>
 
@@ -150,6 +267,40 @@ const DiscussionSpace = () => {
           {/* <h1 className="text-2xl font-bold mb-4">Group Members</h1> */}
           <MemberCard data={members} currentMember={currentMember} />
         </div>
+
+        {isCompleted ? (
+          <div className="flex flex-col items-center justify-center bg-gray-800 p-8 rounded-lg shadow-lg space-y-6 text-center">
+            <h2 className="text-2xl font-bold text-yellow-400">
+              🏆 Discussion Battle Finished!
+            </h2>
+            <p className="text-sm text-gray-300">
+              Your discussion journey has concluded. What’s next?
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-md">
+              {data?.feedback ? (
+                <button className="py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition duration-300">
+                  📊 View Feedback
+                </button>
+              ) : (
+                <button className="py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-md transition duration-300">
+                  ✨ Generate Feedback
+                </button>
+              )}
+              <button className="py-2 px-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg shadow-md transition duration-300">
+                🔄 Start New Discussion
+              </button>
+              <button className="py-2 px-4 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg shadow-md transition duration-300">
+                📖 View Past Discussions
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div>
+            {isConclusion ? <div>Conclusion Battle Starts</div> : null}
+            {isConclusion && getConclusionBy()}
+          </div>
+        )}
 
         {/* Recording Section */}
         {/* <div className="text-center mb-8">
@@ -162,15 +313,18 @@ const DiscussionSpace = () => {
       </div>
       <div className="max-w-3xl w-full flex-1 min-h-screen h-full overflow-scroll bg-gray-800 shadow-lg rounded-lg p-8">
         <Conversion
-          data={conversation}
+          conversation={conversation}
           currentWord={currentWord}
           transcript={transcript}
-          streamData={transcript || currentWord}
           currentMember={currentMember}
           isSpeaking={isSpeaking}
           isListening={isListening}
           isLoading={isLoading}
           currentSpeech={currentSpeech}
+          data={data}
+          discussionLength={data?.discussionLength}
+          conclusionBy={data?.conclusionBy}
+          conclusionPoints={data?.conclusionPoints}
         />{" "}
       </div>
     </div>

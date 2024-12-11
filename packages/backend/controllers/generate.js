@@ -1,10 +1,21 @@
 const GroupDiscussion = require("../models/group-discussion");
 const Conversation = require("../models/conversation");
 const { extractPropertiesFromJson } = require("../utils/extract-metrics");
-const { AIConversationPrompt, PerformanceMetricsPrompt, generateConversationTemplate } = require("../prompts");
+const {
+  AIConversationPrompt,
+  PerformanceMetricsPrompt,
+  generateConversationTemplate,
+  AIConclusionPrompt,
+} = require("../prompts");
+const { generateAIResponse } = require("../utils");
 
-const HF_API_TOKEN = process.env.HF_API_TOKEN;
-const HF_GENERATOR_URL = "https://api-inference.huggingface.co/models/mistralai/Mixtral-8x7B-Instruct-v0.1";
+const getConversationData = (data) => {
+  return data?.map((item) => {
+    return {
+      [item.name]: item?.conversation,
+    };
+  });
+};
 
 const generateConversation = async (req, res) => {
   const { id, participant, conversation: receivedConversation } = req.body;
@@ -15,116 +26,209 @@ const generateConversation = async (req, res) => {
 
   try {
     // Step 1: Retrieve Group Discussion
-    const groupDiscussion = await GroupDiscussion.findById(id).populate("conversationId");
+    const groupDiscussion = await GroupDiscussion.findById(id).populate(
+      "conversationId"
+    );
     if (!groupDiscussion) {
       return res.status(404).json({ error: "Group discussion not found" });
     }
 
-    const { topic, conversationId: { messages = [] } = {}, aiParticipants } = groupDiscussion;
+    const {
+      topic,
+      conversationId: { messages = [] } = {},
+      aiParticipants,
+      discussionLength,
+      conclusionPoints,
+      conclusionBy,
+    } = groupDiscussion;
 
-    const promptTemplate =generateConversationTemplate(topic,receivedConversation);
+    const messageLength = messages?.length;
 
-  
-    // Step 2: Make Hugging Face API calls in parallel
-    const [aiResponseResult, performanceMetricsResult] = await Promise.all([
-      fetch(HF_GENERATOR_URL, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${HF_API_TOKEN}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          inputs: promptTemplate + AIConversationPrompt,
-        }),
-      }).then(response => response.json()),
+    const getStatusValues = () => {
+      if (participant?.type === "AI") {
+        return [
+          discussionLength < messageLength,
+          messageLength === discussionLength + conclusionPoints,
+        ];
+      } else {
+        return [
+          discussionLength - 1 < messageLength,
+          messageLength === discussionLength + conclusionPoints - 1,
+        ];
+      }
+    };
 
-      // Make performance metrics API call only if participant is not AI
-      participant?.type !== "AI"
-        ? fetch(HF_GENERATOR_URL, {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${HF_API_TOKEN}`,
-              "Content-Type": "application/json",
+    const [isConclusion, isTerminatable] = getStatusValues();
+
+    const isLastDiscussionPoint = messageLength === discussionLength - 1;
+
+    const updateConversationStatus = async () => {
+      const conversation = await Conversation.findOne({
+        groupDiscussionId: id,
+      });
+
+      if (conversation && conversation.messages.length > 0) {
+        const lastIndex = conversation.messages.length - 1;
+        const lastMessage = conversation.messages[lastIndex];
+        if (lastMessage?.status) {
+          return await Conversation.findOneAndUpdate(
+            { groupDiscussionId: id },
+            {
+              $set: {
+                [`messages.${lastIndex}.status`]: "SPOKEN",
+                [`messages.${lastIndex}.isConclusion`]: isConclusion,
+              },
             },
-            body: JSON.stringify({
-              inputs: promptTemplate + PerformanceMetricsPrompt,
-            }),
-          }).then(response => response.json())
-        : Promise.resolve(null), // Return null if it's an AI participant
+            { new: true }
+          );
+        }
+      }
+    };
+
+    const updateNewConversation = async (
+      metricsText,
+      responseText = "",
+      randomMember = {}
+    ) => {
+      let newMessages = [];
+
+      const metadata = metricsText
+        ? extractPropertiesFromJson(metricsText)
+        : {};
+
+      if (participant?.type !== "AI") {
+        newMessages.push({
+          _id: participant?._id,
+          name: participant?.name,
+          conversation: receivedConversation,
+          metadata,
+          isConclusion,
+        });
+      }
+
+      if (!isTerminatable) {
+        newMessages.push({
+          name: randomMember?.name,
+          conversation: responseText,
+          isConclusion,
+          status: "GENERATED",
+        });
+      }
+
+      return await Conversation.findOneAndUpdate(
+        { groupDiscussionId: id },
+        {
+          $push: {
+            messages: {
+              $each: newMessages,
+            },
+          },
+        },
+        { new: true, upsert: true }
+      );
+    };
+
+    const promptTemplate = generateConversationTemplate(
+      topic,
+      receivedConversation
+    );
+
+    const getMetricsResponse = () => {
+      return participant?.type !== "AI"
+        ? generateAIResponse({
+            prompt: `${promptTemplate}${PerformanceMetricsPrompt(
+              isConclusion
+            )}`,
+          })
+        : Promise.resolve(null);
+    };
+
+    const metricsResponsePromise = getMetricsResponse();
+
+    if (isTerminatable) {
+      console.log("i came");
+
+      let updatedConversation = [];
+      if (participant?.type === "AI") {
+        updatedConversation = await updateConversationStatus();
+      } else {
+        const [metricsText] = await Promise.all([metricsResponsePromise]);
+        updatedConversation = await updateNewConversation(metricsText);
+      }
+      await GroupDiscussion.findByIdAndUpdate(id, { status: "COMPLETED" });
+      console.log({ updatedConversation: updatedConversation?.messages });
+      return res.status(200).json({
+        completed: true,
+        id,
+        conversation: updatedConversation?.messages,
+      });
+    }
+
+    if (
+      (isLastDiscussionPoint &&
+        conclusionBy === "AI" &&
+        participant?.type === "AI") ||
+      (discussionLength === messageLength && conclusionBy === "You")
+    ) {
+      const updatedConversation = await updateConversationStatus();
+
+      return res.status(200).json({
+        randomMember: req?.user?.userId,
+        conversation: updatedConversation?.messages,
+      });
+    }
+
+    let conversationPrompt = "";
+
+    if (!isConclusion) {
+      conversationPrompt = `${promptTemplate}${AIConversationPrompt}`;
+    } else {
+      const groupedMessages = messages.reduce(
+        (acc, item) => {
+          if (item?.isConclusion) acc.conclusionPoints.push(item);
+          else acc.conversationArray.push(item);
+          return acc;
+        },
+        { conversationArray: [], conclusionPoints: [] }
+      );
+
+      conversationPrompt = AIConclusionPrompt({
+        topic,
+        discussionLength,
+        conversation: getConversationData(groupedMessages.conversationArray),
+        conclusionPoints: getConversationData(groupedMessages.conclusionPoints),
+        conclusionBy,
+      });
+    }
+
+    // Step 2: Generate AI Responses
+    const aiResponsePromise = generateAIResponse({
+      prompt: conversationPrompt,
+    });
+
+    const [responseText, metricsText] = await Promise.all([
+      aiResponsePromise,
+      metricsResponsePromise,
     ]);
-
-    // Extract AI response and performance metrics
-
-
-    const rawText = aiResponseResult?.[0]?.generated_text || aiResponseResult?.text;
-    const rawMetricsText = performanceMetricsResult?.[0]?.generated_text || performanceMetricsResult?.text;
-
-    const responseText = (rawText?.split("AI Response:")[1] || rawText)?.trim();
-    const responseMetricsText = (rawMetricsText?.split("AI Response:")[1] || rawMetricsText)?.trim();
-    console.log({responseMetricsText})
 
     if (!responseText) {
       return res.status(500).json({
         error: "No valid response text generated.",
-        details: aiResponseResult,
       });
     }
 
-    // Extract performance metrics if available
-    const metadata = responseMetricsText ? extractPropertiesFromJson(responseMetricsText) : {};
-console.log({metadata})
-    // Step 3: Update Messages
+    // Update last message's status to "SPOKEN"
+    await updateConversationStatus();
+
     const randomIndex = Math.floor(Math.random() * aiParticipants.length);
     const randomMember = aiParticipants[randomIndex];
 
-    let newMessages = [];
-
-    if (participant?.type !== "AI") {
-      newMessages.push({
-        _id: participant?._id,
-        name: participant?.name,
-        conversation: receivedConversation,
-        metadata,
-      });
-    }
-
-    newMessages.push({
-      name: randomMember?.name,
-      conversation: responseText,
-      status: "GENERATED",
-    });
-
-    // Update last message's status to "SPOKEN"
-    const conversation = await Conversation.findOne({ groupDiscussionId: id });
-
-    if (conversation && conversation.messages.length > 0) {
-      const lastMessage = conversation.messages[conversation.messages.length - 1];
-      if (lastMessage?.status) {
-        await Conversation.findOneAndUpdate(
-          { groupDiscussionId: id },
-          {
-            $set: {
-              [`messages.${conversation.messages.length - 1}.status`]: "SPOKEN", // Set status of last message
-            },
-          }
-        );
-      }
-    }
-
     // Push new messages into the conversation
-    const updatedConversation = await Conversation.findOneAndUpdate(
-      { groupDiscussionId: id },
-      {
-        $push: {
-          messages: {
-            $each: newMessages, // Push multiple new messages
-          },
-        },
-      },
-      { new: true, upsert: true }
+    const updatedConversation = await updateNewConversation(
+      metricsText,
+      responseText,
+      randomMember
     );
-
-    console.log({updatedConversation : updatedConversation?.messages})
 
     return res.status(200).json({
       generatedText: responseText,
