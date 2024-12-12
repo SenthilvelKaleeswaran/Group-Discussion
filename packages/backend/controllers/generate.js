@@ -97,13 +97,11 @@ const generateConversation = async (req, res) => {
     };
 
     const updateNewConversation = async (
-      metricsText,
+      metadata = {},
       responseText = "",
       randomMember = {}
     ) => {
       let newMessages = [];
-
-      const metadata = metricsText ? paseJSON(metricsText) : {};
 
       if (participant?.type !== "AI") {
         newMessages.push({
@@ -148,6 +146,7 @@ const generateConversation = async (req, res) => {
             prompt: `${promptTemplate}${PerformanceMetricsPrompt(
               isConclusion
             )}`,
+            isParse : true
           })
         : Promise.resolve(null);
     };
@@ -213,6 +212,7 @@ const generateConversation = async (req, res) => {
     // Step 2: Generate AI Responses
     const aiResponsePromise = generateAIResponse({
       prompt: conversationPrompt,
+      isParse : true
     });
 
     const [responseText, metricsText] = await Promise.all([
