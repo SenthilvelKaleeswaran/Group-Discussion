@@ -62,6 +62,10 @@ const GroupDiscussionSchema = new mongoose.Schema({
     type :String,
     enum : ["NOT_STARTED","IN_PROGRESS","COMPLETED","HOLDED","ARCHIVED"],
     default : "NOT_STARTED"
+  },
+  feedback : {
+    type : Array,
+    default : []
   }
 });
 

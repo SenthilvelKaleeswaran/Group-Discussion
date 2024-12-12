@@ -1,13 +1,24 @@
 const GroupDiscussion = require("../models/group-discussion");
 const Conversation = require("../models/conversation");
-const { extractPropertiesFromJson } = require("../utils/extract-metrics");
 const {
   AIConversationPrompt,
   PerformanceMetricsPrompt,
   generateConversationTemplate,
   AIConclusionPrompt,
+  discussionInstructionPrompt,
+  OverAllAnalysisPrompt,
+  PointAnalysisPrompt,
 } = require("../prompts");
 const { generateAIResponse } = require("../utils");
+const {
+  AnalysisPrompt,
+  ContentAnalysisPrompt,
+  TimingAndPacingPrompt,
+  HolisticMetricsPrompt,
+  EmotionalIntelligencePrompt,
+  DiscussionEngagementPrompt,
+  CommunicationSkillsPrompt,
+} = require("../prompts");
 
 const getConversationData = (data) => {
   return data?.map((item) => {
@@ -92,9 +103,7 @@ const generateConversation = async (req, res) => {
     ) => {
       let newMessages = [];
 
-      const metadata = metricsText
-        ? extractPropertiesFromJson(metricsText)
-        : {};
+      const metadata = metricsText ? paseJSON(metricsText) : {};
 
       if (participant?.type !== "AI") {
         newMessages.push({
@@ -244,6 +253,127 @@ const generateConversation = async (req, res) => {
   }
 };
 
+const generateFeedback = async (req, res) => {
+  const { id } = req.body;
+
+  try {
+    const groupDiscussion = await GroupDiscussion.findById(id)
+      .populate("conversationId")
+      .populate({
+        path: "participants",
+        select: "userId",
+        populate: {
+          path: "userId",
+          select: "_id name",
+        },
+      });
+
+    if (!groupDiscussion) {
+      return res.status(404).json({ error: "Group discussion not found" });
+    }
+    console.log({ groupDiscussion });
+
+    const {
+      topic,
+      conversationId: { messages = [] } = {},
+      participants,
+      aiParticipants,
+      discussionLength,
+      conclusionPoints,
+      conclusionBy,
+      status,
+      noOfUsers,
+    } = groupDiscussion;
+
+    if (status !== "COMPLETED") {
+      return res
+        .status(404)
+        .json({ error: "Group discussion not completed yet" });
+    }
+
+    if (!messages?.length) {
+      return res
+        .status(404)
+        .json({ error: "Group discussion contains no conversation" });
+    }
+
+    const modifiedConversation = getConversationData(messages);
+
+    const pointAnalysis = [];
+    const userAnalysis = [];
+
+    // Sequential generation of point analysis
+    for (const [index, item] of messages.entries()) {
+      if (item?._id) {
+        const feedback = await generateAIResponse({
+          prompt:
+            generateConversationTemplate(topic, item?.conversation) +
+            `\nFull Discussion : ${JSON.stringify(modifiedConversation)}` +
+            PointAnalysisPrompt +
+            `\nAI Response:`,
+          isParse: true,
+        });
+
+        pointAnalysis.push({
+          feedback,
+          index,
+        });
+      }
+    }
+
+    // Sequential generation of user analysis
+    for (const item of participants) {
+      const user = item?.userId?.name;
+      const feedback = await generateAIResponse({
+        prompt:
+          discussionInstructionPrompt({
+            topic,
+            aiParticipants,
+            discussionLength,
+            conclusionPoints,
+            conclusionBy,
+            noOfUsers,
+            user,
+          }) +
+          `\nFull Discussion : ${JSON.stringify(modifiedConversation)}\n` +
+          OverAllAnalysisPrompt +
+          `\nAI Response:`,
+        isParse: true,
+      });
+      userAnalysis.push({
+        user,
+        feedback,
+      });
+    }
+
+    const updateDiscussionFeedback = pointAnalysis.map((analysis) => ({
+      updateOne: {
+        filter: { groupDiscussionId: id },
+        update: {
+          $set: { [`messages.${analysis.index}.feedback`]: analysis?.feedback },
+        },
+      },
+    }));
+
+    const a = await Promise.all([
+      await Conversation.bulkWrite(updateDiscussionFeedback),
+      await GroupDiscussion.findByIdAndUpdate(
+        id,
+        { feedback: userAnalysis },
+        { new: true }
+      ),
+    ]);
+
+    // Return feedback response
+    return res.status(200).json({ msg : "Success"});
+  } catch (error) {
+    console.error("Error generating feedback:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+
 module.exports = {
   generateConversation,
+  generateFeedback,
 };

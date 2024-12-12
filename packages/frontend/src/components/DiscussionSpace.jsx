@@ -6,8 +6,12 @@ import TimeProgressBar from "../components/TimeProgressBar";
 import Conversion from "../components/Conversation";
 import { useMutation, useQuery } from "react-query";
 
-import { useParams } from "react-router";
-import { generateConversation, getGroupDiscussion } from "../utils/api-call";
+import { useNavigate, useParams } from "react-router";
+import {
+  generateConversation,
+  generateFeedback,
+  getGroupDiscussion,
+} from "../utils/api-call";
 import {
   useMembers,
   useSpeechRecognization,
@@ -17,6 +21,7 @@ import DiscussionIndicator from "./DiscussionIndicator";
 
 const DiscussionSpace = () => {
   const { id } = useParams();
+  const navigate = useNavigate()
 
   const [conversation, setConversation] = useState([]);
 
@@ -57,6 +62,20 @@ const DiscussionSpace = () => {
     },
     onError: (error) => {
       console.error("Error generating conversation:", error.message);
+    },
+  });
+
+  const { mutate: handleFeedbackGeneration, isLoading: isFeedbackGenerating } = useMutation(generateFeedback, {
+    onSuccess: (data) => {
+      console.log({ dataaaaa: data });
+      if (data?.message === "Success") {
+        navigate(`/gd/feedback?id=${id}`);
+      } else {
+        console.error("Unexpected response:", data);
+      }
+    },
+    onError: (error) => {
+      console.error("Error generating feedback:", error.response?.data?.error || error.message || error);
     },
   });
   console.log({ dataaaa: conversation });
@@ -178,7 +197,7 @@ const DiscussionSpace = () => {
   //   }
   // }, [conversation, isSpeaking, isListening, isLoading]);
 
-  console.log({ transcript });
+  console.log({ data });
 
   const getStatus = () => {
     switch (true) {
@@ -250,13 +269,15 @@ const DiscussionSpace = () => {
       <div className="max-w-3xl w-full flex-1.5  bg-gray-800 shadow-lg rounded-lg p-8">
         <p className="font-bold">{data?.topic}</p>
 
-        <DiscussionIndicator data={data} conversation={conversation} currentMember={currentMember} />
+        <DiscussionIndicator
+          data={data}
+          conversation={conversation}
+          currentMember={currentMember}
+        />
 
-        {(!isCompleted && !isLoading && !isListening && status?.length > 0)  ? (
+        {!isCompleted && !isLoading && !isListening && status?.length > 0 ? (
           <TimeProgressBar duration={TIME_INTERVAL} />
         ) : null}
-
-       
 
         <div className="text-blue-600">{getStatus()}</div>
 
@@ -278,13 +299,18 @@ const DiscussionSpace = () => {
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-md">
-              {data?.feedback ? (
+              {data?.feedback?.length ? (
                 <button className="py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition duration-300">
                   📊 View Feedback
                 </button>
               ) : (
-                <button className="py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-md transition duration-300">
-                  ✨ Generate Feedback
+                <button
+                  onClick={() => handleFeedbackGeneration({ id })}
+                  disabled={isFeedbackGenerating}
+                  className="py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-md transition duration-300"
+                >
+                 { isFeedbackGenerating ? "✨ Generating...." : "✨ Generate Feedback"}
+                  
                 </button>
               )}
               <button className="py-2 px-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg shadow-md transition duration-300">

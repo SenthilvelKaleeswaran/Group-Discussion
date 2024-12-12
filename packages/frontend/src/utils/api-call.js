@@ -91,3 +91,11 @@ export const generateConversation = async (data) => {
     body : data
   });
 };
+
+export const generateFeedback = async (data) => {
+  return await apiCall({
+    endpoint: `/generate/feedback`,
+    method: "POST",
+    body : data
+  });
+};

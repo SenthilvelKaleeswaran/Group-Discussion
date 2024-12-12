@@ -35,6 +35,11 @@ const ConversationSchema = new mongoose.Schema({
         default: {},
       },
 
+      feedback: {
+        type: mongoose.Schema.Types.Mixed,
+        default: {},
+      },  
+
       isConclusion: {
         type: Boolean,
         default: false,

@@ -1,10 +1,15 @@
+const { jsonParser } = require("./json-parser");
+
 const HF_API_TOKEN = process.env.HF_API_TOKEN;
 const HF_GENERATOR_URL =
   "https://api-inference.huggingface.co/models/mistralai/Mixtral-8x7B-Instruct-v0.1";
 
-const generateAIResponse = async ({ prompt, separator = 'AI Response:' }) => {
+const generateAIResponse = async ({
+  prompt,
+  separator = "AI Response:",
+  isParse = false,
+}) => {
   try {
-    
     // Make the API request
     const response = await fetch(HF_GENERATOR_URL, {
       method: "POST",
@@ -20,7 +25,9 @@ const generateAIResponse = async ({ prompt, separator = 'AI Response:' }) => {
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(
-        `Error from Hugging Face API: ${errorData.error || response.statusText} (Status: ${response.status})`
+        `Error from Hugging Face API: ${
+          errorData.error || response.statusText
+        } (Status: ${response.status})`
       );
     }
 
@@ -33,11 +40,11 @@ const generateAIResponse = async ({ prompt, separator = 'AI Response:' }) => {
 
     // Extract the AI response
     const responseText = (rawText.split(separator)[1] || rawText)?.trim();
+    if (isParse) return jsonParser(responseText);
+
     return responseText;
   } catch (error) {
     console.error("Error in generateAIResponse:", error.message);
-
-    // Return a user-friendly error message or rethrow if needed
     throw new Error(
       "Failed to generate AI response. Please try again later or contact support if the issue persists."
     );
@@ -45,6 +52,5 @@ const generateAIResponse = async ({ prompt, separator = 'AI Response:' }) => {
 };
 
 module.exports = {
-  generateAIResponse
+  generateAIResponse,
 };
-
