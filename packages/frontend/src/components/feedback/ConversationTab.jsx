@@ -85,7 +85,7 @@ const ConversationTab = ({ data }) => {
           </div>
 
           <div className="space-y-4">
-            <RenderSpace data={data}>
+            <RenderSpace condition={!!currentData?.userId}>
               <CircularProgressBar
                 progress={selectedConversation?.totalMetricsScore}
                 size={70}
@@ -121,12 +121,12 @@ const ConversationTab = ({ data }) => {
       </div>
       <MessageBadges data={selectedConversation?.metadata} />
 
-      {/* <RenderSpace data={data}> */}
+      <RenderSpace condition={!!currentData?.userId}>
         <FeedbackTab
           feedback={selectedConversation?.feedback}
           metricsTotal={selectedConversation?.overAllMetricsTotalPoints}
         />
-      {/* </RenderSpace> */}
+      </RenderSpace>
     </div>
   );
 };

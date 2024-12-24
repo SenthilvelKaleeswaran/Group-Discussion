@@ -17,7 +17,7 @@ const ConversationSection = ({ currentData, expectedPoints }) => {
             Total Number of Points Spoken: {currentData?.conversation?.length || 0}
           </p>
         </div>
-        <RenderSpace data={currentData}>
+        <RenderSpace condition={!!currentData?.userId}>
           <CircularProgressBar
             progress={currentData?.totalConversationScore}
             outOff={20}

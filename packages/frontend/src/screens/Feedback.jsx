@@ -277,7 +277,7 @@ const Feedback = () => {
                     </span>
                   </div>
                 </div>
-                <RenderSpace data={currentData}>
+                <RenderSpace condition={!!currentData?.userId}>
                   <CircularProgressBar
                     progress={currentData?.total}
                     size={105}
@@ -326,7 +326,7 @@ const Feedback = () => {
                         </select>
                       </div>
                     </div>
-                    <RenderSpace data={currentData}>
+                    <RenderSpace condition={!!currentData?.userId}>
                       <div>
                         <div>
                           <label className="text-left">

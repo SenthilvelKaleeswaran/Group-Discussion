@@ -7,6 +7,9 @@ import {
 import Conversation from "./Conversation";
 import Icon from "../../icons";
 import { useRecapDiscussion } from "../../context/useRecapDiscussion";
+import CurrentMember from "./CurrentMember";
+import BlinkingIcon from "../BlinkingIcon";
+import RenderSpace from "../common/RenderSpace";
 
 const ConversationSpace = ({ data }) => {
   const {
@@ -27,11 +30,35 @@ const ConversationSpace = ({ data }) => {
 
   const isButtonDisable = conversation?.length === 0;
 
+  const renderStatus = () => {
+    if (isSpeaking) return `🗣 ${currentSpeech?.name} Speaking`;
+
+    return ``;
+  };
+
+  const renderIcon = () => {
+    if (isSpeaking)
+      return (
+        <BlinkingIcon icon={"Wave"} iconColor={"green"} pingColor="green" />
+      );
+
+    return null;
+  };
+
   return (
-    <div className="space-y-4 p-4 rounded-md">
-     
+    <div className="space-y-2 p-4 rounded-md">
+      <RenderSpace condition={isSpeaking}>
+        <div className="bg-gray-900 w-full rounded-md p-2">
+          <CurrentMember
+            currentMember={currentSpeech}
+            renderStatus={renderStatus}
+            renderIcon={renderIcon}
+          />
+        </div>
+      </RenderSpace>
+
       <div className="bg-gray-900 flex justify-between gap-4 items-center p-4 rounded-md shadow-orange-950">
-        <div  className="space-y-2 w-full">
+        <div className="space-y-2 w-full">
           <div className="flex gap-2 justify-between">
             <div
               onClick={isButtonDisable ? null : () => handleNextPrev("prev")}
@@ -63,7 +90,9 @@ const ConversationSpace = ({ data }) => {
               checked={isTrackConversation}
               value={isTrackConversation}
             />
-            <label className="text-left text-gray-500 text-xs">Track</label>
+            <label className="text-left text-gray-500 text-xs">
+              Track the conversation
+            </label>
           </div>
         </div>
 
@@ -97,13 +126,12 @@ const ConversationSpace = ({ data }) => {
               disabled={specificMember === "all"}
               value={isSpecificConversation}
             />
-            <label className="text-left text-gray-500 text-xs"> Filter Conversation</label>
+            <label className="text-left text-gray-500 text-xs">
+              {" "}
+              Filter Conversation
+            </label>
           </div>
-         
         </div>
-        {/* 
-       
-        */}
       </div>
       <div className="w-full bg-gray-800 shadow-lg rounded-md ">
         <Conversation
@@ -112,7 +140,6 @@ const ConversationSpace = ({ data }) => {
           data={{ ...data, messages: conversation }}
         />
       </div>
-
     </div>
   );
 };
