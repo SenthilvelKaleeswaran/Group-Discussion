@@ -4,7 +4,7 @@ import {
   useSpeechRecognization,
   useSpeechSynthesis,
 } from "../../hooks";
-import Conversion from "../Conversation";
+import Conversation from "./Conversation";
 import Icon from "../../icons";
 import { useRecapDiscussion } from "../../context/useRecapDiscussion";
 
@@ -106,7 +106,7 @@ const ConversationSpace = ({ data }) => {
         */}
       </div>
       <div className="w-full bg-gray-800 shadow-lg rounded-md ">
-        <Conversion
+        <Conversation
           isSpeaking={isSpeaking}
           currentMember={currentSpeech}
           data={{ ...data, messages: conversation }}

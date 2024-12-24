@@ -1,13 +1,13 @@
 import React, { useMemo, useEffect, useRef } from "react";
-import { useConversation } from "../context/conversation";
-import StreamingConversation from "./StreamingConversation";
-import Icon from "../icons";
-import BlinkingIcon from "./BlinkingIcon";
-import AttachedBadge from "./UI/Badge";
-import MessageBadges from "./MessageBadges";
-import DiscussionPoints from "./common/DiscussionPoints";
+import { useConversation } from "../../context/conversation";
+import StreamingConversation from "../StreamingConversation";
+import Icon from "../../icons";
+import BlinkingIcon from "../BlinkingIcon";
+import AttachedBadge from "../UI/Badge";
+import MessageBadges from "../MessageBadges";
+import DiscussionPoints from "../common/DiscussionPoints";
 
-const Conversion = ({
+const Conversation = ({
   data,
   currentMember = {},
   isListening = false,
@@ -175,4 +175,4 @@ const Conversion = ({
   );
 };
 
-export default Conversion;
+export default Conversation;

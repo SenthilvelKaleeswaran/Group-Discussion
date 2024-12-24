@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import MemberCard from "../components/Memberscard";
-import { useConversation } from "../context/conversation";
 import { THREE_SECOND_TIME_INTERVAL, TIME_INTERVAL } from "../constants";
 import TimeProgressBar from "../components/TimeProgressBar";
-import Conversion from "../components/Conversation";
 import { useMutation, useQuery } from "react-query";
 
 import { useNavigate, useParams } from "react-router";
@@ -18,6 +16,7 @@ import {
   useSpeechSynthesis,
 } from "../hooks";
 import DiscussionIndicator from "./DiscussionIndicator";
+import Conversation from "./conversation/Conversation";
 
 const DiscussionSpace = () => {
   const { id } = useParams();
@@ -347,7 +346,7 @@ const DiscussionSpace = () => {
         </div> */}
       </div>
       <div className="max-w-3xl w-full flex-1 min-h-screen h-full overflow-scroll bg-gray-800 shadow-lg rounded-lg p-8">
-        <Conversion
+        <Conversation
           conversation={conversation}
           currentWord={currentWord}
           transcript={transcript}
