@@ -18,6 +18,7 @@ import { AuthProvider } from "./context/auth";
 import { QueryClient, QueryClientProvider } from 'react-query';
 import Profile from "./screens/Profile";
 import DiscussionSpace from "./components/DiscussionSpace";
+import Feedback from "./screens/Feedback";
 
 function App() {
   const queryClient = new QueryClient();
@@ -37,6 +38,8 @@ function App() {
                 <Route path=":id" element={<DiscussionSpace />} />
                 <Route path="" element={<DiscussionDetails />} />
               </Route>
+              <Route path="/feedback" element={<Feedback />} />
+
               <Route path="/profile" element={<Profile />} />
 
             </Route>

@@ -2,12 +2,20 @@
 import { FiMic } from "react-icons/fi";
 import { PiWaveformBold } from "react-icons/pi";
 import { HiDotsHorizontal } from "react-icons/hi";
+import { FaPlay } from "react-icons/fa";
+import { IoPlayBack } from "react-icons/io5";
+import { IoPlayForward } from "react-icons/io5";
+import { FaPause } from "react-icons/fa6";
 
 const Icon = ({ name, ...props }) => {
   const IconsList = {
+    Backward: IoPlayBack,
+    Forward: IoPlayForward,
     MicrophoneOn: FiMic, 
-    Wave : PiWaveformBold,
-    HorizontalDots :HiDotsHorizontal
+    HorizontalDots: HiDotsHorizontal,
+    Pause : FaPause,
+    Play: FaPlay,
+    Wave: PiWaveformBold,
   };
 
   const IconComponent = IconsList[name];
@@ -16,7 +24,7 @@ const Icon = ({ name, ...props }) => {
     return null; 
   }
 
-  return <IconComponent className='w-4.5 h-4.5' {...props}  />;
+  return <IconComponent className="w-4.5 h-4.5" {...props} />;
 };
 
 export default Icon;

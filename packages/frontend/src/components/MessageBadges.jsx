@@ -99,8 +99,8 @@ const MessageBadges = ({ data }) => {
   };
 
   return (
-    <div className="flex flex-row flex-wrap gap-1">
-      {Object.entries(data).map(([topic, value]) => {
+    <div className="flex flex-row flex-wrap gap-2">
+      {Object.entries(data||{})?.map(([topic, value]) => {
         const colors = getTypeForTopic(topic, value);
         const formattedTopic = formatTopicName(topic);
 

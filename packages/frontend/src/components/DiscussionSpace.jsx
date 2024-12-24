@@ -21,7 +21,7 @@ import DiscussionIndicator from "./DiscussionIndicator";
 
 const DiscussionSpace = () => {
   const { id } = useParams();
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   const [conversation, setConversation] = useState([]);
 
@@ -65,19 +65,23 @@ const DiscussionSpace = () => {
     },
   });
 
-  const { mutate: handleFeedbackGeneration, isLoading: isFeedbackGenerating } = useMutation(generateFeedback, {
-    onSuccess: (data) => {
-      console.log({ dataaaaa: data });
-      if (data?.message === "Success") {
-        navigate(`/gd/feedback?id=${id}`);
-      } else {
-        console.error("Unexpected response:", data);
-      }
-    },
-    onError: (error) => {
-      console.error("Error generating feedback:", error.response?.data?.error || error.message || error);
-    },
-  });
+  const { mutate: handleFeedbackGeneration, isLoading: isFeedbackGenerating } =
+    useMutation(generateFeedback, {
+      onSuccess: (data) => {
+        console.log({ dataaaaa: data });
+        if (data?.message === "Success") {
+          navigate(`/gd/feedback?id=${id}`);
+        } else {
+          console.error("Unexpected response:", data);
+        }
+      },
+      onError: (error) => {
+        console.error(
+          "Error generating feedback:",
+          error.response?.data?.error || error.message || error
+        );
+      },
+    });
   console.log({ dataaaa: conversation });
 
   const [currentSpeech, setCurrentSpeech] = useState("");
@@ -300,7 +304,11 @@ const DiscussionSpace = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-md">
               {data?.feedback?.length ? (
-                <button className="py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition duration-300">
+                <button
+                  onClick={() => handleFeedbackGeneration({ id })}
+                  disabled={isFeedbackGenerating}
+                  className="py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition duration-300"
+                >
                   📊 View Feedback
                 </button>
               ) : (
@@ -309,8 +317,9 @@ const DiscussionSpace = () => {
                   disabled={isFeedbackGenerating}
                   className="py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-md transition duration-300"
                 >
-                 { isFeedbackGenerating ? "✨ Generating...." : "✨ Generate Feedback"}
-                  
+                  {isFeedbackGenerating
+                    ? "✨ Generating...."
+                    : "✨ Generate Feedback"}
                 </button>
               )}
               <button className="py-2 px-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg shadow-md transition duration-300">

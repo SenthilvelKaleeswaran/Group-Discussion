@@ -21,7 +21,7 @@ const generateRoutes = require('./routes/generate');
 const userRoutes = require('./routes/user');
 
 const connectDB = require("./config/db");
-const authMiddleware = require("./middleare/auth");
+const authMiddleware = require("./middleware/auth");
 
 
 // Define routes

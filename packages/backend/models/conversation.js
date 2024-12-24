@@ -14,7 +14,7 @@ const ConversationSchema = new mongoose.Schema({
         required: false,
       },
 
-      _id: {
+      userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "UserDetails",
         required: false,

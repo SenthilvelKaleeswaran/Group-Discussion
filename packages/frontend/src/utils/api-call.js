@@ -1,5 +1,7 @@
-const apiCall = async ({ endpoint, method = "GET", body = null }) => {
-  const token = localStorage.getItem("token"); // Optional, if token needs to be sent
+import axios from "axios";
+
+const apiCall = async ({ endpoint, method = "GET", data = null }) => {
+  const token = localStorage.getItem("token");
 
   const headers = {
     "Content-Type": "application/json",
@@ -12,32 +14,22 @@ const apiCall = async ({ endpoint, method = "GET", body = null }) => {
   const requestOptions = {
     method,
     headers,
-    body: body ? JSON.stringify(body) : null,
+    data,
   };
 
-  // Ensure the API URL is formed correctly
   const apiUrl = `${import.meta.env.VITE_API_URL}${
     import.meta.env.VITE_API_PORT
   }/api${endpoint}`;
 
-  console.log({
-    aaa: apiUrl, // Check the final URL being generated
-  });
-
   try {
-    const response = await fetch(apiUrl, requestOptions);
-
-    const data = await response.json();
+    const response = await axios(apiUrl, requestOptions);
+    const data = response.data;
     console.log({ data });
-
-    if (!response.ok) {
-      throw new Error(data.message || data.msg || "Something went wrong");
-    }
 
     return data;
   } catch (error) {
     console.error("API call error:", error);
-    throw error;
+    throw error.response?.data || error.message || "Something went wrong"; // Extracting error details from the response
   }
 };
 
@@ -45,7 +37,7 @@ export const registerUser = async (data) => {
   return await apiCall({
     endpoint: "/auth/register",
     method: "POST",
-    body: data,
+    data,
   });
 };
 
@@ -53,7 +45,7 @@ export const loginUser = async (data) => {
   return await apiCall({
     endpoint: "/auth/login",
     method: "POST",
-    body: data,
+    data,
   });
 };
 
@@ -61,7 +53,7 @@ export const createDiscussion = async (data) => {
   return await apiCall({
     endpoint: "/group-discussion/create",
     method: "POST",
-    body: data,
+    data,
   });
 };
 
@@ -69,7 +61,7 @@ export const updateUser = async (data) => {
   return await apiCall({
     endpoint: `/user/update`,
     method: "POST",
-    body: data,
+    data,
   });
 };
 
@@ -88,7 +80,7 @@ export const generateConversation = async (data) => {
   return await apiCall({
     endpoint: `/generate/conversation`,
     method: "POST",
-    body : data
+    data,
   });
 };
 
@@ -96,6 +88,6 @@ export const generateFeedback = async (data) => {
   return await apiCall({
     endpoint: `/generate/feedback`,
     method: "POST",
-    body : data
+    data,
   });
 };

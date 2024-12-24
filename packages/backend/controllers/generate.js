@@ -10,15 +10,7 @@ const {
   PointAnalysisPrompt,
 } = require("../prompts");
 const { generateAIResponse } = require("../utils");
-const {
-  AnalysisPrompt,
-  ContentAnalysisPrompt,
-  TimingAndPacingPrompt,
-  HolisticMetricsPrompt,
-  EmotionalIntelligencePrompt,
-  DiscussionEngagementPrompt,
-  CommunicationSkillsPrompt,
-} = require("../prompts");
+
 
 const getConversationData = (data) => {
   return data?.map((item) => {
@@ -105,7 +97,7 @@ const generateConversation = async (req, res) => {
 
       if (participant?.type !== "AI") {
         newMessages.push({
-          _id: participant?._id,
+          userId: participant?._id,
           name: participant?.name,
           conversation: receivedConversation,
           metadata,
@@ -212,13 +204,14 @@ const generateConversation = async (req, res) => {
     // Step 2: Generate AI Responses
     const aiResponsePromise = generateAIResponse({
       prompt: conversationPrompt,
-      isParse : true
     });
 
     const [responseText, metricsText] = await Promise.all([
       aiResponsePromise,
       metricsResponsePromise,
     ]);
+
+    console.log({responseText})
 
     if (!responseText) {
       return res.status(500).json({
@@ -304,7 +297,7 @@ const generateFeedback = async (req, res) => {
 
     // Sequential generation of point analysis
     for (const [index, item] of messages.entries()) {
-      if (item?._id) {
+      if (item?.userId) {
         const feedback = await generateAIResponse({
           prompt:
             generateConversationTemplate(topic, item?.conversation) +
@@ -323,7 +316,7 @@ const generateFeedback = async (req, res) => {
 
     // Sequential generation of user analysis
     for (const item of participants) {
-      const user = item?.userId?.name;
+      const {_id,name} = item?.userId;
       const feedback = await generateAIResponse({
         prompt:
           discussionInstructionPrompt({
@@ -333,7 +326,7 @@ const generateFeedback = async (req, res) => {
             conclusionPoints,
             conclusionBy,
             noOfUsers,
-            user,
+            user : name,
           }) +
           `\nFull Discussion : ${JSON.stringify(modifiedConversation)}\n` +
           OverAllAnalysisPrompt +
@@ -341,7 +334,7 @@ const generateFeedback = async (req, res) => {
         isParse: true,
       });
       userAnalysis.push({
-        user,
+        _id,
         feedback,
       });
     }

@@ -6,6 +6,8 @@ export const ConversationProvider = ({ children }) => {
   const [conversation, setConversation] = useState([]);
 
   const updateConversation = ({ currentMember, newConversation }) => {
+    console.log("member render - updateConversation")
+
     console.log({ currentMember, newConversation });
     if (!currentMember?.id) {
       console.error("Invalid currentMember provided.");
@@ -25,6 +27,9 @@ export const ConversationProvider = ({ children }) => {
       },
     ]);
   };
+
+  console.log("conversation render")
+
 
   return (
     <ConversationContext.Provider value={{ conversation, updateConversation }}>

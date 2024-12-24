@@ -72,9 +72,9 @@ const pointAnalysis = () => {
        ${getJsonValue("Originality", "<Out of Hundered>")}
      },
       "Analytical Thinking": {
-      ${getJsonValue("Critical Thinking", "<High|Medium|Low>")}
-      ${getJsonValue("Problem-Solving", "<High|Medium|Low>")}
-      ${getJsonValue("Connections", "<High|Medium|Low>")}
+      ${getJsonValue("Critical Thinking", "<Out of Hundered>")}
+      ${getJsonValue("Problem-Solving", "<Out of Hundered>")}
+      ${getJsonValue("Connections", "<Out of Hundered>")}
       ${getJsonValue("Analytical Depth", "<Out of Hundred>")}
       ${getJsonValue("Logical Reasoning", "<Out of Hundred>")}
       ${getJsonValue("Perspective Diversity", "<Out of Hundred>")}
