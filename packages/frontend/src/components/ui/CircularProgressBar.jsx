@@ -16,18 +16,18 @@ const CircularProgressBar = ({
     setOffset(circumference - (progress / outOff) * circumference);
   }, [progress, circumference]);
 
-  const point = outOff/10
+  const point = outOff / 10;
 
   const getColor = (progress) => {
-    if (progress < point*1) return "#8B0000"; // Dark Red
-    if (progress < point*2) return "#FF0000"; // Red
-    if (progress < point*3) return "#FF4500"; // Orange Red
-    if (progress < point*4) return "#FFA500"; // Orange
-    if (progress < point*5) return "#FFFF00"; // Yellow
-    if (progress < point*6) return "#ADFF2F"; // Green Yellow
-    if (progress < point*7) return "#7CFC00"; // Lawn Green
-    if (progress < point*8) return "#008000"; // Green
-    if (progress < point*9) return "#00FF00"; // Lime
+    if (progress < point * 1) return "#8B0000"; // Dark Red
+    if (progress < point * 2) return "#FF0000"; // Red
+    if (progress < point * 3) return "#FF4500"; // Orange Red
+    if (progress < point * 4) return "#FFA500"; // Orange
+    if (progress < point * 5) return "#FFFF00"; // Yellow
+    if (progress < point * 6) return "#ADFF2F"; // Green Yellow
+    if (progress < point * 7) return "#7CFC00"; // Lawn Green
+    if (progress < point * 8) return "#008000"; // Green
+    if (progress < point * 9) return "#00FF00"; // Lime
     return "#008000"; // Green
   };
 
@@ -70,11 +70,14 @@ const CircularProgressBar = ({
         {showOutOff ? (
           <div>
             <p className="text-sm">{progress}</p>
-            <p className="text-xs">{outOff}</p>
+
+            <p className="text-xs flex items-center gap-1">
+              {" "}
+              <span className="text-normal">/</span> {outOff}
+            </p>
           </div>
         ) : (
-
-           progress 
+          progress
         )}
       </div>
     </div>

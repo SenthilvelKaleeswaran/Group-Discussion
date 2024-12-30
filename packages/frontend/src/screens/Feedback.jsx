@@ -56,7 +56,7 @@ const Feedback = () => {
 
   const getTotalPoints = (data) => {
     let obj = {};
-    Object.keys(data).forEach((category) => {
+    Object.keys(data || {}).forEach((category) => {
       const factors = data[category];
 
       // Sum all factor values in the category
@@ -301,7 +301,7 @@ const Feedback = () => {
                         <select
                           value={selectedParticipant}
                           onChange={(event) => handleParticipantSelect(event)}
-                          className="p-2 w-full bg-gray-500 rounded-md"
+                          className="p-2 w-full bg-gray-800 rounded-md border-none outline-none space-y-2"
                         >
                           <optgroup label="Members">
                             {data?.participants.map((participant) => (

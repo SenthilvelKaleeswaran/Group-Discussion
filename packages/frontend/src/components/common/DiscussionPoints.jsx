@@ -1,19 +1,39 @@
-import React, { useMemo, useEffect, useRef } from "react";
+import React, { useMemo, useEffect, useRef, useCallback } from "react";
 import MessageBadges from "../MessageBadges";
 import RenderSpace from "./RenderSpace";
 import SelectableContainer from "./SelectableContainer";
 import { useRecapDiscussion } from "../../context/useRecapDiscussion";
+import Icon from "../../icons";
+import { NameCard } from "./ConversationComponent";
+import { getNameCardStyle } from "../../utils";
 
-const DiscussionPoints = ({
-  data,
-  isLiveDiscussion = false,
-}) => {
+const StatusCard = ({ title, message, additionalText }) => (
+  <div className="relative flex items-center justify-center pb-8 pt-4">
+    <div className="relative z-10 p-6 bg-gray-900 border border-gray-500 rounded-lg shadow-lg text-center space-y-2">
+      <h3 className="text-lg font-bold text-blue-500">{title}</h3>
+      <p className="text-base text-gray-300 ">{message}</p>
+      {additionalText && (
+        <p className="text-sm text-gray-300">{additionalText}</p>
+      )}
+    </div>
+  </div>
+);
+
+const DiscussionPoints = ({ data, isLiveDiscussion = false }) => {
   const discussionLength = data?.discussionLength;
   const conclusionBy = data?.conclusionBy;
   const conclusionPoints = data?.conclusionPoints;
-  const conversation = data?.messages || data?.conversationId?.messages;
-  const selectedPointRef = useRef(null); // Reference to the selected point
+  const conversation =
+  data?.discussion ||data?.messages || data?.conversationId?.messages ;
+  const selectedPointRef = useRef(null);
+  const containerRef = useRef(null);
 
+
+  useEffect(() => {
+    if (isLiveDiscussion && containerRef.current) {
+      containerRef.current.scrollTop = 0;
+    }
+  }, [isLiveDiscussion, conversation]);
 
   const userId = localStorage.getItem("userId");
 
@@ -36,7 +56,7 @@ const DiscussionPoints = ({
       updatedArray.reverse();
     }
 
-    return { updatedArray, userPoints };
+    return { discussion: updatedArray, userPoints };
   };
 
   const getConversationData = () => {
@@ -51,10 +71,9 @@ const DiscussionPoints = ({
     return countUserPoints(array);
   };
 
-  const { updatedArray: discussion, userPoints } = useMemo(
-    getConversationData,
-    [conversation]
-  );
+  const { discussion, userPoints } = useMemo(getConversationData, [
+    conversation,
+  ]);
 
   const getConclusionText = () => {
     switch (conclusionBy) {
@@ -72,34 +91,33 @@ const DiscussionPoints = ({
   };
 
   const renderStatusCard = ({ isDiscussionEnd, isDiscussionCompleted }) => {
-    if (isDiscussionCompleted)
-      return (
-        <div className="relative flex items-center justify-center pb-8 pt-4">
-          <div className="relative z-10 p-6 bg-gray-900 border border-gray-500 rounded-lg shadow-lg text-center">
-            <h3 className="text-lg font-bold text-blue-500">
-              📌 Discussion Completed 📌
-            </h3>
-            <p className="text-sm text-gray-300 mt-2">
-              Hurray discussion was completed
-            </p>
-          </div>
-        </div>
-      );
-    if (isDiscussionEnd) {
-      return (
-        <div className="relative flex items-center justify-center py-8">
-          <div className="relative z-10 p-6 bg-gray-900 border border-gray-500 rounded-lg shadow-lg text-center">
-            <h3 className="text-lg font-bold text-blue-500">
-              📌 Discussion Finished 📌
-            </h3>
-            <p className="text-sm text-gray-300 mt-2">{getConclusionText()}</p>
-          </div>
-        </div>
-      );
-    } else return null;
+    if (!isDiscussionCompleted && !isDiscussionEnd) {
+      return null;
+    }
+
+    let title = "";
+    let message = "";
+    let additionalText = "";
+
+    if (isDiscussionCompleted) {
+      title = "📌 Discussion Completed 📌";
+      message = "Hurray discussion was completed";
+    } else if (isDiscussionEnd) {
+      title = "📌 Ready for Conclusion ? 📌";
+      message = "Discussion has wrapped up";
+      additionalText = getConclusionText();
+    }
+
+    return (
+      <StatusCard
+        title={title}
+        message={message}
+        additionalText={additionalText}
+      />
+    );
   };
 
-  const getValues = (item, index) => {
+  const getValues = (index) => {
     const conversationLength = discussion?.length;
 
     if (!isLiveDiscussion) {
@@ -140,128 +158,131 @@ const DiscussionPoints = ({
   };
 
   useEffect(() => {
-    if (!isLiveDiscussion && selectedPointRef.current && recapContext?.currentSpeech) {
+    if (
+      !isLiveDiscussion &&
+      selectedPointRef.current &&
+      recapContext?.currentSpeech
+    ) {
       selectedPointRef.current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
+        behavior: "smooth",
+        block: "center",
       });
     }
-  }, [recapContext?.currentSpeech]); // Removed unnecessary dependencies
-  
+  }, [recapContext?.currentSpeech]);
 
+  console.log({ discussion });
 
-  
+  if (conversation?.length === 0) {
+    let message = "";
+    if (isLiveDiscussion) {
+      message = "Be the first to Start your Discussion";
+    } else {
+      message = "No discussion points";
+    }
+    return (
+      <div className="place-content-center h-full">
+        <p className="text-gray-700">{message} </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col relative gap-4 bg-gray-900 h-[calc(100vh-100px)]">
-      {discussion?.map((item, index) => {
-        const isUser = item?.userId === userId;
-        const isAnotherUser = !!item?.userId && !isUser;
-        const isCurrentSpeech = recapContext?.currentSpeech?._id === item?._id;
+    <div
+      className="flex-1 overflow-y-auto bg-gray-900 p-2 rounded-md"
+      // ref={containerRef}
+    >
+      <div className="flex flex-col relative gap-2 bg-gray-900 h-full">
+        {discussion?.map((item, index) => {
+          const isUser = item?.userId === userId;
+          const isAnotherUser = !!item?.userId && !isUser;
+          const isCurrentSpeech =
+            recapContext?.currentSpeech?._id === item?._id;
 
-        const {
-          currentPointNumber,
-          conclusionPointNumber,
-          isConclusionStarted,
-          isDiscussionEnd,
-          isDiscussionCompleted,
-        } = getValues(item, index);
+          const {
+            currentPointNumber,
+            conclusionPointNumber,
+            isConclusionStarted,
+            isDiscussionEnd,
+            isDiscussionCompleted,
+          } = getValues(index);
 
-        const userName = item?.name;
-        const userPointCount = userPoints[userName] || 0;
-        const metadata = item?.metadata || {};
+          const userName = item?.name;
+          const userPointCount = userPoints[userName] || 0;
+          const metadata = item?.metadata || {};
 
-        return (
-          <div
-            key={item?.name + index}
-            className="space-y-4"
-            ref={!isLiveDiscussion && isCurrentSpeech ? selectedPointRef : null}
-          >
-            <RenderSpace condition={isLiveDiscussion}>
-              {renderStatusCard({ isDiscussionCompleted, isDiscussionEnd })}
-            </RenderSpace>
-            <SelectableContainer
-              onClick={() => {}}
-              condition={!isLiveDiscussion}
+          const { name, nameCard, conversation } = getNameCardStyle(
+            isCurrentSpeech,
+            isUser,
+            isAnotherUser
+          );
+
+          return (
+            <div
+              key={item?.name + index}
+              className="space-y-4 p-2"
+              ref={
+                !isLiveDiscussion && isCurrentSpeech ? selectedPointRef : null
+              }
             >
-              <div
-                className={`p-2 text-center space-y-2 shadow-lg rounded-lg transition transform hover:-translate-y-1 ${
-                  isCurrentSpeech
-                    ? "ring-2 ring-purple-900"
-                    : "ring-2 ring-gray-900"
-                }`}
+              <RenderSpace condition={isLiveDiscussion}>
+                {renderStatusCard({ isDiscussionCompleted, isDiscussionEnd })}
+              </RenderSpace>
+              <SelectableContainer
+                onClick={() => recapContext?.handlePlay({ id: item?._id })}
+                condition={!isLiveDiscussion}
               >
-                <div className="flex gap-4 items-center justify-between w-full">
-                  <div className="flex gap-2 items-center">
-                    <div
-                      className={`w-8 h-8 flex items-center justify-center rounded-full shadow-inner ${
-                        isUser
-                          ? "bg-blue-500"
-                          : isAnotherUser
-                          ? "bg-green-500"
-                          : "bg-gray-500"
-                      }  ${isCurrentSpeech ? "bg-purple-700" : ""}`}
-                    >
-                      <span className="font-bold">
-                        {item?.name.slice(0, 1).toUpperCase()}
-                      </span>
-                    </div>
-                    <span
-                      className={`font-bold ${
-                        isUser
-                          ? "text-blue-500"
-                          : isAnotherUser
-                          ? "text-green-300"
-                          : "text-gray-300"
-                      }  ${isCurrentSpeech ? "text-purple-700" : ""}`}
-                    >
-                      {item?.name}
-                    </span>
-                  </div>
-
-                  <div className="flex gap-2 items-center">
-                    <p className="text-xs rounded-full bg-green-500 px-1.5 py-0.5">
-                      {item?.point} / {userPointCount} Points
-                    </p>
-                    <p className="text-xs rounded-full bg-blue-500 px-1.5 py-0.5">
-                      {isConclusionStarted
-                        ? conclusionPointNumber
-                        : currentPointNumber}
-                      /
-                      {isConclusionStarted
-                        ? conclusionPoints
-                        : discussionLength}
-                    </p>
-
-                    <RenderSpace condition={item?.isConclusion}>
-                      <p className="text-xs rounded-full bg-purple-500 px-1.5 py-0.5">
-                        Conclusion
-                      </p>
-                    </RenderSpace>
-                  </div>
-                </div>
-
-                <p
-                  className={`text-sm p-2 rounded-md ${
-                    isUser
-                      ? "bg-blue-800 text-right"
-                      : isAnotherUser
-                      ? "bg-green-800 text-left"
-                      : "bg-gray-800 text-left"
-                  } ${isCurrentSpeech ? "bg-purple-950" : ""}`}
+                <div
+                  className={`p-2 text-center space-y-2 shadow-lg rounded-lg transition transform hover:-translate-y-1 ${
+                    isCurrentSpeech ? "ring-2 ring-purple-900" : ""
+                  }`}
                 >
-                  {item?.conversation || "No conversation available"}
-                </p>
-                <div className="mt-2 space-y-1 text-sm text-gray-400">
-                  <MessageBadges data={metadata} />
+                  <div className="flex gap-4 items-center justify-between w-full">
+                    <NameCard
+                      userDetails={item}
+                      name={name}
+                      nameCard={nameCard}
+                    />
+                    <div className="flex gap-2 items-center">
+                      <p className="text-xs rounded-full bg-green-500 px-1.5 py-0.5">
+                        {item?.point} / {userPointCount} Points
+                      </p>
+                      <p className="text-xs rounded-full bg-blue-500 px-1.5 py-0.5">
+                        {isConclusionStarted
+                          ? conclusionPointNumber
+                          : currentPointNumber}
+                        /
+                        {isConclusionStarted
+                          ? conclusionPoints
+                          : discussionLength}
+                      </p>
+
+                      <RenderSpace condition={item?.isConclusion}>
+                        <p className="text-xs rounded-full bg-purple-500 px-1.5 py-0.5">
+                          Conclusion
+                        </p>
+                      </RenderSpace>
+                    </div>
+                  </div>
+
+                  <p className={`text-sm p-2 rounded-md ${conversation}`}>
+                    {item?.conversation || "No conversation available"}
+                  </p>
+                  <div className="mt-2 space-y-1 text-sm text-gray-400">
+                    <MessageBadges data={metadata} />
+                  </div>
                 </div>
-              </div>
-            </SelectableContainer>
-            <RenderSpace condition={!isLiveDiscussion}>
-              {renderStatusCard({ isDiscussionCompleted, isDiscussionEnd })}
-            </RenderSpace>
-          </div>
-        );
-      })}
+              </SelectableContainer>
+              <RenderSpace
+                condition={
+                  !isLiveDiscussion && !recapContext?.isSpecificConversation
+                }
+              >
+                {renderStatusCard({ isDiscussionCompleted, isDiscussionEnd })}
+              </RenderSpace>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };

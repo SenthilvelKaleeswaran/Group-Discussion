@@ -10,7 +10,7 @@ try {
 
     // Check if all expected properties are present, if not, return placeholders
     const properties = {
-        selfCorrectionRate: parsedObject["Self-Correction Rate"] || "N/A",
+        selfCorrectionRate: parsedObject["Self Correction Rate"] || "N/A",
         constructiveness: parsedObject["Constructiveness"] || "N/A",
         empathyDetection: parsedObject["Empathy Detection"] || "N/A",
         intensityOfEmotion: parsedObject["Intensity of Emotion"] || "Unknown",

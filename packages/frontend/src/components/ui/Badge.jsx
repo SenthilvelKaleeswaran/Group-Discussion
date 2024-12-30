@@ -1,28 +1,19 @@
-import clsx from "clsx";
 import React from "react";
 
-const AttachedBadge = ({ topic, value, bgColor, textColor, valueColor }) => {
+const AttachedBadge = ({ topic, value, valueColor }) => {
   return (
-    <div
-      className={clsx("space-x-1 w-fit rounded-full px-4 pb-1")}
-      style={{
-        backgroundColor: bgColor, // Optional background for visibility
-      }}
-    >
+    <div className="space-x-0.5 w-fit p-1.5 rounded-full bg-gray-800 shadow-2xl">
       <span
-        className={clsx("text-xs font-semibold")}
-        style={{
-          color: textColor, // Topic text color
-        }}
+        className={
+          "text-xs font-semibold bg-gray-900 p-1 px-2 rounded-full text-gray-400"
+        }
       >
         {topic}
       </span>
       <span className="w-0.5 h-full bg-black"></span>
       <span
-        className={clsx("text-xs font-semibold")}
-        style={{
-          color: valueColor, // Value text color
-        }}
+        className={"text-xs font-semibold p-1 px-2 rounded-full text-gray-900"}
+        style={{ backgroundColor: valueColor }}
       >
         {value}
       </span>

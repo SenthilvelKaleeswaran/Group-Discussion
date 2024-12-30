@@ -347,7 +347,6 @@ const DiscussionSpace = () => {
       </div>
       <div className="max-w-3xl w-full flex-1 min-h-screen h-full overflow-scroll bg-gray-800 shadow-lg rounded-lg p-8">
         <Conversation
-          conversation={conversation}
           currentWord={currentWord}
           transcript={transcript}
           currentMember={currentMember}
@@ -355,10 +354,11 @@ const DiscussionSpace = () => {
           isListening={isListening}
           isLoading={isLoading}
           currentSpeech={currentSpeech}
-          data={data}
+          data={{ ...data, discussion: conversation }}
           discussionLength={data?.discussionLength}
           conclusionBy={data?.conclusionBy}
           conclusionPoints={data?.conclusionPoints}
+          isLiveDiscussion
         />{" "}
       </div>
     </div>

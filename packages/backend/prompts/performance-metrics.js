@@ -8,7 +8,7 @@ const PerformanceMetricsPrompt = (isConclusion) => {
 Instructions: ${getInstruction()}
 Output Format:
 {
-"Self-Correction Rate": <out of hundred>,
+"Self Correction Rate": <out of hundred>,
 "Constructiveness": <out of hundred>,
 "Empathy Detection": <out of hundred>,
 "Intensity of Emotion": "<Low|Medium|High>",
