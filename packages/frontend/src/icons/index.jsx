@@ -6,6 +6,7 @@ import { FaPlay } from "react-icons/fa";
 import { IoPlayBack } from "react-icons/io5";
 import { IoPlayForward } from "react-icons/io5";
 import { FaPause } from "react-icons/fa6";
+import { VscRobot } from "react-icons/vsc";
 
 const Icon = ({ name, ...props }) => {
   const IconsList = {
@@ -15,6 +16,7 @@ const Icon = ({ name, ...props }) => {
     HorizontalDots: HiDotsHorizontal,
     Pause : FaPause,
     Play: FaPlay,
+    Robot :VscRobot,
     Wave: PiWaveformBold,
   };
 

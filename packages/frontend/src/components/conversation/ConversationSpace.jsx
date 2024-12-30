@@ -118,7 +118,7 @@ const ConversationSpace = ({ data }) => {
               ))}
             </optgroup>
           </select>
-          <div className="space-x-2 flex flex-start ">
+          <div className={`space-x-2 flex flex-start   ${specificMember === "all" ? 'opacity-50' : ''}`}>
             <input
               type="checkbox"
               onChange={handleShowSpecificConversation}
@@ -126,7 +126,7 @@ const ConversationSpace = ({ data }) => {
               disabled={specificMember === "all"}
               value={isSpecificConversation}
             />
-            <label className="text-left text-gray-500 text-xs">
+            <label className={`text-left text-gray-500 text-xs`}>
               {" "}
               Filter Conversation
             </label>
@@ -137,7 +137,7 @@ const ConversationSpace = ({ data }) => {
         <Conversation
           isSpeaking={isSpeaking}
           currentMember={currentSpeech}
-          data={{ ...data, messages: conversation }}
+          data={{ ...data, discussion: conversation }}
         />
       </div>
     </div>

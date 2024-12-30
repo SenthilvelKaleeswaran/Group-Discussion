@@ -74,9 +74,21 @@ const useSpeechSynthesis = ({ text, voice, pitch = 1, rate = 1, volume = 1 }) =>
     };
   }, [text, voice, pitch, rate, volume]);
 
+  const handlePause = () => {
+    window.speechSynthesis.pause();
+    setIsSpeaking(false);
+  };
+
+  const handleResume = () => {
+    window.speechSynthesis.resume();
+    setIsSpeaking(true);
+  };
+
   return {
     isSpeaking,
-    currentWord : spokenText, // Real-time updates of spoken text
+    currentWord: spokenText, // Real-time updates of spoken text
+    handlePause,
+    handleResume,
   };
 };
 

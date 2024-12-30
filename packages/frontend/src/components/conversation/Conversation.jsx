@@ -1,10 +1,7 @@
 import React, { useMemo, useEffect, useRef } from "react";
-import { useConversation } from "../../context/conversation";
 import StreamingConversation from "../StreamingConversation";
 import Icon from "../../icons";
 import BlinkingIcon from "../BlinkingIcon";
-import AttachedBadge from "../UI/Badge";
-import MessageBadges from "../MessageBadges";
 import DiscussionPoints from "../common/DiscussionPoints";
 import CurrentMember from "./CurrentMember";
 import RenderSpace from "../common/RenderSpace";
@@ -20,15 +17,6 @@ const Conversation = ({
   currentSpeech = "",
   isLiveDiscussion = false,
 }) => {
-  const conversation = data?.messages || data?.conversationId?.messages;
-  const containerRef = useRef(null); // Reference to the container
-
-  useEffect(() => {
-    if (isLiveDiscussion && containerRef.current) {
-      containerRef.current.scrollTop = containerRef.current.scrollHeight;
-    }
-  }, [isLiveDiscussion, transcript, currentWord]);
-
   const renderIcon = () => {
     if (isListening && transcript?.length > 0)
       return (
@@ -65,7 +53,7 @@ const Conversation = ({
 
   const renderText = () => {
     if (!isLiveDiscussion) return ``;
-    if (!currentMember && conversation?.length === 0)
+    if (!currentMember && data?.discussion?.length === 0)
       return `🌟 Be the Pioneer! Start the discussion and set the tone for greatness! ✨`;
     if (!currentMember)
       return `🎙️ Ready to make your point? Double-tap 👉 S 👈 to take the stage! 🚀`;
@@ -82,7 +70,7 @@ const Conversation = ({
   };
 
   return (
-    <div className="flex flex-col relative gap-4 bg-gray-700 h-[calc(100vh-100px)] rounded-md">
+    <div className="flex flex-col relative gap-4 bg-gray-800 h-[calc(100vh-100px)] rounded-md">
       <RenderSpace condition={isLiveDiscussion}>
         <div className="bg-gray-900 w-full rounded-md p-2">
           <CurrentMember
@@ -98,15 +86,7 @@ const Conversation = ({
         </div>
       </RenderSpace>
 
-      <div
-        className="flex-1 overflow-y-auto bg-gray-900 p-2 rounded-md"
-        ref={containerRef}
-      >
-        <DiscussionPoints
-          data={data}
-          isLiveDiscussion={isLiveDiscussion}
-        />
-      </div>
+      <DiscussionPoints data={data} isLiveDiscussion={isLiveDiscussion} />
     </div>
   );
 };
