@@ -5,6 +5,10 @@ import BlinkingIcon from "../BlinkingIcon";
 import DiscussionPoints from "../common/DiscussionPoints";
 import CurrentMember from "./CurrentMember";
 import RenderSpace from "../common/RenderSpace";
+import MessageBadges from "../MessageBadges";
+import { NameCard } from "../common/ConversationComponent";
+import Loader from "../shared/Loader";
+import { getNameCardStyle } from "../../utils";
 
 const Conversation = ({
   data,
@@ -16,7 +20,13 @@ const Conversation = ({
   currentWord = "",
   currentSpeech = "",
   isLiveDiscussion = false,
+  events,
+  processingPoint,
+
+
 }) => {
+
+
   const renderIcon = () => {
     if (isListening && transcript?.length > 0)
       return (
@@ -86,7 +96,39 @@ const Conversation = ({
         </div>
       </RenderSpace>
 
-      <DiscussionPoints data={data} isLiveDiscussion={isLiveDiscussion} />
+      <RenderSpace condition={isLiveDiscussion && !!processingPoint }>
+      <div className="space-y-4 p-2 bg-gray-900 rounded-md">
+          <div
+            className={`p-2 text-center space-y-2 shadow-lg rounded-lg transition transform hover:-translate-y-1`}
+          >
+            <div className="flex gap-4 items-center justify-between w-full">
+              <NameCard userDetails={processingPoint?.currentMember} />
+              <div className="flex gap-2 items-center">
+              <Loader text='Processing' />
+              </div>
+            </div>
+
+            <p className={`text-sm text-left p-2 rounded-md bg-blue-600`}>
+              {processingPoint?.conversation || "No conversation available"}
+            </p> 
+            {/* {generatingMetrics ? (
+              <p>Loading ....</p>
+            ) : (
+              <div className="mt-2 space-y-1 text-sm text-gray-400">
+                <MessageBadges data={metadata} />
+              </div>
+            )} */}
+          </div>
+         
+        </div>
+
+      </RenderSpace>
+
+      <DiscussionPoints
+        data={data}
+        isLiveDiscussion={isLiveDiscussion}
+        events={events}
+      />
     </div>
   );
 };

@@ -7,6 +7,7 @@ import { IoPlayBack } from "react-icons/io5";
 import { IoPlayForward } from "react-icons/io5";
 import { FaPause } from "react-icons/fa6";
 import { VscRobot } from "react-icons/vsc";
+import { FiLoader } from "react-icons/fi";
 
 const Icon = ({ name, ...props }) => {
   const IconsList = {
@@ -14,6 +15,7 @@ const Icon = ({ name, ...props }) => {
     Forward: IoPlayForward,
     MicrophoneOn: FiMic, 
     HorizontalDots: HiDotsHorizontal,
+    Loader : FiLoader,
     Pause : FaPause,
     Play: FaPlay,
     Robot :VscRobot,

@@ -1,7 +1,6 @@
 import React from "react";
 
 const DiscussionIndicator = ({ data, conversation,isSpeaking }) => {
-  console.log({ data, conversation });
   const conversationLength = conversation?.length || 0;
   const discussionLength = data?.discussionLength || 0;
   const conclusionLength = data?.conclusionPoints || 0;
@@ -9,17 +8,10 @@ const DiscussionIndicator = ({ data, conversation,isSpeaking }) => {
   const conclusionPointsLeft =
     conversationLength - discussionLength - conclusionLength || 0;
   const conclusionBy = data?.conclusionBy;
-  console.log({
-    conversationLength,
-    discussionLength,
-    conclusionLength,
-    discussionPointsLeft,
-    conclusionPointsLeft,
-  });
+ 
   const getValues = () => {
     let count = discussionPointsLeft;
     let message = "";
-    console.log("ppppp")
     const total = discussionLength + conclusionLength
 
     if (discussionPointsLeft < 0) {
@@ -55,11 +47,8 @@ const DiscussionIndicator = ({ data, conversation,isSpeaking }) => {
       count = discussionPointsLeft;
       message = `📊 ${discussionPointsLeft} discussion points remaining. Keep contributing!`;
     } else if (total === conversationLength) {
-        console.log("ppppp2")
-
       message = "Discussion completed";
     }
-    console.log("ppppp3",{message,discussionLength,conclusionLength,total,conversationLength})
     if(isSpeaking){
       count -= 1
 

@@ -1,10 +1,21 @@
 import Icon from "../../icons";
+import { getNameCardStyle } from "../../utils";
 
-export const NameCard = ({ userDetails, name, nameCard }) => {
-  console.log({ userDetails, aaa: !!userDetails?.type === "AI" });
+export const NameCard = ({ userDetails, isCurrentSpeech = false }) => {
+  const userId = localStorage.getItem("userId");
+
+  const { name, nameCard } = getNameCardStyle(
+    isCurrentSpeech,
+    userDetails?.type === "You" ||
+      userDetails?.userId === userId ||
+      userDetails?.id === userId,
+    userDetails.type === "User" || !!userDetails?.userId
+  );
+
   return (
     <div className="flex gap-2 items-center">
-      {userDetails?.type && userDetails?.type !== "AI" || userDetails?.userId ? (
+      {(userDetails?.type && userDetails?.type !== "AI") ||
+      (!userDetails?.type && userDetails?.userId) ? (
         <div
           className={`w-8 h-8 flex items-center justify-center rounded-full shadow-inner font-bold ${nameCard}`}
         >
