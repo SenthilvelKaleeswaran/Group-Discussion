@@ -1,11 +1,17 @@
-import React, { useMemo, useEffect, useRef, useCallback } from "react";
+import React, {
+  useMemo,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import MessageBadges from "../MessageBadges";
 import RenderSpace from "./RenderSpace";
 import SelectableContainer from "./SelectableContainer";
 import { useRecapDiscussion } from "../../context/useRecapDiscussion";
 import Icon from "../../icons";
 import { NameCard } from "./ConversationComponent";
-import { getNameCardStyle } from "../../utils";
+import { getConversationStyle, getNameCardStyle } from "../../utils";
+import Loader from "../shared/Loader";
 
 const StatusCard = ({ title, message, additionalText }) => (
   <div className="relative flex items-center justify-center pb-8 pt-4">
@@ -19,15 +25,26 @@ const StatusCard = ({ title, message, additionalText }) => (
   </div>
 );
 
-const DiscussionPoints = ({ data, isLiveDiscussion = false }) => {
+const DiscussionPoints = ({ data, isLiveDiscussion = false, events }) => {
   const discussionLength = data?.discussionLength;
   const conclusionBy = data?.conclusionBy;
   const conclusionPoints = data?.conclusionPoints;
   const conversation =
-  data?.discussion ||data?.messages || data?.conversationId?.messages ;
+    data?.discussion || data?.messages || data?.conversationId?.messages;
   const selectedPointRef = useRef(null);
   const containerRef = useRef(null);
+  const [generatingMetrics, setGeneratingMetrics] = useState(false);
+  const [currentMessageId, setCurrentMessageId] = useState(null);
 
+  console.log({conversation,data})
+
+  useEffect(() => {
+    if (events && events.PERFORMANCE_METRICS) {
+      const { isLoading, messageId } = events.PERFORMANCE_METRICS;
+      setCurrentMessageId(messageId);
+      setGeneratingMetrics(isLoading);
+    }
+  }, [events.PERFORMANCE_METRICS]);
 
   useEffect(() => {
     if (isLiveDiscussion && containerRef.current) {
@@ -40,7 +57,6 @@ const DiscussionPoints = ({ data, isLiveDiscussion = false }) => {
   const recapContext = !isLiveDiscussion
     ? useRecapDiscussion()
     : { currentSpeech: null };
-  console.log({ recapContext });
 
   const countUserPoints = (array) => {
     const userPoints = {};
@@ -64,7 +80,7 @@ const DiscussionPoints = ({ data, isLiveDiscussion = false }) => {
 
     const lastItem = conversation[conversation.length - 1];
     const array =
-      lastItem?.status === "SPOKEN" || data?.status === "COMPLETED"
+      lastItem?.userId || lastItem?.status === "SPOKEN" || data?.status === "COMPLETED"
         ? conversation
         : conversation.slice(0, -1);
 
@@ -125,7 +141,8 @@ const DiscussionPoints = ({ data, isLiveDiscussion = false }) => {
       const isConclusionStarted = currentPointNumber > discussionLength;
       const conclusionPointNumber = currentPointNumber - discussionLength;
       const isDiscussionCompleted =
-        index + 1 === conversationLength && data?.status === "COMPLETED";
+        conversationLength === discussionLength + conclusionPoints &&
+        index + 1 === conversationLength;
 
       const isDiscussionEnd =
         conversationLength >= discussionLength &&
@@ -145,7 +162,9 @@ const DiscussionPoints = ({ data, isLiveDiscussion = false }) => {
       const isDiscussionEnd =
         conversationLength >= discussionLength &&
         index === conversationLength - discussionLength;
-      const isDiscussionCompleted = index === 0 && data?.status === "COMPLETED";
+      const isDiscussionCompleted =
+        index === 0 &&
+        conversationLength === discussionLength + conclusionPoints;
 
       return {
         currentPointNumber,
@@ -169,8 +188,6 @@ const DiscussionPoints = ({ data, isLiveDiscussion = false }) => {
       });
     }
   }, [recapContext?.currentSpeech]);
-
-  console.log({ discussion });
 
   if (conversation?.length === 0) {
     let message = "";
@@ -210,7 +227,7 @@ const DiscussionPoints = ({ data, isLiveDiscussion = false }) => {
           const userPointCount = userPoints[userName] || 0;
           const metadata = item?.metadata || {};
 
-          const { name, nameCard, conversation } = getNameCardStyle(
+          const conversationStyle = getConversationStyle(
             isCurrentSpeech,
             isUser,
             isAnotherUser
@@ -218,7 +235,7 @@ const DiscussionPoints = ({ data, isLiveDiscussion = false }) => {
 
           return (
             <div
-              key={item?.name + index}
+              key={item?.name + index + item?._id}
               className="space-y-4 p-2"
               ref={
                 !isLiveDiscussion && isCurrentSpeech ? selectedPointRef : null
@@ -239,8 +256,7 @@ const DiscussionPoints = ({ data, isLiveDiscussion = false }) => {
                   <div className="flex gap-4 items-center justify-between w-full">
                     <NameCard
                       userDetails={item}
-                      name={name}
-                      nameCard={nameCard}
+                      isCurrentSpeech={isCurrentSpeech}
                     />
                     <div className="flex gap-2 items-center">
                       <p className="text-xs rounded-full bg-green-500 px-1.5 py-0.5">
@@ -264,12 +280,16 @@ const DiscussionPoints = ({ data, isLiveDiscussion = false }) => {
                     </div>
                   </div>
 
-                  <p className={`text-sm p-2 rounded-md ${conversation}`}>
+                  <p className={`text-sm p-2 rounded-md ${conversationStyle}`}>
                     {item?.conversation || "No conversation available"}
                   </p>
-                  <div className="mt-2 space-y-1 text-sm text-gray-400">
-                    <MessageBadges data={metadata} />
-                  </div>
+                  {generatingMetrics && currentMessageId === item?._id ? (
+                    <Loader text="Generating Metrics" />
+                  ) : (
+                    <div className="mt-2 space-y-1 text-sm text-gray-400">
+                      <MessageBadges data={metadata} />
+                    </div>
+                  )}
                 </div>
               </SelectableContainer>
               <RenderSpace

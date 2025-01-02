@@ -3,9 +3,9 @@ export const getColors = (value) => {
       Aligned: "#28b463", // Green
       Detached: "#ff5733", // Red
       Divergent: "#ffc300", // Yellow
-      High: "#ff5733", // Vibrant red
+      High: "#28b463", // Vibrant red
       Medium: "#ffc300", // Vibrant yellow
-      Low: "#28b463", // Red
+      Low: "#ff5733", // Red
       Neutral: "#ffc300", // Yellow
       Positive: "#28b463", // Green
       Negative: "#ff5733", // Red

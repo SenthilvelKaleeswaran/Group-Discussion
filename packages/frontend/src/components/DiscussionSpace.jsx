@@ -11,9 +11,11 @@ import {
   getGroupDiscussion,
 } from "../utils/api-call";
 import {
+  useDiscussionSocket,
   useMembers,
   useSpeechRecognization,
   useSpeechSynthesis,
+  useWebSocket,
 } from "../hooks";
 import DiscussionIndicator from "./DiscussionIndicator";
 import Conversation from "./conversation/Conversation";
@@ -23,6 +25,8 @@ const DiscussionSpace = () => {
   const navigate = useNavigate();
 
   const [conversation, setConversation] = useState([]);
+  const [processingPoint, setProcessingPoint] = useState(null);
+  const [status, setStatus] = useState("");
 
   const {
     data,
@@ -33,6 +37,13 @@ const DiscussionSpace = () => {
       setConversation(data?.conversationId?.messages);
     },
   });
+
+  const { sendMessage, events, isConnected, closeSocket } = useWebSocket(
+    "ws://localhost:5000",
+    {
+      disconnect: data?.status === "COMPLETED" || status === "Completed",
+    }
+  );
 
   const isConclusion = useMemo(() => {
     return conversation?.length > data?.discussionLength;
@@ -48,7 +59,6 @@ const DiscussionSpace = () => {
 
   const { mutate, isLoading } = useMutation(generateConversation, {
     onSuccess: (data) => {
-      console.log({ dataaaaa: data });
       if (data?.generatedText)
         setCurrentSpeech(data?.generatedText.slice(0, 100));
       else setCurrentSpeech("");
@@ -67,7 +77,6 @@ const DiscussionSpace = () => {
   const { mutate: handleFeedbackGeneration, isLoading: isFeedbackGenerating } =
     useMutation(generateFeedback, {
       onSuccess: (data) => {
-        console.log({ dataaaaa: data });
         if (data?.message === "Success") {
           navigate(`/gd/feedback?id=${id}`);
         } else {
@@ -81,16 +90,13 @@ const DiscussionSpace = () => {
         );
       },
     });
-  console.log({ dataaaa: conversation });
 
   const [currentSpeech, setCurrentSpeech] = useState("");
 
-  // const { conversation, updateConversation } = useConversation();
   const { isSpeaking, currentWord } = useSpeechSynthesis({
     text: currentSpeech,
     voice: currentMember?.voice,
   });
-  const [status, setStatus] = useState("");
 
   const userId = localStorage.getItem("userId");
 
@@ -109,7 +115,7 @@ const DiscussionSpace = () => {
   };
 
   const strictUserPermission = strictPermission();
-  const isCompleted = data?.status === "COMPLETED";
+  const isCompleted = data?.status === "COMPLETED" || status === "Completed";
 
   const checkPermission = () => {
     if (strictUserPermission) return true;
@@ -120,7 +126,6 @@ const DiscussionSpace = () => {
   };
 
   const grantPermission = checkPermission();
-  console.log({ grantPermission, strictUserPermission });
 
   const {
     transcript,
@@ -141,37 +146,63 @@ const DiscussionSpace = () => {
     isListeningRef.current = isListening;
   }, [isListening]);
 
-  const handleGenerateConversation = () =>
-    mutate({
-      id,
-      participant: currentMember,
-      conversation: transcript || currentSpeech,
-    });
+  const [choosingRandomMember, setChoosingRandomMember] = useState(false);
+
+  useDiscussionSocket({
+    events,
+    currentSpeech,
+    conversation,
+    closeSocket,
+    setChoosingRandomMember,
+    selectMember,
+    setCurrentSpeech,
+    setConversation,
+    setProcessingPoint,
+    setStatus,
+  });
+
+  const handleGenerateConversation = () => {
+    // mutate({
+    //   id,
+    //   participant: currentMember,
+    //   conversation: transcript || currentSpeech,
+    // });
+
+    if (!isCompleted && isConnected) {
+      sendMessage("GENERATE_FEEDBACK", {
+        id,
+        participant: currentMember,
+        conversation: transcript || currentSpeech,
+      });
+
+      setCurrentSpeech("");
+
+      setProcessingPoint({
+        currentMember,
+        conversation: transcript || currentSpeech,
+      });
+    }
+  };
 
   useEffect(() => {
-    if (transcript.length > 0 && currentSpeech.length === 0 && !isListening) {
+    if (
+      !isCompleted &&
+      transcript.length > 0 &&
+      currentSpeech.length === 0 &&
+      !isListening
+    ) {
       handleGenerateConversation();
     }
-  }, [isListening, transcript, currentSpeech]);
+  }, [isListening, transcript, currentSpeech, isCompleted]);
 
   useEffect(() => {
     if (currentSpeech?.length > 0 && isSpeaking) {
       resetTranscript();
     }
   }, [isSpeaking]);
-  // const isReadyToConclude =
-  //   conversation?.length > 0 &&
-  //   conversation?.length === data?.discussionLength &&
-  //   (transcript?.length > 0 || currentSpeech?.length > 0) &&
-  //   !isLoading &&
-  //   !isSpeaking &&
-  //   !isListening;
-
-  // const [isConclusionStarted, setIsConclusionStarted] =
-  //   useState(isReadyToConclude);
 
   useEffect(() => {
-    if (currentSpeech.length > 0 && !isSpeaking) {
+    if (!isCompleted && currentSpeech.length > 0 && !isSpeaking) {
       setCurrentSpeech("");
       setStatus("Your time to access the session");
 
@@ -182,28 +213,12 @@ const DiscussionSpace = () => {
         setStatus("");
       }, THREE_SECOND_TIME_INTERVAL + 500);
     }
-  }, [isListening, isSpeaking]);
-
-  // useEffect(() => {
-  //   if (
-  //     conversation?.length &&
-  //     conversation?.length === data?.discussionLength &&
-  //     !isLoading &&
-  //     !isSpeaking &&
-  //     !isListening
-  //   ) {
-  //     console.log("status i came da check");
-  //     setIsConclusionStarted(true);
-  //     setTimeout(() => {
-  //       setIsConclusionStarted(false);
-  //     }, TIME_INTERVAL);
-  //   }
-  // }, [conversation, isSpeaking, isListening, isLoading]);
-
-  console.log({ data });
+  }, [isListening, isSpeaking, isCompleted]);
 
   const getStatus = () => {
     switch (true) {
+      case choosingRandomMember:
+        return "Choosing Random Member";
       case strictUserPermission:
         return "You only need to speak";
       case issLoading:
@@ -214,7 +229,7 @@ const DiscussionSpace = () => {
         return `Please wait ${currentMember?.name} to complete`;
       case isListening:
         return "Listening";
-      case status.length > 0:
+      case status?.length > 0:
         return status;
       case data?.conversation?.length > 0:
         return `Please Wait ${currentMember?.name} to start`;
@@ -224,7 +239,6 @@ const DiscussionSpace = () => {
         return "Stopped";
     }
   };
-  console.log({ currentWord });
 
   const getConclusionBy = () => {
     const conclusionBy = data?.conclusionBy;
@@ -261,14 +275,9 @@ const DiscussionSpace = () => {
         return null;
     }
   };
-  console.log({
-    // isConclusionStarted,
-    a: !isCompleted && !isLoading && !isListening && status?.length > 0,
-    status,
-  });
 
   return (
-    <div className="flex  gap-4 min-h-screen w-full bg-green-500 text-gray-200 p-4">
+    <div className="flex gap-4 min-h-screen w-full bg-green-500 text-gray-200 p-4">
       <div className="max-w-3xl w-full flex-1.5  bg-gray-800 shadow-lg rounded-lg p-8">
         <p className="font-bold">{data?.topic}</p>
 
@@ -345,7 +354,7 @@ const DiscussionSpace = () => {
           />
         </div> */}
       </div>
-      <div className="max-w-3xl w-full flex-1 min-h-screen h-full overflow-scroll bg-gray-800 shadow-lg rounded-lg p-8">
+      <div className="w-full min-h-screen h-full overflow-scroll bg-gray-800 shadow-lg rounded-lg p-8">
         <Conversation
           currentWord={currentWord}
           transcript={transcript}
@@ -359,6 +368,8 @@ const DiscussionSpace = () => {
           conclusionBy={data?.conclusionBy}
           conclusionPoints={data?.conclusionPoints}
           isLiveDiscussion
+          events={events}
+          processingPoint={processingPoint}
         />{" "}
       </div>
     </div>
