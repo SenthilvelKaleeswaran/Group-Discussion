@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { loginUser } from "../utils/api-call";
 import { useAuth } from "../context/auth";
 
-const Login = () => {
+export const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
@@ -73,5 +73,3 @@ const Login = () => {
     </div>
   );
 };
-
-export default Login;

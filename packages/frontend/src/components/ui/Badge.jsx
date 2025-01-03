@@ -1,6 +1,6 @@
 import React from "react";
 
-const AttachedBadge = ({ topic, value, valueColor }) => {
+export const Badge = ({ topic, value, valueColor }) => {
   return (
     <div className="space-x-0.5 w-fit p-1.5 rounded-full bg-gray-800 shadow-2xl">
       <span
@@ -20,5 +20,3 @@ const AttachedBadge = ({ topic, value, valueColor }) => {
     </div>
   );
 };
-
-export default AttachedBadge;

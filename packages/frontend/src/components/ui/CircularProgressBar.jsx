@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 
-const CircularProgressBar = ({
+export const CircularProgressBar = ({
   progress,
   strokeWidth = 10,
   size = 100,
@@ -83,5 +83,3 @@ const CircularProgressBar = ({
     </div>
   );
 };
-
-export default CircularProgressBar;

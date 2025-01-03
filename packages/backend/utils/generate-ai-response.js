@@ -2,7 +2,7 @@ const { jsonParser } = require("./json-parser");
 
 const HF_API_TOKEN = process.env.HF_API_TOKEN;
 const HF_GENERATOR_URL =
-  "https://api-inference.huggingface.co/models/mistralai/Mixtral-8x7B-Instruct-v0.1";
+  "https://api-inference.huggingface.co/models/PowerInfer/SmallThinker-3B-Preview";
 
 const generateAIResponse = async ({
   prompt,

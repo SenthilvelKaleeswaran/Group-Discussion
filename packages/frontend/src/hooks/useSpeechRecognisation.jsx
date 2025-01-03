@@ -26,7 +26,6 @@ const useSpeechRecognization = ({
     recognition.onstart = () => {
       selectMember();
     };
-    console.log({ recognition });
     recognition.onend = () => {
       if (isListening && !isSpeaking) {
         console.log("Restarting recognition...");
@@ -72,7 +71,6 @@ const useSpeechRecognization = ({
     const result = Array.from(event.results)
       .map((res) => res[0].transcript)
       .join("");
-    console.log({ transcript: result });
     setTranscript(result);
 
     resetAutoStopTimer(); // Reset the timer when speech is detected

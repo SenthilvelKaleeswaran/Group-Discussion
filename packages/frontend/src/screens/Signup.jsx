@@ -2,7 +2,7 @@ import React, { useContext, useState } from "react";
 import { registerUser } from "../utils/api-call";
 import { useAuth } from "../context/auth";
 
-const Signup = () => {
+export const Signup = () => {
   const {login} = useAuth()
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -89,5 +89,3 @@ const Signup = () => {
     </div>
   );
 };
-
-export default Signup;

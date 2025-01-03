@@ -2,14 +2,16 @@ import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "react-query";
 import { getGroupDiscussion } from "../utils/api-call";
-import CircularProgressBar from "../components/ui/CircularProgressBar"; // Ensure correct import path
-import { ConversationSpace, ConversationTab, FeedbackTab } from "../components";
-import { RecapDiscussionProvider } from "../context/useRecapDiscussion";
-import RenderSpace from "../components/feedback/RenderSpace";
-import ConversationSection from "../components/feedback/ConversationSection";
-import PerformanceSection from "../components/feedback/PerformanceSection";
+import { RecapDiscussionProvider } from "../context";
+import { CircularProgressBar } from "../components/ui";
+import {
+  ConversationSection,
+  PerformanceSection,
+  ConversationSpace,
+} from "../components/screens";
+import { RenderSpace } from "../components/shared";
 
-const Feedback = () => {
+export const Feedback = () => {
   const [searchParams] = useSearchParams();
   const id = searchParams.get("id");
   const [selectedParticipant, setSelectedParticipant] = useState("");
@@ -373,5 +375,3 @@ const Feedback = () => {
     </RecapDiscussionProvider>
   );
 };
-
-export default Feedback;

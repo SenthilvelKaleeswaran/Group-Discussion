@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target": "ES2020", // Use modern JavaScript features
+    "module": "CommonJS", // Use CommonJS module system (required for Node.js)
+    "moduleResolution": "node", // Resolve modules using Node.js resolution
+    "outDir": "./dist", // Ensure compiled files go to the dist folder
+    "rootDir": "./", // Define the root directory for TypeScript source files
+    "esModuleInterop": true, // Enable compatibility with ES6 module imports
+    "forceConsistentCasingInFileNames": true, // Ensure consistent casing in filenames
+    "skipLibCheck": true, // Skip type checking of declaration files
+    "strict": true, // Enable strict type-checking options
+    "noImplicitAny": true, // Prevent variables from having an implicit 'any' type
+    "resolveJsonModule": true, // Allow importing JSON files as modules
+    "types": ["node"], // Include Node.js types for backend code
+    "declaration": true, // Generate `.d.ts` declaration files (optional)
+    "allowJs": true, // Allow JavaScript files (if mixing with TypeScript)
+    "sourceMap": true // Generate source maps for debugging
+  },
+  "include": [
+    "controllers/**/*", // Include all files inside the controllers folder
+    "models/**/*", // Include all files inside the models folder
+    "middleware/**/*", // Include all files inside the middleware folder
+    "routes/**/*", // Include all files inside the routes folder
+    "utils/**/*", // Include all files inside the utils folder
+    "prompts/**/*", // Include all files inside the prompts folder
+    "config/**/*", // Include all files inside the config folder
+    "src/**/*" // Include all files inside the src folder (if you have one)
+  ],
+  "exclude": [
+    "node_modules", // Exclude node_modules folder
+    "dist" // Exclude the dist folder
+  ]
+}
