@@ -4,14 +4,13 @@ import {
   useSpeechRecognization,
   useSpeechSynthesis,
 } from "../../../hooks";
-import Conversation from "../conversation/Conversation";
+import {Conversation} from "../conversation/Conversation";
 import Icon from "../../../icons";
-import { useRecapDiscussion } from "../../../context/useRecapDiscussion";
-import CurrentMember from "../conversation/CurrentMember";
-import BlinkingIcon from "../BlinkingIcon";
-import RenderSpace from "../common/RenderSpace";
+import {CurrentMember} from "../conversation/CurrentMember";
+import { useRecapDiscussion } from "../../../context";
+import { BlinkingIcon, RenderSpace } from "../../shared";
 
-const ConversationSpace = ({ data }) => {
+export const ConversationSpace = ({ data }) => {
   const {
     conversation,
     currentSpeech,
@@ -143,5 +142,3 @@ const ConversationSpace = ({ data }) => {
     </div>
   );
 };
-
-export default ConversationSpace;

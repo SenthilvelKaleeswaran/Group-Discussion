@@ -1,7 +1,7 @@
 import clsx from "clsx";
-import Icon from "../icons";
+import Icon from "../../icons";
 
-const BlinkingIcon = ({ icon, iconColor = "blue", pingColor = "blue" }) => {
+export const BlinkingIcon = ({ icon, iconColor = "blue", pingColor = "blue" }) => {
   const ping = `bg-${pingColor}-500`;
   const border = `border-${iconColor}-500`;
   const text = `text-${iconColor}-500`;
@@ -19,5 +19,3 @@ const BlinkingIcon = ({ icon, iconColor = "blue", pingColor = "blue" }) => {
     </div>
   );
 };
-
-export default BlinkingIcon;

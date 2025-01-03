@@ -1,7 +1,7 @@
 import React from "react";
 import { NameCard } from "./ConversationComponent";
 
-const CurrentMember = ({ currentMember, renderStatus, renderIcon }) => {
+export const CurrentMember = ({ currentMember, renderStatus, renderIcon }) => {
   if (!currentMember) return null;
   return (
     <div className="flex justify-between items-center px-2">
@@ -13,5 +13,3 @@ const CurrentMember = ({ currentMember, renderStatus, renderIcon }) => {
     </div>
   );
 };
-
-export default CurrentMember;

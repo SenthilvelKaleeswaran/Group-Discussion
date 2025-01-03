@@ -1,15 +1,12 @@
-import React from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../context/auth";
 
-const ProtectedWrapper = () => {
+export const NonAuthWrapper = () => {
   const { isAuthenticated } = useAuth();
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />;
   }
-
   return <Outlet />;
 };
 
-export default ProtectedWrapper;
+export default NonAuthWrapper;

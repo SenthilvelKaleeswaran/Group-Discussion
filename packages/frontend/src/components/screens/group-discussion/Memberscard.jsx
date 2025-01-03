@@ -1,6 +1,6 @@
 import React from "react";
 
-const MemberCard = ({ data, currentMember }) => {
+export const MemberCard = ({ data, currentMember }) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 px-4 py-8 bg-gray-900">
       {data?.map((member) => {
@@ -57,5 +57,3 @@ const MemberCard = ({ data, currentMember }) => {
     </div>
   );
 };
-
-export default MemberCard;

@@ -1,12 +1,11 @@
 import React, { useState } from "react";
-import FeedbackTab from "./FeedbackTab";
-import CircularProgressBar from "../ui/CircularProgressBar";
-import MessageBadges from "../MessageBadges";
-import { useRecapDiscussion } from "../../context/useRecapDiscussion";
-import RenderSpace from "./RenderSpace";
-import NextConversationCard from "./NextConversationCard";
+import { FeedbackTab } from "./FeedbackTab";
+import { NextConversationCard } from "./NextConversationCard";
+import { MessageBadges, RenderSpace } from "../../shared";
+import { CircularProgressBar } from "../../ui";
+import { useRecapDiscussion } from "../../../context";
 
-const ConversationTab = ({ data }) => {
+export const ConversationTab = ({ data }) => {
   const {
     conversationTab,
     currentSpeech,
@@ -32,14 +31,14 @@ const ConversationTab = ({ data }) => {
 
   const isPrevDisabled = conversationTab === 0;
   const isNextDisabled = conversationTab + 1 === conversation?.length;
-  const isCurrentTab = selectedConversation?._id === currentSpeech?._id
+  const isCurrentTab = selectedConversation?._id === currentSpeech?._id;
 
   return (
     <div className="space-y-4">
       <div className="flex gap-2">
         <button
           onClick={() => {
-            if (!isPrevDisabled) handleConversationTab({action : "prev"});
+            if (!isPrevDisabled) handleConversationTab({ action: "prev" });
           }}
           disabled={isPrevDisabled}
           className={`bg-gray-900 rounded-md p-2 ${
@@ -52,7 +51,7 @@ const ConversationTab = ({ data }) => {
           {conversation?.map((item, index) => {
             return (
               <div
-                onClick={() =>handleConversationTab({index})}
+                onClick={() => handleConversationTab({ index })}
                 className={` py-1 px-2 rounded-md cursor-pointer ${
                   conversationTab === index
                     ? "bg-white text-gray-900"
@@ -66,7 +65,7 @@ const ConversationTab = ({ data }) => {
         </div>
         <button
           onClick={() => {
-            if (!isNextDisabled) handleConversationTab({action : "next"});
+            if (!isNextDisabled) handleConversationTab({ action: "next" });
           }}
           disabled={isNextDisabled}
           className={`bg-gray-900 rounded-md p-2 ${
@@ -111,11 +110,7 @@ const ConversationTab = ({ data }) => {
                 </button>
               </div>
             )}
-            {
-              isCurrentTab ? <NextConversationCard /> : null
-            }
-                            
-
+            {isCurrentTab ? <NextConversationCard /> : null}
           </div>
         </div>
       </div>
@@ -130,5 +125,3 @@ const ConversationTab = ({ data }) => {
     </div>
   );
 };
-
-export default ConversationTab;

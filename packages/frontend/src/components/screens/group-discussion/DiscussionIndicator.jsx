@@ -1,6 +1,6 @@
 import React from "react";
 
-const DiscussionIndicator = ({ data, conversation,isSpeaking }) => {
+export const DiscussionIndicator = ({ data, conversation,isSpeaking }) => {
   const conversationLength = conversation?.length || 0;
   const discussionLength = data?.discussionLength || 0;
   const conclusionLength = data?.conclusionPoints || 0;
@@ -76,5 +76,3 @@ const DiscussionIndicator = ({ data, conversation,isSpeaking }) => {
     </div>
   );
 };
-
-export default DiscussionIndicator;

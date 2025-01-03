@@ -1,9 +1,9 @@
 import { useMutation } from "react-query";
-import { createDiscussion } from "../../../utils/api-call";
+import { createDiscussion } from "../utils/api-call";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-export const DiscussionDetails = () => {
+export const CreateDiscussion = () => {
   const [discussionDetails, setDiscussionDetails] = useState({
     topic: "Online Class vs Offline Class",
     isTopicAiGenerated: false, // New field

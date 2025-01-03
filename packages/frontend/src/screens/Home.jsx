@@ -2,7 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/auth";
 
-const Home = () => {
+export const Home = () => {
   const { isAuthenticated, logout } = useAuth();
 
   return (
@@ -84,5 +84,3 @@ const Home = () => {
     </div>
   );
 };
-
-export default Home;

@@ -1,7 +1,7 @@
 import React from "react";
-import { useRecapDiscussion } from "../../../context/useRecapDiscussion";
+import { useRecapDiscussion } from "../../../context";
 
-const NextConversationCard = ({ currentData, expectedPoints }) => {
+export const NextConversationCard = ({ currentData, expectedPoints }) => {
   const { fullDiscussion, index, handleNextPrev } = useRecapDiscussion();
 
   console.log("fullDiscussion:", fullDiscussion); // Debug log
@@ -49,5 +49,3 @@ const NextConversationCard = ({ currentData, expectedPoints }) => {
     </div>
   );
 };
-
-export default NextConversationCard;
