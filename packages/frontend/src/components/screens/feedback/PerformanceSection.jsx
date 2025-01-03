@@ -1,8 +1,8 @@
 import React from "react";
-import CircularProgressBar from "../ui/CircularProgressBar";
-import FeedbackTab from "./FeedbackTab";
+import {FeedbackTab} from "./FeedbackTab";
+import { CircularProgressBar } from "../../ui";
 
-const PerformanceSection = ({ currentData, expectedPoints }) => {
+export const PerformanceSection = ({ currentData, expectedPoints }) => {
   return (
     <div className="p-6 bg-gray-800 rounded-lg shadow-lg mb-6 space-y-4">
       <div className="flex justify-between">
@@ -31,5 +31,3 @@ const PerformanceSection = ({ currentData, expectedPoints }) => {
     </div>
   );
 };
-
-export default PerformanceSection;

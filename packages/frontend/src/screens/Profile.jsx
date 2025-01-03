@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useMutation, useQuery } from "react-query";
 import { getUserDetails, updateUser } from "../utils/api-call";
 
-const Profile = () => {
+export const Profile = () => {
   const [details, setDetails] = useState({ name: "" }); 
 
   const { data, isLoading, error: userDetailsError } = useQuery(
@@ -90,5 +90,3 @@ const Profile = () => {
     </div>
   );
 };
-
-export default Profile;

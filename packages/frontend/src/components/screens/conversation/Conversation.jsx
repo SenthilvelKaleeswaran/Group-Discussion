@@ -1,16 +1,13 @@
 import React, { useMemo, useEffect, useRef } from "react";
 import StreamingConversation from "./StreamingConversation";
 import Icon from "../../../icons";
-import BlinkingIcon from "../../BlinkingIcon";
 import DiscussionPoints from "./DiscussionPoints";
-import CurrentMember from "./CurrentMember";
-import RenderSpace from "../../shared/RenderSpace";
-import MessageBadges from "../../MessageBadges";
+import {CurrentMember} from "./CurrentMember";
+import  { BlinkingIcon, Loader,RenderSpace } from "../../shared";
 import { NameCard } from "./ConversationComponent";
-import Loader from "../../shared/Loader";
 import { getNameCardStyle } from "../../../utils";
 
-const Conversation = ({
+export const Conversation = ({
   data,
   currentMember = {},
   isListening = false,
@@ -132,5 +129,3 @@ const Conversation = ({
     </div>
   );
 };
-
-export default Conversation;

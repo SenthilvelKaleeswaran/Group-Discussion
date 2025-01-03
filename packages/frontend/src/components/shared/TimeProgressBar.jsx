@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-const TimeProgressBar = ({ duration }) => {
+export const TimeProgressBar = ({ duration }) => {
   const [progress, setProgress] = useState(100);
 
   // Function to calculate the color from green to red
@@ -38,5 +38,3 @@ const TimeProgressBar = ({ duration }) => {
     </div>
   );
 };
-
-export default TimeProgressBar;

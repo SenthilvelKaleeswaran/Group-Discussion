@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import CircularProgressBar from "../ui/CircularProgressBar";
+import { CircularProgressBar } from "../../ui";
 
-const FeedbackTab = ({ feedback,metricsTotal }) => {
+export const FeedbackTab = ({ feedback,metricsTotal }) => {
   console.log({ feedback });
 
   if (!feedback) {
@@ -52,5 +52,3 @@ const FeedbackTab = ({ feedback,metricsTotal }) => {
     </div>
   );
 };
-
-export default FeedbackTab;

@@ -1,17 +1,13 @@
-import React, {
-  useMemo,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-import MessageBadges from "../../MessageBadges";
-import RenderSpace from "../../shared/RenderSpace";
-import SelectableContainer from "../../shared/SelectableContainer";
-import { useRecapDiscussion } from "../../../context/useRecapDiscussion";
-import Icon from "../../../icons";
+import React, { useMemo, useEffect, useRef, useState } from "react";
+import {
+  RenderSpace,
+  Loader,
+  MessageBadges,
+  SelectableContainer,
+} from "../../shared";
+import { useRecapDiscussion } from "../../../context";
 import { NameCard } from "./ConversationComponent";
-import { getConversationStyle, getNameCardStyle } from "../../../utils";
-import Loader from "../../shared/Loader";
+import { getConversationStyle } from "../../../utils";
 
 const StatusCard = ({ title, message, additionalText }) => (
   <div className="relative flex items-center justify-center pb-8 pt-4">
@@ -36,7 +32,7 @@ const DiscussionPoints = ({ data, isLiveDiscussion = false, events }) => {
   const [generatingMetrics, setGeneratingMetrics] = useState(false);
   const [currentMessageId, setCurrentMessageId] = useState(null);
 
-  console.log({conversation,data})
+  console.log({ conversation, data });
 
   useEffect(() => {
     if (events && events.PERFORMANCE_METRICS) {
@@ -80,7 +76,9 @@ const DiscussionPoints = ({ data, isLiveDiscussion = false, events }) => {
 
     const lastItem = conversation[conversation.length - 1];
     const array =
-      lastItem?.userId || lastItem?.status === "SPOKEN" || data?.status === "COMPLETED"
+      lastItem?.userId ||
+      lastItem?.status === "SPOKEN" ||
+      data?.status === "COMPLETED"
         ? conversation
         : conversation.slice(0, -1);
 

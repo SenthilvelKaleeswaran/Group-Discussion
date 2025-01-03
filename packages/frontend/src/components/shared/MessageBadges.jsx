@@ -1,9 +1,8 @@
 import React from "react";
-import AttachedBadge from "./UI/Badge";
-import { formatTopicName } from "../utils/string/capitalizedFormat";
-import { getColors } from "../utils";
+import { Badge } from "../ui";
+import { formatTopicName, getColors } from "../../utils";
 
-const MessageBadges = ({ data }) => {
+export const MessageBadges = ({ data }) => {
   return (
     <div className="flex flex-row flex-wrap gap-2">
       {Object.entries(data || {})?.map(([topic, value]) => {
@@ -12,7 +11,7 @@ const MessageBadges = ({ data }) => {
 
         if (value !== "N/A")
           return (
-            <AttachedBadge
+            <Badge
               key={topic + value}
               topic={formattedTopic}
               value={value}
@@ -23,5 +22,3 @@ const MessageBadges = ({ data }) => {
     </div>
   );
 };
-
-export default MessageBadges;
