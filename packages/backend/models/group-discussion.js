@@ -1,72 +1,185 @@
 const mongoose = require("mongoose");
 
 const GroupDiscussionSchema = new mongoose.Schema({
+  // Topic Settings
   topic: {
     type: String,
-    required: true,
   },
-  aiModelsCount: {
-    type: Number,
-    default: 0,
+  topicSetting: {
+    type: String,
+    enum: ["AI", "admin", "dynamic"],
+    default: "admin",
   },
-  noOfUsers: {
-    type: Number,
-    default: 1,
-  },
+
+  // Participants
   aiParticipants: [
     {
-      name: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "AIModels",
     },
   ],
   participants: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Participant",
+      ref: "User",
     },
-  ], // References to non-AI participants (users)
+  ],
+  otherParticipants: [
+    {
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
+      },
+      role: {
+        type: String,
+        enum: ["admin", "listener"],
+        default: "listener",
+      },
+    },
+  ],
+
+  // Discussion Settings
+  discussionMode: {
+    type: String,
+    enum: ["random", "selection", "both"],
+    default: "selection",
+  },
+  discussionLength: {
+    type: Number,
+    required() {
+      return this.discussionLengthSetting === "fixed";
+    },
+  },
+  discussionLengthSetting: {
+    type: String,
+    enum: ["fixed", "dynamic", "onDiscussion"],
+    default: "fixed",
+  },
+
+  // Points Settings
+  pointsSetting: {
+    type: String,
+    enum: ["noLimit", "limit", "range"],
+    default: "noLimit",
+  },
+  minPoints: {
+    type: Number,
+    min: 0,
+    required() {
+      return this.pointsSetting === "range";
+    },
+  },
+  maxPoints: {
+    type: Number,
+    required() {
+      return this.pointsSetting === "range";
+    },
+  },
+  pointsPerParticipant: {
+    type: Number,
+    required() {
+      return this.pointsSetting === "limit";
+    },
+  },
+
+  // Conclusion Settings
+  conclusionBy: {
+    type: String,
+    enum: ["ai", "participants", "both", "you"],
+    default: "both",
+  },
+  conclusionMode: {
+    type: String,
+    enum: ["random", "selection", "both"],
+    default: "selection",
+  },
+  conclusionLength: {
+    type: Number,
+    required() {
+      return this.conclusionLengthSetting === "fixed";
+    },
+  },
+  conclusionLengthSetting: {
+    type: String,
+    enum: ["fixed", "dynamic", "onDiscussion"],
+    default: "fixed",
+  },
+
+  // AI Settings
+  aiSpeechMode: {
+    type: String,
+    enum: ["automatic", "selection", "periodic"],
+    default: "selection",
+  },
+  aiSpeaksAtFrequency: {
+    type: Number,
+    required() {
+      return this.aiSpeechMode === "periodic";
+    },
+  },
+
+  // Participants settings
+  accessConversation: {
+    type: Boolean,
+    default: false,
+  },
+  accessOthersConversation: {
+    type: Boolean,
+    default: false,
+  },
+  accessFeedback: {
+    type: Boolean,
+    default: false,
+  },
+  accessOthersFeedback: {
+    type: Boolean,
+    default: false,
+  },
+
+
+  // Other Participants settings
+  accessParticipantConversation: {
+    type: Boolean,
+    default: false,
+  },
+  accessParticipantFeedback: {
+    type: Boolean,
+    default: false,
+  },
+
+  // Mic Settings
+  micAccessWaitTime: {
+    type: Number,
+    default: 2,
+  },
+
+  // Meta Details
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true,
   },
-  conversationId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Conversation",
-  },
-  discussionLength: {
-    type: Number,
-    default: 5, // Default discussion length in minutes
-  },
-  conclusionBy: {
+  rounds: {
     type: String,
-    enum: ["You", "User", "AI", "Random"],
-    default: "Random",
-  },
-  conclusionPoints: {
-    type: Number,
-    default: 1,
-  },
-  micAccessWaitTime: {
-    type: Number,
-    default: 2, // Default wait time for mic access in seconds
-  },
-  isTopicAiGenerated: {
-    type: Boolean,
-    default: false,
+    enum: ["single", "multiple"],
+    default: "single",
   },
   createdAt: {
     type: Date,
     default: Date.now,
   },
-  status : {
-    type :String,
-    enum : ["NOT_STARTED","IN_PROGRESS","COMPLETED","HOLDED","ARCHIVED"],
-    default : "NOT_STARTED"
+  status: {
+    type: String,
+    enum: ["notStarted", "inProgress", "completed", "holded", "paused"],
+    default: "notStarted",
   },
-  feedback : {
-    type : Array,
-    default : []
-  }
+  sessionStartTime: {
+    type: Date,
+  },
+  sessionEndTime: {
+    type: Date,
+  },
 });
 
 module.exports = mongoose.model("GroupDiscussion", GroupDiscussionSchema);
