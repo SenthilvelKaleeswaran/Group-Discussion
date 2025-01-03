@@ -1,5 +1,5 @@
 import { useMutation } from "react-query";
-import { createDiscussion } from "../utils/api-call";
+import { createDiscussion } from "../../../utils/api-call";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 

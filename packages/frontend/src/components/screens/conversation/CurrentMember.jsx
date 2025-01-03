@@ -1,5 +1,5 @@
 import React from "react";
-import { NameCard } from "../common/ConversationComponent";
+import { NameCard } from "./ConversationComponent";
 
 const CurrentMember = ({ currentMember, renderStatus, renderIcon }) => {
   if (!currentMember) return null;

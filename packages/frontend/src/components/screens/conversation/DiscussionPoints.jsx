@@ -4,14 +4,14 @@ import React, {
   useRef,
   useState,
 } from "react";
-import MessageBadges from "../MessageBadges";
-import RenderSpace from "./RenderSpace";
-import SelectableContainer from "./SelectableContainer";
-import { useRecapDiscussion } from "../../context/useRecapDiscussion";
-import Icon from "../../icons";
+import MessageBadges from "../../MessageBadges";
+import RenderSpace from "../../shared/RenderSpace";
+import SelectableContainer from "../../shared/SelectableContainer";
+import { useRecapDiscussion } from "../../../context/useRecapDiscussion";
+import Icon from "../../../icons";
 import { NameCard } from "./ConversationComponent";
-import { getConversationStyle, getNameCardStyle } from "../../utils";
-import Loader from "../shared/Loader";
+import { getConversationStyle, getNameCardStyle } from "../../../utils";
+import Loader from "../../shared/Loader";
 
 const StatusCard = ({ title, message, additionalText }) => (
   <div className="relative flex items-center justify-center pb-8 pt-4">

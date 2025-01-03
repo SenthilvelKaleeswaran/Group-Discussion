@@ -3,11 +3,11 @@ import {
   useMembers,
   useSpeechRecognization,
   useSpeechSynthesis,
-} from "../../hooks";
-import Conversation from "./Conversation";
-import Icon from "../../icons";
-import { useRecapDiscussion } from "../../context/useRecapDiscussion";
-import CurrentMember from "./CurrentMember";
+} from "../../../hooks";
+import Conversation from "../conversation/Conversation";
+import Icon from "../../../icons";
+import { useRecapDiscussion } from "../../../context/useRecapDiscussion";
+import CurrentMember from "../conversation/CurrentMember";
 import BlinkingIcon from "../BlinkingIcon";
 import RenderSpace from "../common/RenderSpace";
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { useRecapDiscussion } from "../../context/useRecapDiscussion";
+import { useRecapDiscussion } from "../../../context/useRecapDiscussion";
 
 const NextConversationCard = ({ currentData, expectedPoints }) => {
   const { fullDiscussion, index, handleNextPrev } = useRecapDiscussion();

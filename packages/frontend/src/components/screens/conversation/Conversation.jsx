@@ -1,14 +1,14 @@
 import React, { useMemo, useEffect, useRef } from "react";
-import StreamingConversation from "../StreamingConversation";
-import Icon from "../../icons";
-import BlinkingIcon from "../BlinkingIcon";
-import DiscussionPoints from "../common/DiscussionPoints";
+import StreamingConversation from "./StreamingConversation";
+import Icon from "../../../icons";
+import BlinkingIcon from "../../BlinkingIcon";
+import DiscussionPoints from "./DiscussionPoints";
 import CurrentMember from "./CurrentMember";
-import RenderSpace from "../common/RenderSpace";
-import MessageBadges from "../MessageBadges";
-import { NameCard } from "../common/ConversationComponent";
-import Loader from "../shared/Loader";
-import { getNameCardStyle } from "../../utils";
+import RenderSpace from "../../shared/RenderSpace";
+import MessageBadges from "../../MessageBadges";
+import { NameCard } from "./ConversationComponent";
+import Loader from "../../shared/Loader";
+import { getNameCardStyle } from "../../../utils";
 
 const Conversation = ({
   data,

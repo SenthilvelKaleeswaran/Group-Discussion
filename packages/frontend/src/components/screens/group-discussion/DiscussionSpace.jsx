@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import MemberCard from "../components/Memberscard";
-import { THREE_SECOND_TIME_INTERVAL, TIME_INTERVAL } from "../constants";
-import TimeProgressBar from "../components/TimeProgressBar";
+import MemberCard from "../../Memberscard";
+import { THREE_SECOND_TIME_INTERVAL, TIME_INTERVAL } from "../../../constants";
+import TimeProgressBar from "../../TimeProgressBar";
 import { useMutation, useQuery } from "react-query";
 
 import { useNavigate, useParams } from "react-router";
@@ -9,16 +9,16 @@ import {
   generateConversation,
   generateFeedback,
   getGroupDiscussion,
-} from "../utils/api-call";
+} from "../../../utils/api-call";
 import {
   useDiscussionSocket,
   useMembers,
   useSpeechRecognization,
   useSpeechSynthesis,
   useWebSocket,
-} from "../hooks";
+} from "../../../hooks";
 import DiscussionIndicator from "./DiscussionIndicator";
-import Conversation from "./conversation/Conversation";
+import Conversation from "../conversation/Conversation";
 
 const DiscussionSpace = () => {
   const { id } = useParams();

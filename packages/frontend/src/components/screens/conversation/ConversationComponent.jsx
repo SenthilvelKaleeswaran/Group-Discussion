@@ -1,5 +1,5 @@
-import Icon from "../../icons";
-import { getNameCardStyle } from "../../utils";
+import Icon from "../../../icons";
+import { getNameCardStyle } from "../../../utils";
 
 export const NameCard = ({ userDetails, isCurrentSpeech = false }) => {
   const userId = localStorage.getItem("userId");
