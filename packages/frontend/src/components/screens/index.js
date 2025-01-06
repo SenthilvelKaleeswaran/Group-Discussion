@@ -4,6 +4,7 @@ import { MemberCard } from "./group-discussion/Memberscard";
 import { PerformanceSection } from "./feedback/PerformanceSection";
 import { ConversationSection } from "./feedback/ConversationSection";
 import { ConversationSpace } from "./feedback/ConversationSpace";
+import { Section } from "./create-discussion/Section";
 
 export {
   Conversation,
@@ -12,4 +13,5 @@ export {
   DiscussionIndicator,
   MemberCard,
   PerformanceSection,
+  Section
 };
