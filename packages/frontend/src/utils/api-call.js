@@ -91,3 +91,22 @@ export const generateFeedback = async (data) => {
     data,
   });
 };
+
+export const getAiModels = async () => {
+  return await apiCall({ endpoint: `/ai-model` });
+};
+
+export const getAiModelById = async (id) => {
+  return await apiCall({ endpoint: `/ai-model/${id}` });
+};
+
+export const updateAiModel = async (id, data) => {
+  return await apiCall({ endpoint: `/ai-model/${id}`, method: "PUT", data });
+};
+
+export const deleteAiModel = async (id) => {
+  return await apiCall({ endpoint: `/ai-model/${id}`, method: "DELETE" });
+};
+
+
+

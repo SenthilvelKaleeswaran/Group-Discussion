@@ -6,24 +6,23 @@ const AIModelSchema = new mongoose.Schema({
     required: true,
     trim: true,
   },
+  avatar: {
+    type: String,
+  },
+  gender: {
+    type: String,
+    enum : ['male','female'],
+    default : 'male'
+  },
+  description: {
+    type: String,
+  },
   prompt: {
     type: String,
-    required: true, 
-  },
-  type: {
-    type: String,
-    enum: [
-      "polite", 
-      "neutral", 
-      "arrogant", 
-      "calm", 
-      "acceptsPoints", 
-      "doesNotAcceptPoints", 
-      "encouraging", 
-      "assertive"
-    ],
     required: true,
-    default: "neutral",
+  },
+  aiType: {
+    type:  mongoose.Schema.Types.Mixed,
   },
   createdAt: {
     type: Date,

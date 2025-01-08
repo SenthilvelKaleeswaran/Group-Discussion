@@ -1,7 +1,23 @@
 module.exports = {
-  content: ["./src/**/*.{js,jsx,ts,tsx}"], // Update with your project paths
   theme: {
-    extend: {},
+    extend: {
+      // Optional: Add custom animations or transformations here
+    },
   },
-  plugins: [],
+  plugins: [
+    function ({ addUtilities }) {
+      addUtilities(
+        {
+          '.rotate-y-180': {
+            transform: 'rotateY(180deg)',
+            transition: 'transform 0.5s ease',
+          },
+          '.backface-hidden': {
+            backfaceVisibility: 'hidden',
+          },
+        },
+        ['responsive', 'group-hover'] 
+      );
+    },
+  ],
 };

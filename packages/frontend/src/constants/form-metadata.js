@@ -361,22 +361,22 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "TextInput",
         label: "Name",
-        id: "aiName",
-        name: "aiName",
+        id: "name",
+        name: "name",
         placeholder: "Enter AI name",
       },
       {
         component: "TextInput",
         label: "Avatar",
-        id: "aiAvatar",
-        name: "aiAvatar",
+        id: "avatar",
+        name: "avatar",
         type: "file",
       },
       {
         component: "DropdownSelect",
         label: "Gender",
-        id: "aiGender",
-        name: "aiGender",
+        id: "gender",
+        name: "gender",
         placeholder: "Select AI gender",
         options: [
           { value: "male", label: "👨 Male" },
@@ -386,10 +386,10 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "DropdownSelect",
         label: "Tone",
-        id: "aiTone",
-        name: "aiTone",
+        id: "tone",
+        name: "tone",
         placeholder: "Select AI tone",
-        options:[
+        options: [
           {
             "label": "Collaborative",
             "options": [
@@ -464,7 +464,6 @@ export const AI_MODEL_FORM_DATA = [
             "options": [
               { "value": "analytical", "label": "🧠 Analytical" },
               { "value": "logical", "label": "🧠 Logical" },
-              { "value": "analytical", "label": "📊 Analytical" },
               { "value": "rational", "label": "🔍 Rational" },
               { "value": "thoughtful", "label": "🤔 Thoughtful" },
               { "value": "insightful", "label": "💡 Insightful" },
@@ -472,9 +471,7 @@ export const AI_MODEL_FORM_DATA = [
             ]
           }
         ]
-        
-        }
-  
+      }
     ],
   },
   {
@@ -484,40 +481,40 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "DropdownSelect",
         label: "Assertiveness",
-        id: "aiAssertiveness",
-        name: "aiAssertiveness",
+        id: "assertiveness",
+        name: "assertiveness",
         placeholder: "Select assertiveness level",
         options: LEVEL_OPTIONS,
       },
       {
         component: "DropdownSelect",
         label: "Agreeableness",
-        id: "aiAgreeableness",
-        name: "aiAgreeableness",
+        id: "agreeableness",
+        name: "agreeableness",
         placeholder: "Select agreeableness level",
         options: LEVEL_OPTIONS,
       },
       {
         component: "DropdownSelect",
         label: "Openness",
-        id: "aiOpenness",
-        name: "aiOpenness",
+        id: "openness",
+        name: "openness",
         placeholder: "Select openness level",
         options: LEVEL_OPTIONS,
       },
       {
         component: "DropdownSelect",
         label: "Conscientiousness",
-        id: "aiConscientiousness",
-        name: "aiConscientiousness",
+        id: "conscientiousness",
+        name: "conscientiousness",
         placeholder: "Select conscientiousness level",
         options: LEVEL_OPTIONS,
       },
       {
         component: "DropdownSelect",
         label: "Emotional Stability",
-        id: "aiEmotionalStability",
-        name: "aiEmotionalStability",
+        id: "emotionalStability",
+        name: "emotionalStability",
         placeholder: "Select emotional stability level",
         options: [
           { value: "calm", label: "😌 Calm" },
@@ -533,10 +530,10 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "DropdownSelect",
         label: "Emotion Types",
-        id: "aiEmotionTypes",
-        name: "aiEmotionTypes",
+        id: "emotionTypes",
+        name: "emotionTypes",
         placeholder: "Select emotion types",
-        options:[
+        options: [
           {
             label: "Positive Emotions",
             options: [
@@ -562,16 +559,14 @@ export const AI_MODEL_FORM_DATA = [
               { value: "frustration", label: "😤 Frustration" },
               { value: "disappointment", label: "😞 Disappointment" },
             ],
-          },
-         
+          }
         ]
-        
       },
       {
         component: "DropdownSelect",
         label: "Empathy Level",
-        id: "aiEmpathyLevel",
-        name: "aiEmpathyLevel",
+        id: "empathyLevel",
+        name: "empathyLevel",
         placeholder: "Select empathy level",
         options: [
           { value: "high", label: "🤗 High" },
@@ -588,8 +583,8 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "DropdownSelect",
         label: "Role",
-        id: "aiRole",
-        name: "aiRole",
+        id: "role",
+        name: "role",
         placeholder: "Select AI role",
         options: [
           { value: "moderator", label: "👮 Moderator" },
@@ -607,8 +602,8 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "DropdownSelect",
         label: "Response Style",
-        id: "aiResponseStyle",
-        name: "aiResponseStyle",
+        id: "responseStyle",
+        name: "responseStyle",
         placeholder: "Select response style",
         options: [
           { value: "concise", label: "📝 Concise" },
@@ -619,8 +614,8 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "DropdownSelect",
         label: "Response Type",
-        id: "aiResponseType",
-        name: "aiResponseType",
+        id: "responseType",
+        name: "responseType",
         placeholder: "Select response type",
         options: [
           { value: "agreeDisagree", label: "👍👎 Agree/Disagree Mode" },
@@ -637,8 +632,8 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "DropdownSelect",
         label: "Logic vs Emotion",
-        id: "aiLogicVsEmotion",
-        name: "aiLogicVsEmotion",
+        id: "logicVsEmotion",
+        name: "logicVsEmotion",
         placeholder: "Select logic vs emotion",
         options: [
           { value: "logical", label: "🧠 Logical" },
@@ -648,22 +643,19 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "DropdownSelect",
         label: "Debate Mode",
-        id: "aiDebateMode",
-        name: "aiDebateMode",
+        id: "debateMode",
+        name: "debateMode",
         placeholder: "Select debate mode",
         options: [
           { value: "formalDebater", label: "👔 Formal Debater" },
-          {
-            value: "casualConversationalist",
-            label: "🗣️ Casual Conversationalist",
-          },
+          { value: "casualConversationalist", label: "🗣️ Casual Conversationalist" },
         ],
       },
       {
         component: "DropdownSelect",
         label: "Complexity Level",
-        id: "aiComplexityLevel",
-        name: "aiComplexityLevel",
+        id: "complexityLevel",
+        name: "complexityLevel",
         placeholder: "Select complexity level",
         options: [
           { value: "simple", label: "📚 Simple" },
@@ -679,8 +671,8 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "DropdownSelect",
         label: "Question Type Preference",
-        id: "aiQuestionTypePreference",
-        name: "aiQuestionTypePreference",
+        id: "questionTypePreference",
+        name: "questionTypePreference",
         placeholder: "Select question type preference",
         options: [
           { value: "openEnded", label: "💬 Open-Ended Questions" },
@@ -691,8 +683,8 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "DropdownSelect",
         label: "Encouragement Style",
-        id: "aiEncouragementStyle",
-        name: "aiEncouragementStyle",
+        id: "encouragementStyle",
+        name: "encouragementStyle",
         placeholder: "Select encouragement style",
         options: [
           { value: "supportive", label: "🤗 Supportive Encouragement" },
@@ -709,8 +701,8 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "DropdownSelect",
         label: "Agree vs. Disagree",
-        id: "aiAgreeDisagree",
-        name: "aiAgreeDisagree",
+        id: "agreeDisagree",
+        name: "agreeDisagree",
         placeholder: "Select agree vs. disagree",
         options: [
           { value: "agree", label: "👍 Agree" },
@@ -721,8 +713,8 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "DropdownSelect",
         label: "Contradiction Levels",
-        id: "aiContradictionLevels",
-        name: "aiContradictionLevels",
+        id: "contradictionLevels",
+        name: "contradictionLevels",
         placeholder: "Select contradiction levels",
         options: [
           { value: "high", label: "😲 High" },
@@ -733,8 +725,8 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "DropdownSelect",
         label: "Supportive Responses",
-        id: "aiSupportiveResponses",
-        name: "aiSupportiveResponses",
+        id: "supportiveResponses",
+        name: "supportiveResponses",
         placeholder: "Select supportive responses level",
         options: [
           { value: "high", label: "🤗 High Support" },
@@ -751,8 +743,8 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "DropdownSelect",
         label: "Participant Level",
-        id: "aiParticipantLevel",
-        name: "aiParticipantLevel",
+        id: "participantLevel",
+        name: "participantLevel",
         placeholder: "Select participant level",
         options: [
           { value: "active", label: "🗣️ Active Participant" },
@@ -763,8 +755,8 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "DropdownSelect",
         label: "Frequency of Participation",
-        id: "aiFrequencyOfParticipation",
-        name: "aiFrequencyOfParticipation",
+        id: "frequencyOfParticipation",
+        name: "frequencyOfParticipation",
         placeholder: "Select frequency of participation",
         options: [
           { value: "frequent", label: "🗣️ Frequent" },
@@ -775,3 +767,4 @@ export const AI_MODEL_FORM_DATA = [
     ],
   },
 ];
+
