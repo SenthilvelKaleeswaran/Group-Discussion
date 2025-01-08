@@ -1,33 +1,23 @@
-import { useMutation } from "react-query";
-import { createDiscussion } from "../utils/api-call";
+import { useMutation, useQuery } from "react-query";
+import { createDiscussion, getAiModels } from "../utils/api-call";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Section } from "../components/screens";
-import {
-  Group,
-  Options,
-  Option,
-  Select,
-  TextInput,
-  Trigger,
-  DropdownSelect,
-  Checkbox,
-  Button,
-} from "../components/ui";
-import { AI_MEMBERS_FORM_DATA, FORM_METADATA } from "../constants";
-import { RenderSpace } from "../components/shared";
+import { TextInput, DropdownSelect, Checkbox, Button } from "../components/ui";
+import { FORM_METADATA } from "../constants";
+import { AiModelCard, RenderSpace } from "../components/shared";
 
 export const CreateDiscussion = () => {
   const [form, setForm] = useState("details");
   const [discussionDetails, setDiscussionDetails] = useState({
     topic: "Online Class vs Offline Class",
-    topicSetting: "admin",
+    topicSetting: "manual",
     aiParticipants: [],
     participants: [],
     otherParticipants: [],
     discussionMode: "selection",
     discussionLength: 5,
-    discussionLengthSetting: "fixed",
+    discussionLengthSetting: "limit",
     pointsSetting: "noLimit",
     minPoints: 0,
     maxPoints: 0,
@@ -35,7 +25,7 @@ export const CreateDiscussion = () => {
     conclusionBy: "both",
     conclusionMode: "selection",
     conclusionLength: 0,
-    conclusionLengthSetting: "fixed",
+    conclusionLengthSetting: "limit",
     aiSpeechMode: "selection",
     aiSpeaksAtFrequency: 0,
     accessConversation: false,
@@ -45,14 +35,18 @@ export const CreateDiscussion = () => {
     accessParticipantConversation: false,
     accessParticipantFeedback: false,
     micAccessWaitTime: 2,
-    createdBy: "",
     rounds: "single",
-    status: "notStarted",
-    sessionStartTime: null,
-    sessionEndTime: null,
+    // sessionStartTime: null,
+    // sessionEndTime: null,
   });
+  const [aiParticipants, setAiParticipants] = useState([]);
 
   const navigate = useNavigate();
+
+  const { data: aiModelData, isLoading: isAiModelLoading } = useQuery(
+    [`ai-model`],
+    getAiModels
+  );
 
   const { mutate, isLoading, isError, error } = useMutation(createDiscussion, {
     onSuccess: (data) => {
@@ -63,8 +57,13 @@ export const CreateDiscussion = () => {
     },
   });
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    mutate({ ...discussionDetails, aiParticipants });
+  };
+
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value, type, checked } = e.target || e;
     setDiscussionDetails((prev) => {
       if (type === "checkbox") {
         return {
@@ -86,33 +85,41 @@ export const CreateDiscussion = () => {
     });
   };
 
-  const handleDropdownChange = (name, value) => {
-    setDiscussionDetails((prev) => {
-      return {
-        ...prev,
-        [name]: value,
-      };
+  const getConditions = (field) => {
+    const { conditions = {}, type } = field;
+    console.log({ typeee: type });
+    const {
+      disabledCondition = [],
+      requiredCondition = [],
+      validation = [],
+    } = conditions;
+
+    const evaluateConditions = (conditionsArray) =>
+      conditionsArray?.length > 0
+        ? conditionsArray.every(({ id, value }) => {
+            return Array.isArray(value)
+              ? value.includes(discussionDetails[id])
+              : discussionDetails[id] === value;
+          })
+        : false;
+
+    const disabled = evaluateConditions(disabledCondition);
+
+    return {
+      disabled,
+      required: evaluateConditions(requiredCondition),
+      hideCorrection:
+        type === "select" || (disabledCondition?.length > 0 && !disabled),
+    };
+  };
+
+  const handleModelsChange = (id) => {
+    setAiParticipants((prev) => {
+      const updated = prev.includes(id)
+        ? prev.filter((item) => item !== id)
+        : [...prev, id];
+      return updated;
     });
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    mutate(discussionDetails);
-  };
-
-  const isDisabled = (field) => {
-    const { id, disableCondition } = field;
-
-    if (disableCondition && Array.isArray(disableCondition)) {
-      return disableCondition.every((item) => {
-        const { value } = item;
-        if (Array.isArray(value)) {
-          return value.includes(discussionDetails[item.id]);
-        }
-        return discussionDetails[item.id] === value;
-      });
-    }
-    return false;
   };
 
   return (
@@ -140,7 +147,11 @@ export const CreateDiscussion = () => {
                 />
               </RenderSpace>
               <RenderSpace condition={form === "members"}>
-                <Button label={isLoading ? "Creating..." : "Create"} variant="success" />
+                <Button
+                  label={isLoading ? "Creating..." : "Create"}
+                  variant="success"
+                  type="submit"
+                />
               </RenderSpace>
             </div>
           </div>
@@ -153,15 +164,14 @@ export const CreateDiscussion = () => {
               >
                 <div className="grid grid-cols-2 gap-4">
                   {section.fields.map((field, idx) => {
-                    console.log({ aaa: isDisabled(field), field: field?.id });
                     if (field.component === "TextInput") {
                       return (
                         <TextInput
                           key={idx}
                           value={discussionDetails[field.id]}
+                          {...getConditions(field)}
                           {...field}
                           onChange={handleChange}
-                          disabled={isDisabled(field)}
                         />
                       );
                     } else if (field.component === "DropdownSelect") {
@@ -169,18 +179,18 @@ export const CreateDiscussion = () => {
                         <DropdownSelect
                           key={idx}
                           value={discussionDetails[field.id]}
+                          {...getConditions({ ...field, type: "select" })}
                           {...field}
-                          onChange={handleDropdownChange}
-                          disabled={isDisabled(field)}
+                          onChange={handleChange}
                         />
                       );
                     } else if (field.component === "Checkbox") {
                       return (
                         <Checkbox
                           key={idx}
+                          {...getConditions(field)}
                           {...field}
                           onChange={handleChange}
-                          disabled={isDisabled(field)}
                         />
                       );
                     }
@@ -190,62 +200,28 @@ export const CreateDiscussion = () => {
               </Section>
             ))
           ) : (
-            <div>
-              {AI_MEMBERS_FORM_DATA?.map((section, index) => (
-                <Section
-                  key={index}
-                  title={section.title}
-                  description={section.description}
-                >
-                  <div className="grid grid-cols-2 gap-4">
-                    {section.fields.map((field, idx) => {
-                      console.log({ aaa: isDisabled(field), field: field?.id });
-                      if (field.component === "TextInput") {
-                        return (
-                          <TextInput
-                            key={idx}
-                            value={discussionDetails[field.id]}
-                            {...field}
-                            onChange={handleChange}
-                            disabled={isDisabled(field)}
-                          />
-                        );
-                      } else if (field.component === "DropdownSelect") {
-                        return (
-                          <DropdownSelect
-                            key={idx}
-                            value={discussionDetails[field.id]}
-                            {...field}
-                            onChange={handleDropdownChange}
-                            disabled={isDisabled(field)}
-                          />
-                        );
-                      } else if (field.component === "Checkbox") {
-                        return (
-                          <Checkbox
-                            key={idx}
-                            {...field}
-                            onChange={handleChange}
-                            disabled={isDisabled(field)}
-                          />
-                        );
-                      }
-                      return null; // Fallback for any unhandled field types
-                    })}
-                  </div>
-                </Section>
-              ))}
+            <div className="space-y-4">
+              <p className="text-xl text-gray-900">
+                Select The AI Participants
+              </p>
+              <AiModelCard
+                models={aiModelData}
+                selectedModels={aiParticipants}
+                handleChange={handleModelsChange}
+              />
             </div>
           )}
 
-          <button
+          <Button
             type="submit"
             className="w-full py-4 bg-blue-600 text-white font-semibold text-lg rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 ease-in-out"
             disabled={isLoading}
-          >
-            {isLoading ? "Creating Discussion..." : "Start Discussion"}
-          </button>
-          {isError && <p className="text-red-500">{error?.message}</p>}
+            label={isLoading ? "Creating Discussion..." : "Start Discussion"}
+          />
+
+          <RenderSpace condition={isError}>
+            <p className="text-red-500">{error?.message}</p>
+          </RenderSpace>
         </form>
       </div>
     </div>

@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState } from "react";
 import { RenderSpace } from "../shared";
 import { useOutsideClickListener } from "../../hooks";
+import Icon from "../../icons";
+import { TextInput } from ".";
 
 // Create Contexts
 const SelectContext = createContext();
@@ -13,6 +15,7 @@ const Select = ({
   options = [],
   className = "",
   children,
+  ...rest
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -35,17 +38,11 @@ const Select = ({
         closeMenu,
         options,
         isGroupped,
+        label,
+        ...rest,
       }}
     >
       <div className={`relative w-full ${className}`} ref={outsideClikRef}>
-        <RenderSpace condition={label}>
-          <label
-            htmlFor={id}
-            className="block text-lg text-left font-medium text-gray-700 mb-2"
-          >
-            {label}
-          </label>
-        </RenderSpace>
         {children}
       </div>
     </SelectContext.Provider>
@@ -53,8 +50,18 @@ const Select = ({
 };
 
 const Trigger = ({ children, className, disabled }) => {
-  const { isOpen, toggleOpen, value, options, isGroupped } =
-    useContext(SelectContext);
+  const {
+    isOpen,
+    toggleOpen,
+    value,
+    options,
+    isGroupped,
+    label,
+    id,
+    hideCorrection,
+    required,
+  } = useContext(SelectContext);
+  console.log({ hideCorrection });
 
   const selectedOption = isGroupped
     ? options?.find((item) => {
@@ -67,15 +74,30 @@ const Trigger = ({ children, className, disabled }) => {
   const displayValue = selectedOption ? selectedOption.label : children;
 
   return (
-    <button
+    <div
+      className="flex items-center justify-between w-full relative"
       onClick={toggleOpen}
-      className={`w-full flex justify-between px-4 py-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 ${
-        disabled ? "bg-gray-100 cursor-not-allowed" : "focus:ring-blue-500"
-      } w-full p-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 ease-in-out shadow-sm bg-black ${className}`}
     >
-      <span>{displayValue}</span>
-      <span>{isOpen ? "▲" : "▼"}</span>
-    </button>
+      <TextInput
+        id={id}
+        name={id}
+        type="text"
+        value={displayValue}
+        onChange={(e) => onChange && onChange(e.target.value)}
+        disabled={disabled}
+        label={label}
+        readOnly
+        required={required}
+        hideCorrection={hideCorrection}
+        className={"w-full cursor-pointer"}
+      />
+      <Icon
+        name={isOpen ? "ChevronUp" : "ChevronDown"}
+        className={`w-3 absolute bottom-5 right-4 h-3 ${
+          disabled ? "text-gray-500" : "text-white"
+        }`}
+      />
+    </div>
   );
 };
 
@@ -101,7 +123,7 @@ const Option = ({ children, value, disabled }) => {
 
   const handleSelect = () => {
     if (!disabled) {
-      onChange(id, value);
+      onChange({ name: id, value });
       closeMenu();
     }
   };

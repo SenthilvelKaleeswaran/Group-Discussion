@@ -12,7 +12,7 @@ const ConversationSchema = new mongoose.Schema({
   },
   participantType: {
     type: String,
-    enum: ["AI", "participant"],
+    enum: ["ai", "participant"],
     required: true,
   },
   discussion: {

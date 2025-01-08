@@ -6,7 +6,8 @@ export const MessageBadges = ({ data }) => {
   return (
     <div className="flex flex-row flex-wrap gap-2">
       {Object.entries(data || {})?.map(([topic, value]) => {
-        const valueColor = getColors(value);
+        const formattedValue = formatTopicName(value)
+        const valueColor = getColors(formattedValue);
         const formattedTopic = formatTopicName(topic);
 
         if (value !== "N/A")
@@ -14,7 +15,7 @@ export const MessageBadges = ({ data }) => {
             <Badge
               key={topic + value}
               topic={formattedTopic}
-              value={value}
+              value={formattedValue}
               valueColor={valueColor}
             />
           );
