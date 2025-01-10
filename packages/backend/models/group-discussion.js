@@ -7,7 +7,7 @@ const GroupDiscussionSchema = new mongoose.Schema({
   },
   topicSetting: {
     type: String,
-    enum: ["AI", "admin", "dynamic"],
+    enum: ["manual", "ai", "dynamic"],
     default: "admin",
   },
 
@@ -53,14 +53,14 @@ const GroupDiscussionSchema = new mongoose.Schema({
   },
   discussionLengthSetting: {
     type: String,
-    enum: ["fixed", "dynamic", "onDiscussion"],
+    enum: ["limit", "noLimit", "onDiscussion"],
     default: "fixed",
   },
 
   // Points Settings
   pointsSetting: {
     type: String,
-    enum: ["noLimit", "limit", "range"],
+    enum: ["limit","noLimit", "range"],
     default: "noLimit",
   },
   minPoints: {
@@ -102,7 +102,7 @@ const GroupDiscussionSchema = new mongoose.Schema({
   },
   conclusionLengthSetting: {
     type: String,
-    enum: ["fixed", "dynamic", "onDiscussion"],
+    enum: ["limit","noLimit", "range"],
     default: "fixed",
   },
 

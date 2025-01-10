@@ -1,34 +1,20 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { RenderSpace } from "../shared";
+import Icon from "../../icons";
+import InputHeader from "./InputHeaders";
 
-// interface TextInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-//   label?: string; 
-//   className?: string;
-// }
+const TextInput = ({ label, id, className, ...rest }) => {
+  const { disabled } = rest;
+  console.log({ restfild: rest,name : rest?.name });
 
-const TextInput = ({
-  label,
-  id,
-  className,
-  ...rest
-}) => {
   return (
-    <div>
-      <RenderSpace condition={label}>
-        <label
-          htmlFor={id}
-          className="block text-lg text-left font-medium text-gray-700 mb-2"
-        >
-          {label}
-        </label>
-      </RenderSpace>
+    <div className="w-full">
+      <InputHeader field={{ ...rest, label, id }} />
       <input
         id={id}
         {...rest}
         className={`w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 ${
-          rest?.disabled
-            ? "bg-gray-100 cursor-not-allowed"
-            : "focus:ring-blue-500"
+          disabled ? "bg-gray-100 cursor-not-allowed" : "focus:ring-blue-600"
         } transition duration-200 ease-in-out shadow-sm ${className}`}
       />
     </div>

@@ -8,24 +8,34 @@ import { IoPlayForward } from "react-icons/io5";
 import { FaPause } from "react-icons/fa6";
 import { VscRobot } from "react-icons/vsc";
 import { FiLoader } from "react-icons/fi";
-
+import { FaRotate } from "react-icons/fa6";
+import { IoCheckmarkCircle } from "react-icons/io5";
+import { FaStarOfLife } from "react-icons/fa6";
+import { LuTarget } from "react-icons/lu";
+import { FaChevronDown } from "react-icons/fa";
+import { FaChevronUp } from "react-icons/fa";
 const Icon = ({ name, ...props }) => {
   const IconsList = {
     Backward: IoPlayBack,
+    ChevronDown: FaChevronDown,
+    ChevronUp: FaChevronUp,
+    Correct: IoCheckmarkCircle,
     Forward: IoPlayForward,
-    MicrophoneOn: FiMic, 
+    MicrophoneOn: FiMic,
     HorizontalDots: HiDotsHorizontal,
-    Loader : FiLoader,
-    Pause : FaPause,
+    Loader: FiLoader,
+    Pause: FaPause,
     Play: FaPlay,
-    Robot :VscRobot,
+    Require: LuTarget,
+    Robot: VscRobot,
+    Rotate: FaRotate,
     Wave: PiWaveformBold,
   };
 
   const IconComponent = IconsList[name];
 
   if (!IconComponent) {
-    return null; 
+    return null;
   }
 
   return <IconComponent className="w-4.5 h-4.5" {...props} />;

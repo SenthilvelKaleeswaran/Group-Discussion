@@ -22,6 +22,7 @@ const conversationRoutes = require("./routes/conversation");
 const participantRoutes = require("./routes/participant");
 const generateRoutes = require("./routes/generate");
 const userRoutes = require("./routes/user");
+const aiModelRoutes = require("./routeS/ai-model");
 
 const connectDB = require("./config/db");
 const { authMiddleware, authenticateWebSocket } = require("./middleware/auth");
@@ -37,6 +38,7 @@ app.use("/api/conversation", conversationRoutes);
 app.use("/api/participants", participantRoutes);
 app.use("/api/generate", generateRoutes);
 app.use("/api/user", userRoutes);
+app.use("/api/ai-model", aiModelRoutes);
 
 // Default route for errors or undefined routes
 app.use((_, res) => {

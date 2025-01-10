@@ -9,6 +9,7 @@ export const FORM_METADATA = [
         id: "topicSetting",
         name: "topicSetting",
         placeholder: "Select a setting",
+        required: true,
         options: [
           { value: "manual", label: "✏️ Type Manually" },
           { value: "ai", label: "🤖 Generate By AI" },
@@ -21,15 +22,22 @@ export const FORM_METADATA = [
         id: "topic",
         name: "topic",
         placeholder: "Enter your topic",
-        disableCondition: [
-          {
-            id: "topicSetting",
-            value: ["ai", "dynamic"],
-          },
-        ],
+        conditions: {
+          disabledCondition: [
+            {
+              id: "topicSetting",
+              value: ["ai", "dynamic"],
+            },
+          ],
+          requiredCondition: [
+            {
+              id: "topicSetting",
+              value: ["manual"],
+            },
+          ],
+        },
       },
     ],
-
   },
   // {
   //   title: "Users Settings",
@@ -53,6 +61,57 @@ export const FORM_METADATA = [
   //   ],
   // },
   {
+    title: "AI Settings",
+    description: "Configure the AI settings.",
+    fields: [
+      {
+        component: "DropdownSelect",
+        label: "AI Speech Mode",
+        id: "aiSpeechMode",
+        name: "aiSpeechMode",
+        options: [
+          { value: "automatic", label: "🗣️ Speak Automatically" },
+          { value: "selection", label: "🎯 Speak When Selected" },
+          { value: "periodic", label: "⏱️ Speak Periodically" },
+        ],
+        placeholder: "Select AI Speech Mode",
+        required: true,
+      },
+      {
+        component: "TextInput",
+        label: "AI Speaks At Frequency",
+        id: "aiSpeaksAtFrequency",
+        name: "aiSpeaksAtFrequency",
+        type: "number",
+        placeholder: "Enter frequency",
+        conditions: {
+          disabledCondition: [
+            {
+              id: "aiSpeechMode",
+              value: ["automatic", "selection"],
+            },
+          ],
+          requiredCondition: [
+            {
+              id: "aiSpeechMode",
+              value: ["periodic"],
+            },
+          ],
+        },
+        // validation: {
+        //   validate(value) {
+        //     return value?.length > 3;
+        //   },
+        //   error(value) {
+        //     if (value?.length < 3) {
+        //       return "Length should be greater than 3.";
+        //     }
+        //   },
+        // },
+      },
+    ],
+  },
+  {
     title: "Discussion Settings",
     description: "Configure the discussion settings.",
     fields: [
@@ -62,40 +121,48 @@ export const FORM_METADATA = [
         id: "discussionMode",
         name: "discussionMode",
         placeholder: "Select discussion mode",
+        required: true,
         options: [
           { value: "random", label: "🎲 Random - Make them obtain" },
           { value: "selection", label: "🎙️ Decide - You choose who speaks" },
           { value: "both", label: "🔄 Mix of both modes" },
         ],
       },
-      {
-        component: "DropdownSelect",
-        label: "Discussion Length Setting",
-        id: "discussionLengthSetting",
-        name: "discussionLengthSetting",
-        placeholder: "Select length setting",
-        options: [
-          { value: "limit", label: "🔒 Limited" },
-          { value: "noLimit", label: "🔓 No Limit" },
-          { value: "onDiscussion", label: "🤝 Decide During Discussion" },
-        ],
-      },
-      {
-        component: "TextInput",
-        label: "Discussion Length",
-        id: "discussionLength",
-        name: "discussionLength",
-        type: "number",
-        placeholder: "Enter the discussion length",
-        disableCondition: [
-          {
-            id: "discussionLengthSetting",
-            value: ["noLimit", "onDiscussion"],
-          },
-        ],
-      },
+      // {
+      //   component: "DropdownSelect",
+      //   label: "Discussion Length Setting",
+      //   id: "discussionLengthSetting",
+      //   name: "discussionLengthSetting",
+      //   placeholder: "Select length setting",
+      //   options: [
+      //     { value: "limit", label: "🔒 Limited" },
+      //     { value: "noLimit", label: "🔓 No Limit" },
+      //     { value: "onDiscussion", label: "🤝 Decide During Discussion" },
+      //   ],
+      // },
+      // {
+      //   component: "TextInput",
+      //   label: "Discussion Length",
+      //   id: "discussionLength",
+      //   name: "discussionLength",
+      //   type: "number",
+      //   placeholder: "Enter the discussion length",
+      //   conditions: {
+      //     disabledCondition: [
+      //       {
+      //         id: "discussionLengthSetting",
+      //         value: ["noLimit", "onDiscussion"],
+      //       },
+      //     ],
+      //     requiredCondition: [
+      //       {
+      //         id: "discussionLengthSetting",
+      //         value: ["limit"],
+      //       },
+      //     ],
+      //   },
+      // },
     ],
-
   },
   {
     title: "Points Settings",
@@ -108,10 +175,11 @@ export const FORM_METADATA = [
         name: "pointsSetting",
         placeholder: "Select points setting",
         options: [
+          { value: "limit", label: "🔒 Limited" },
           { value: "noLimit", label: "🔓 No Limit" },
-          { value: "limit", label: "🔒 Limit" },
           { value: "range", label: "📊 Range" },
         ],
+        required: true,
       },
       {
         component: "TextInput",
@@ -120,12 +188,20 @@ export const FORM_METADATA = [
         name: "minPoints",
         type: "number",
         placeholder: "Enter minimum points",
-        disableCondition: [
-          {
-            id: "pointsSetting",
-            value: ["limit"],
-          },
-        ],
+        conditions: {
+          disabledCondition: [
+            {
+              id: "pointsSetting",
+              value: ["limit"],
+            },
+          ],
+          requiredCondition: [
+            {
+              id: "pointsSetting",
+              value: ["range"],
+            },
+          ],
+        },
       },
       {
         component: "TextInput",
@@ -134,12 +210,20 @@ export const FORM_METADATA = [
         name: "maxPoints",
         type: "number",
         placeholder: "Enter maximum points",
-        disableCondition: [
-          {
-            id: "pointsSetting",
-            value: ["limit", "noLimit"],
-          },
-        ],
+        conditions: {
+          disabledCondition: [
+            {
+              id: "pointsSetting",
+              value: ["limit", "noLimit"],
+            },
+          ],
+          requiredCondition: [
+            {
+              id: "pointsSetting",
+              value: ["range"],
+            },
+          ],
+        },
       },
       {
         component: "TextInput",
@@ -148,15 +232,22 @@ export const FORM_METADATA = [
         name: "pointsPerParticipant",
         type: "number",
         placeholder: "Enter points per participant",
-        disableCondition: [
-          {
-            id: "pointsSetting",
-            value: ["range", "noLimit"],
-          },
-        ],
+        conditions: {
+          disabledCondition: [
+            {
+              id: "pointsSetting",
+              value: ["range", "noLimit"],
+            },
+          ],
+          requiredCondition: [
+            {
+              id: "pointsSetting",
+              value: ["limit"],
+            },
+          ],
+        },
       },
     ],
-
   },
   {
     title: "Conclusion Settings",
@@ -173,6 +264,7 @@ export const FORM_METADATA = [
           { value: "both", label: "🔗 Both (AI + Participants)" },
         ],
         placeholder: "Select conclusion source",
+        required: true,
       },
       {
         component: "DropdownSelect",
@@ -185,6 +277,7 @@ export const FORM_METADATA = [
           { value: "both", label: "🔄 Mix of both modes" },
         ],
         placeholder: "Select conclusion mode",
+        required: true,
       },
       {
         component: "DropdownSelect",
@@ -205,49 +298,24 @@ export const FORM_METADATA = [
         name: "conclusionLength",
         type: "number",
         placeholder: "Enter conclusion length",
-        disableCondition: [
-          {
-            id: "conclusionLengthSetting",
-            value: ["noLimit", "onDiscussion"],
-          },
-        ],
+        conditions: {
+          disabledCondition: [
+            {
+              id: "conclusionLengthSetting",
+              value: ["noLimit", "onDiscussion"],
+            },
+          ],
+          requiredCondition: [
+            {
+              id: "conclusionLengthSetting",
+              value: ["limit"],
+            },
+          ],
+        },
       },
     ],
-
   },
-  {
-    title: "AI Settings",
-    description: "Configure the AI settings.",
-    fields: [
-      {
-        component: "DropdownSelect",
-        label: "AI Speech Mode",
-        id: "aiSpeechMode",
-        name: "aiSpeechMode",
-        options: [
-          { value: "automatic", label: "🗣️ Speak Automatically" },
-          { value: "selection", label: "🎯 Speak When Selected" },
-          { value: "periodic", label: "⏱️ Speak Periodically" },
-        ],
-        placeholder: "Select AI Speech Mode",
-      },
-      {
-        component: "TextInput",
-        label: "AI Speaks At Frequency",
-        id: "aiSpeaksAtFrequency",
-        name: "aiSpeaksAtFrequency",
-        type: "number",
-        placeholder: "Enter frequency",
-        disableCondition: [
-          {
-            id: "aiSpeechMode",
-            value: ["automatic", "selection"],
-          },
-        ],
-      },
-    ],
 
-  },
   {
     title: "Participants Settings",
     description: "Configure the participants settings.",
@@ -295,8 +363,6 @@ export const FORM_METADATA = [
         type: "checkbox",
       },
     ],
-
-    
   },
   {
     title: "Mic Settings",
@@ -314,7 +380,6 @@ export const FORM_METADATA = [
 ];
 
 export const AI_MEMBERS_FORM_DATA = [
-
   {
     title: "AI Members Details",
     description: "Provide the basic information about the discussion topic.",
@@ -336,12 +401,14 @@ export const AI_MEMBERS_FORM_DATA = [
         id: "topic",
         name: "topic",
         placeholder: "Enter number of AI",
-        disableCondition: [
-          {
-            id: "aiMembers",
-            value: ["select"],
-          },
-        ],
+        conditions: {
+          disabledCondition: [
+            {
+              id: "aiMembers",
+              value: ["select"],
+            },
+          ],
+        },
       },
     ],
   },
@@ -351,7 +418,7 @@ const LEVEL_OPTIONS = [
   { value: "high", label: "💪 High" },
   { value: "medium", label: "🤝 Medium" },
   { value: "low", label: "🤏 Low" },
-]
+];
 
 export const AI_MODEL_FORM_DATA = [
   {
@@ -361,22 +428,22 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "TextInput",
         label: "Name",
-        id: "aiName",
-        name: "aiName",
+        id: "name",
+        name: "name",
         placeholder: "Enter AI name",
       },
       {
         component: "TextInput",
         label: "Avatar",
-        id: "aiAvatar",
-        name: "aiAvatar",
+        id: "avatar",
+        name: "avatar",
         type: "file",
       },
       {
         component: "DropdownSelect",
         label: "Gender",
-        id: "aiGender",
-        name: "aiGender",
+        id: "gender",
+        name: "gender",
         placeholder: "Select AI gender",
         options: [
           { value: "male", label: "👨 Male" },
@@ -386,95 +453,92 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "DropdownSelect",
         label: "Tone",
-        id: "aiTone",
-        name: "aiTone",
+        id: "tone",
+        name: "tone",
         placeholder: "Select AI tone",
-        options:[
+        options: [
           {
-            "label": "Collaborative",
-            "options": [
-              { "value": "supportive", "label": "🤝 Supportive" },
-              { "value": "empathetic", "label": "💖 Empathetic" },
-              { "value": "motivational", "label": "💪 Motivational" },
-              { "value": "friendly", "label": "🤗 Friendly" },
-              { "value": "cheerful", "label": "😊 Cheerful" },
-              { "value": "encouraging", "label": "👍 Encouraging" },
-              { "value": "cooperative", "label": "🤝 Cooperative" }
-            ]
+            label: "Collaborative",
+            options: [
+              { value: "supportive", label: "🤝 Supportive" },
+              { value: "empathetic", label: "💖 Empathetic" },
+              { value: "motivational", label: "💪 Motivational" },
+              { value: "friendly", label: "🤗 Friendly" },
+              { value: "cheerful", label: "😊 Cheerful" },
+              { value: "encouraging", label: "👍 Encouraging" },
+              { value: "cooperative", label: "🤝 Cooperative" },
+            ],
           },
           {
-            "label": "Neutral",
-            "options": [
-              { "value": "neutral", "label": "⚖️ Neutral" },
-              { "value": "professional", "label": "🧑‍💼 Professional" },
-              { "value": "informative", "label": "📚 Informative" },
-              { "value": "calm", "label": "😌 Calm" },
-              { "value": "clear", "label": "🔍 Clear" },
-              { "value": "objective", "label": "🎯 Objective" },
-            ]
+            label: "Neutral",
+            options: [
+              { value: "neutral", label: "⚖️ Neutral" },
+              { value: "professional", label: "🧑‍💼 Professional" },
+              { value: "informative", label: "📚 Informative" },
+              { value: "calm", label: "😌 Calm" },
+              { value: "clear", label: "🔍 Clear" },
+              { value: "objective", label: "🎯 Objective" },
+            ],
           },
           {
-            "label": "Challenging",
-            "options": [
-              { "value": "assertive", "label": "💥 Assertive" },
-              { "value": "critical", "label": "🧐 Critical" },
-              { "value": "oppositional", "label": "💣 Oppositional" },
-              { "value": "provocative", "label": "🔥 Provocative" },
-              { "value": "disruptive", "label": "⚡ Disruptive" },
-              { "value": "skeptical", "label": "🤔 Skeptical" },
-              { "value": "inquisitive", "label": "🕵️‍♂️ Inquisitive" }
-            ]
+            label: "Challenging",
+            options: [
+              { value: "assertive", label: "💥 Assertive" },
+              { value: "critical", label: "🧐 Critical" },
+              { value: "oppositional", label: "💣 Oppositional" },
+              { value: "provocative", label: "🔥 Provocative" },
+              { value: "disruptive", label: "⚡ Disruptive" },
+              { value: "skeptical", label: "🤔 Skeptical" },
+              { value: "inquisitive", label: "🕵️‍♂️ Inquisitive" },
+            ],
           },
           {
-            "label": "Formal",
-            "options": [
-              { "value": "formal", "label": "📜 Formal" },
-              { "value": "authoritative", "label": "📣 Authoritative" },
-              { "value": "professional", "label": "🧑‍💼 Professional" },
-              { "value": "respectful", "label": "🤝 Respectful" },
-              { "value": "diplomatic", "label": "🕊️ Diplomatic" },
-              { "value": "structured", "label": "🏢 Structured" }
-            ]
+            label: "Formal",
+            options: [
+              { value: "formal", label: "📜 Formal" },
+              { value: "authoritative", label: "📣 Authoritative" },
+              { value: "professional", label: "🧑‍💼 Professional" },
+              { value: "respectful", label: "🤝 Respectful" },
+              { value: "diplomatic", label: "🕊️ Diplomatic" },
+              { value: "structured", label: "🏢 Structured" },
+            ],
           },
           {
-            "label": "Casual",
-            "options": [
-              { "value": "casual", "label": "😎 Casual" },
-              { "value": "humorous", "label": "😂 Humorous" },
-              { "value": "sarcastic", "label": "😏 Sarcastic" },
-              { "value": "relaxed", "label": "😌 Relaxed" },
-              { "value": "playful", "label": "🎈 Playful" },
-              { "value": "conversational", "label": "🗣️ Conversational" }
-            ]
+            label: "Casual",
+            options: [
+              { value: "casual", label: "😎 Casual" },
+              { value: "humorous", label: "😂 Humorous" },
+              { value: "sarcastic", label: "😏 Sarcastic" },
+              { value: "relaxed", label: "😌 Relaxed" },
+              { value: "playful", label: "🎈 Playful" },
+              { value: "conversational", label: "🗣️ Conversational" },
+            ],
           },
           {
-            "label": "Emotional",
-            "options": [
-              { "value": "passionate", "label": "❤️ Passionate" },
-              { "value": "excited", "label": "🤩 Excited" },
-              { "value": "enthusiastic", "label": "🎉 Enthusiastic" },
-              { "value": "sympathetic", "label": "🤗 Sympathetic" },
-              { "value": "compassionate", "label": "💗 Compassionate" },
-              { "value": "anxious", "label": "😟 Anxious" },
-              { "value": "frustrated", "label": "😤 Frustrated" }
-            ]
+            label: "Emotional",
+            options: [
+              { value: "passionate", label: "❤️ Passionate" },
+              { value: "excited", label: "🤩 Excited" },
+              { value: "enthusiastic", label: "🎉 Enthusiastic" },
+              { value: "sympathetic", label: "🤗 Sympathetic" },
+              { value: "compassionate", label: "💗 Compassionate" },
+              { value: "anxious", label: "😟 Anxious" },
+              { value: "frustrated", label: "😤 Frustrated" },
+            ],
           },
           {
-            "label": "Intellectual",
-            "options": [
-              { "value": "analytical", "label": "🧠 Analytical" },
-              { "value": "logical", "label": "🧠 Logical" },
-              { "value": "analytical", "label": "📊 Analytical" },
-              { "value": "rational", "label": "🔍 Rational" },
-              { "value": "thoughtful", "label": "🤔 Thoughtful" },
-              { "value": "insightful", "label": "💡 Insightful" },
-              { "value": "reflective", "label": "🧘 Reflective" }
-            ]
-          }
-        ]
-        
-        }
-  
+            label: "Intellectual",
+            options: [
+              { value: "analytical", label: "🧠 Analytical" },
+              { value: "logical", label: "🧠 Logical" },
+              { value: "rational", label: "🔍 Rational" },
+              { value: "thoughtful", label: "🤔 Thoughtful" },
+              { value: "insightful", label: "💡 Insightful" },
+              { value: "reflective", label: "🧘 Reflective" },
+            ],
+          },
+        ],
+      },
     ],
   },
   {
@@ -484,40 +548,40 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "DropdownSelect",
         label: "Assertiveness",
-        id: "aiAssertiveness",
-        name: "aiAssertiveness",
+        id: "assertiveness",
+        name: "assertiveness",
         placeholder: "Select assertiveness level",
         options: LEVEL_OPTIONS,
       },
       {
         component: "DropdownSelect",
         label: "Agreeableness",
-        id: "aiAgreeableness",
-        name: "aiAgreeableness",
+        id: "agreeableness",
+        name: "agreeableness",
         placeholder: "Select agreeableness level",
         options: LEVEL_OPTIONS,
       },
       {
         component: "DropdownSelect",
         label: "Openness",
-        id: "aiOpenness",
-        name: "aiOpenness",
+        id: "openness",
+        name: "openness",
         placeholder: "Select openness level",
         options: LEVEL_OPTIONS,
       },
       {
         component: "DropdownSelect",
         label: "Conscientiousness",
-        id: "aiConscientiousness",
-        name: "aiConscientiousness",
+        id: "conscientiousness",
+        name: "conscientiousness",
         placeholder: "Select conscientiousness level",
         options: LEVEL_OPTIONS,
       },
       {
         component: "DropdownSelect",
         label: "Emotional Stability",
-        id: "aiEmotionalStability",
-        name: "aiEmotionalStability",
+        id: "emotionalStability",
+        name: "emotionalStability",
         placeholder: "Select emotional stability level",
         options: [
           { value: "calm", label: "😌 Calm" },
@@ -533,10 +597,10 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "DropdownSelect",
         label: "Emotion Types",
-        id: "aiEmotionTypes",
-        name: "aiEmotionTypes",
+        id: "emotionTypes",
+        name: "emotionTypes",
         placeholder: "Select emotion types",
-        options:[
+        options: [
           {
             label: "Positive Emotions",
             options: [
@@ -547,9 +611,7 @@ export const AI_MODEL_FORM_DATA = [
           },
           {
             label: "Neutral Emotions",
-            options: [
-              { value: "surprise", label: "😮 Surprise" },
-            ],
+            options: [{ value: "surprise", label: "😮 Surprise" }],
           },
           {
             label: "Negative Emotions",
@@ -563,15 +625,13 @@ export const AI_MODEL_FORM_DATA = [
               { value: "disappointment", label: "😞 Disappointment" },
             ],
           },
-         
-        ]
-        
+        ],
       },
       {
         component: "DropdownSelect",
         label: "Empathy Level",
-        id: "aiEmpathyLevel",
-        name: "aiEmpathyLevel",
+        id: "empathyLevel",
+        name: "empathyLevel",
         placeholder: "Select empathy level",
         options: [
           { value: "high", label: "🤗 High" },
@@ -588,8 +648,8 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "DropdownSelect",
         label: "Role",
-        id: "aiRole",
-        name: "aiRole",
+        id: "role",
+        name: "role",
         placeholder: "Select AI role",
         options: [
           { value: "moderator", label: "👮 Moderator" },
@@ -607,8 +667,8 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "DropdownSelect",
         label: "Response Style",
-        id: "aiResponseStyle",
-        name: "aiResponseStyle",
+        id: "responseStyle",
+        name: "responseStyle",
         placeholder: "Select response style",
         options: [
           { value: "concise", label: "📝 Concise" },
@@ -619,8 +679,8 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "DropdownSelect",
         label: "Response Type",
-        id: "aiResponseType",
-        name: "aiResponseType",
+        id: "responseType",
+        name: "responseType",
         placeholder: "Select response type",
         options: [
           { value: "agreeDisagree", label: "👍👎 Agree/Disagree Mode" },
@@ -637,8 +697,8 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "DropdownSelect",
         label: "Logic vs Emotion",
-        id: "aiLogicVsEmotion",
-        name: "aiLogicVsEmotion",
+        id: "logicVsEmotion",
+        name: "logicVsEmotion",
         placeholder: "Select logic vs emotion",
         options: [
           { value: "logical", label: "🧠 Logical" },
@@ -648,8 +708,8 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "DropdownSelect",
         label: "Debate Mode",
-        id: "aiDebateMode",
-        name: "aiDebateMode",
+        id: "debateMode",
+        name: "debateMode",
         placeholder: "Select debate mode",
         options: [
           { value: "formalDebater", label: "👔 Formal Debater" },
@@ -662,8 +722,8 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "DropdownSelect",
         label: "Complexity Level",
-        id: "aiComplexityLevel",
-        name: "aiComplexityLevel",
+        id: "complexityLevel",
+        name: "complexityLevel",
         placeholder: "Select complexity level",
         options: [
           { value: "simple", label: "📚 Simple" },
@@ -679,8 +739,8 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "DropdownSelect",
         label: "Question Type Preference",
-        id: "aiQuestionTypePreference",
-        name: "aiQuestionTypePreference",
+        id: "questionTypePreference",
+        name: "questionTypePreference",
         placeholder: "Select question type preference",
         options: [
           { value: "openEnded", label: "💬 Open-Ended Questions" },
@@ -691,8 +751,8 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "DropdownSelect",
         label: "Encouragement Style",
-        id: "aiEncouragementStyle",
-        name: "aiEncouragementStyle",
+        id: "encouragementStyle",
+        name: "encouragementStyle",
         placeholder: "Select encouragement style",
         options: [
           { value: "supportive", label: "🤗 Supportive Encouragement" },
@@ -709,8 +769,8 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "DropdownSelect",
         label: "Agree vs. Disagree",
-        id: "aiAgreeDisagree",
-        name: "aiAgreeDisagree",
+        id: "agreeDisagree",
+        name: "agreeDisagree",
         placeholder: "Select agree vs. disagree",
         options: [
           { value: "agree", label: "👍 Agree" },
@@ -721,8 +781,8 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "DropdownSelect",
         label: "Contradiction Levels",
-        id: "aiContradictionLevels",
-        name: "aiContradictionLevels",
+        id: "contradictionLevels",
+        name: "contradictionLevels",
         placeholder: "Select contradiction levels",
         options: [
           { value: "high", label: "😲 High" },
@@ -733,8 +793,8 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "DropdownSelect",
         label: "Supportive Responses",
-        id: "aiSupportiveResponses",
-        name: "aiSupportiveResponses",
+        id: "supportiveResponses",
+        name: "supportiveResponses",
         placeholder: "Select supportive responses level",
         options: [
           { value: "high", label: "🤗 High Support" },
@@ -751,8 +811,8 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "DropdownSelect",
         label: "Participant Level",
-        id: "aiParticipantLevel",
-        name: "aiParticipantLevel",
+        id: "participantLevel",
+        name: "participantLevel",
         placeholder: "Select participant level",
         options: [
           { value: "active", label: "🗣️ Active Participant" },
@@ -763,8 +823,8 @@ export const AI_MODEL_FORM_DATA = [
       {
         component: "DropdownSelect",
         label: "Frequency of Participation",
-        id: "aiFrequencyOfParticipation",
-        name: "aiFrequencyOfParticipation",
+        id: "frequencyOfParticipation",
+        name: "frequencyOfParticipation",
         placeholder: "Select frequency of participation",
         options: [
           { value: "frequent", label: "🗣️ Frequent" },
