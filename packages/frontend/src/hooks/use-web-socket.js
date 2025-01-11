@@ -1,94 +1,76 @@
 import { useEffect, useState, useCallback } from "react";
+import { io } from "socket.io-client";
 
-export const useWebSocket = (url,{disconnect  = false}) => {
-  const [ws, setWs] = useState(null);
+export const useWebSocket = (url, { disconnect = false }) => {
+  const [socket, setSocket] = useState(null);
   const [events, setEvents] = useState({});
   const [isConnected, setIsConnected] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
-  const [manualDisconnect, setManualDisconnect] = useState(disconnect); // New state to track manual disconnection
+  const [manualDisconnect, setManualDisconnect] = useState(disconnect); 
 
   const connect = useCallback(() => {
-    if (manualDisconnect) return; // Don't reconnect if manually disconnected
+    if (manualDisconnect) return; 
 
     const token = localStorage.getItem("token");
-    const socket = new WebSocket(url, [`auth-${token}`]);
+    const newSocket = io(url, {
+      auth: { token }, 
+      reconnectionAttempts: 3, 
+      autoConnect: true,
+    });
 
-    socket.onopen = () => {
-      console.log("Connected to WebSocket");
-      setWs(socket);
+    newSocket.on("connect", () => {
+      console.log("Connected to Socket.IO server");
+      setSocket(newSocket);
       setIsConnected(true);
-      setRetryCount(0); // Reset retry count on successful connection
-    };
+    });
 
-    socket.onmessage = (event) => {
-      try {
-        const { event: eventType, data } = JSON.parse(event.data);
-        console.log(`Event received: ${eventType}`, data);
-        setEvents((prev) => ({ ...prev, [eventType]: data }));
-      } catch (error) {
-        console.error("Error parsing WebSocket message:", error);
-      }
-    };
-
-    socket.onclose = () => {
-      console.log("WebSocket closed");
-      setWs(null);
+    newSocket.on("disconnect", () => {
+      console.log("Disconnected from Socket.IO server");
+      setSocket(null);
       setIsConnected(false);
+    });
 
-      if (!manualDisconnect && retryCount < 3) {
-        console.log(`Retrying connection (${retryCount + 1}/3)...`);
-        setRetryCount((prev) => prev + 1);
-      }
-    };
+    newSocket.on("connect_error", (error) => {
+      console.error("Socket.IO connection error:", error);
+    });
 
-    socket.onerror = (error) => {
-      console.error("WebSocket error:", error);
-    };
+    // Listen for custom events dynamically
+    newSocket.onAny((eventType, data) => {
+      console.log(`Event received: ${eventType}`, data);
+      setEvents((prev) => ({ ...prev, [eventType]: data }));
+    });
 
-    return socket;
-  }, [url, retryCount, manualDisconnect]);
+    return newSocket;
+  }, [url, manualDisconnect]);
 
   const closeSocket = useCallback(() => {
-    if (ws) {
-      console.log("Closing WebSocket connection...");
-      ws.close();
-      setWs(null);
+    if (socket) {
+      console.log("Closing Socket.IO connection...");
+      socket.disconnect();
+      setSocket(null);
       setIsConnected(false);
-      setRetryCount(0); // Reset retry count
       setManualDisconnect(true); // Mark as manually disconnected
     }
-  }, [ws]);
+  }, [socket]);
 
   useEffect(() => {
-    const socket = connect();
+    const newSocket = connect();
 
     // Cleanup on unmount
     return () => {
-      console.log("Cleaning up WebSocket connection...");
-      socket?.close();
+      console.log("Cleaning up Socket.IO connection...");
+      newSocket?.disconnect();
     };
   }, [connect]);
 
-  useEffect(() => {
-    let retryTimeout;
-    if (!isConnected && retryCount > 0 && retryCount <= 3 && !manualDisconnect) {
-      retryTimeout = setTimeout(() => {
-        console.log("Attempting to reconnect...");
-        connect();
-      }, 2000); // Retry after 2 seconds
-    }
-    return () => clearTimeout(retryTimeout);
-  }, [isConnected, retryCount, connect, manualDisconnect]);
-
   const sendMessage = useCallback(
-    (action, payload) => {
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ action, payload }));
+    (event, payload) => {
+      if (socket && socket.connected) {
+        socket.emit(event, payload);
       } else {
-        console.warn("WebSocket is not open. Unable to send message.");
+        console.warn("Socket.IO is not connected. Unable to send message.");
       }
     },
-    [ws]
+    [socket]
   );
 
   return { sendMessage, events, closeSocket, isConnected };

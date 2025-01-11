@@ -3,7 +3,7 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const http = require("http");
-const WebSocket = require("ws");
+const { Server } = require("socket.io");
 
 dotenv.config();
 
@@ -22,11 +22,11 @@ const conversationRoutes = require("./routes/conversation");
 const participantRoutes = require("./routes/participant");
 const generateRoutes = require("./routes/generate");
 const userRoutes = require("./routes/user");
-const aiModelRoutes = require("./routeS/ai-model");
+const aiModelRoutes = require("./routes/ai-model");
 
 const connectDB = require("./config/db");
-const { authMiddleware, authenticateWebSocket } = require("./middleware/auth");
-const { webSocketHandler } = require("./web-socket-handler");
+const { authMiddleware, authSocketMiddleware } = require("./middleware/auth");
+const { socketHandler } = require("./socket-handler");
 
 // Define RESTful API routes
 app.use("/api/auth", authRoutes);
@@ -48,36 +48,18 @@ app.use((_, res) => {
 // Create an HTTP server
 const server = http.createServer(app);
 
-// Attach WebSocket server to the HTTP server
-const wss = new WebSocket.Server({ noServer: true });
-
-// WebSocket connection handling
-wss.on("connection", (ws, req) => {
-  ws.on("message", (message) => {
-    webSocketHandler(ws,message,req)
-  });
-
-  ws.on("close", () => {
-    console.log("Client disconnected");
-  });
-
-  ws.on("error", (error) => {
-    console.error("WebSocket error:", error);
-  });
+// Attach Socket.IO to the HTTP server
+const io = new Server(server, {
+  cors: {
+    origin: "*", // Update as per your client origin
+    methods: ["GET", "POST"],
+  },
 });
 
-server.on("upgrade", (request, socket, head) => {
-  authenticateWebSocket(request, (result, code, message) => {
-    if (!result) {
-      socket.write(`HTTP/1.1 ${code} ${message}\r\n\r\n`);
-      socket.destroy();
-      return;
-    }
+io.use(authSocketMiddleware);
 
-    wss.handleUpgrade(request, socket, head, (ws) => {
-      wss.emit("connection", ws, request);
-    });
-  });
+io.on("connection", (socket) => {
+  socketHandler(socket);
 });
 
 // Start the server
