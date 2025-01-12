@@ -1,7 +1,7 @@
 const Participant = require('../models/participant');
 
 const getParticipants = async (req, res) => {
-  const groupDiscussionId = req.params.groupDiscussionId;
+  const {groupDiscussionId} = req.params;
 
   try {
     const participants = await Participant.find({ groupDiscussionId }).populate('userId name');
