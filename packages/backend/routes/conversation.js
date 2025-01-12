@@ -1,9 +1,16 @@
-const express = require('express');
-const router = express.Router();
-const { createConversation, updateConversation, getConversation } = require('../controllers/conversation');
+const express = require("express");
+const {
+  getConversation,
+  createConversation,
+  updateConversation,
+  deleteConversation,
+} = require("../controllers/conversation");
 
-router.post('/create', createConversation);
-router.put('/update', updateConversation);
-router.get('/get/:groupDiscussionId', getConversation);
+const router = express.Router();
+
+router.get("/:id", getConversation);
+router.post("/:id", createConversation);
+router.patch("/:id", updateConversation);
+router.delete("/:id", deleteConversation);
 
 module.exports = router;
