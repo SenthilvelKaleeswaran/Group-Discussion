@@ -1,63 +1,102 @@
 const { generateConversation } = require("./controllers/generate");
+const { addParticipant } = require("./socket-controllers/participant");
 
-async function socketHandler(socket) {
+async function socketHandler(socket, connectedUsers) {
   console.log("Client connected:", socket.id);
 
-  // Function to send response
-  const sendResponse = (event, data) => {
-    socket.emit(event, data);
-  };
-
-  // Listen for actions from the client
-  socket.on("action", async (message) => {
+  socket.on("JOIN_SESSION", async ({ sessionId, userId }) => {
     try {
-      const { action, payload } = message;
-      console.log({ action, payload, user: socket.user });
-
-      if (!action || !payload) {
-        return sendResponse("ERROR", {
-          message: "Missing 'action' or 'payload' in the message.",
-        });
+      let session = await Session.findOne({ sessionId });
+      if (!session) {
+        session = new Session({ sessionId, participants: [] });
+        await session.save();
       }
 
-      let handler;
-
-      if (action === "GENERATE_FEEDBACK") {
-        handler = generateConversation;
-      } else {
-        return sendResponse("ERROR", {
-          message: "Invalid action",
-          details: `Action '${action}' is not supported.`,
-        });
-      }
-
-      // Call the appropriate handler
-      await handler(
-        {
-          body: {
-            ...payload,
-            isWebSocket: true,
-            socket,
-            event: action,
-            sendResponse,
-            user: socket.user,
-          },
-        },
-        {
-          status: (code) => ({
-            json: (data) => {
-              sendResponse(action, { code, data });
-            },
-          }),
-        }
-      );
-    } catch (error) {
-      console.error("Handler error:", error);
-      sendResponse("ERROR", {
-        message: "Error processing action",
-        details: error.message,
+      const participant = new Participant({
+        socketId: socket.id,
+        sessionId,
+        userId,
       });
+      await participant.save();
+
+      session.participants.push(participant._id);
+      await session.save();
+
+      socket.join(sessionId);
+      socket.to(sessionId).emit("USER_JOINED", { socketId: socket.id });
+    } catch (err) {
+      console.error("Error joining session:", err);
     }
+  });
+
+  socket.on("LEAVE_SESSION", async ({ sessionId }) => {
+    try {
+      const participant = await Participant.findOneAndDelete({
+        socketId: socket.id,
+      });
+
+      if (participant) {
+        const session = await Session.findOne({ sessionId });
+        if (session) {
+          session.participants = session.participants.filter(
+            (id) => id.toString() !== participant._id.toString()
+          );
+          await session.save();
+
+          socket.to(sessionId).emit("USER_LEFT", { socketId: socket.id });
+
+          if (session.participants.length === 0) {
+            await Session.findOneAndDelete({ sessionId });
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error leaving session:", err);
+    }
+  });
+
+  socket.on("OFFER", ({ sessionId, receiverId, sdp }) => {
+    io.to(receiverId).emit("OFFER", { senderId: socket.id, sdp });
+  });
+
+  socket.on("ANSWER", ({ sessionId, receiverId, sdp }) => {
+    io.to(receiverId).emit("ANSWER", { senderId: socket.id, sdp });
+  });
+
+  socket.on("CANDIDATE", ({ sessionId, receiverId, candidate }) => {
+    io.to(receiverId).emit("CANDIDATE", { senderId: socket.id, candidate });
+  });
+
+  socket.on("disconnect", async () => {
+    try {
+      const participant = await Participant.findOneAndDelete({
+        socketId: socket.id,
+      });
+
+      if (participant) {
+        const session = await Session.findOne({ sessionId: participant.sessionId });
+        if (session) {
+          session.participants = session.participants.filter(
+            (id) => id.toString() !== participant._id.toString()
+          );
+          await session.save();
+
+          socket.to(participant.sessionId).emit("USER_LEFT", {
+            socketId: socket.id,
+          });
+
+          if (session.participants.length === 0) {
+            await Session.findOneAndDelete({ sessionId: participant.sessionId });
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error on disconnect:", err);
+    }
+  });
+  
+  socket.on("GENERATE_FEEDBACK", (data) => {
+    console.log("GENERATE_FEEDBACK", data);
   });
 
   // Handle disconnection

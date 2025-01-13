@@ -15,7 +15,7 @@ const GroupDiscussionSchema = new mongoose.Schema({
   aiParticipants: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "AIModels",
+      ref: "AIModel",
     },
   ],
   participants: [
@@ -169,6 +169,7 @@ const GroupDiscussionSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  sessionPassword: { type: String },
   status: {
     type: String,
     enum: ["notStarted", "inProgress", "completed", "holded", "paused"],

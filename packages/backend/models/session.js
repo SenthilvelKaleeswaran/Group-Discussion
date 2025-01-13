@@ -6,10 +6,6 @@ const ParticipantTimingSchema = new mongoose.Schema({
 });
 
 const DetailsSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    required: true,
-  },
   isActive: { type: Boolean, default: true },
   name: { type: String, required: true },
   muteStatus: { type: Boolean, default: false },
@@ -31,11 +27,7 @@ const BlockSchema = new mongoose.Schema({
 
 const ParticipantSchema = new mongoose.Schema(
   {
-    _id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "GroupDiscussion",
-      required: true,
-    },
+    groupDiscussionId: { type: String, required: true, unique: true },
     participants: {
       type: Map,
       of: DetailsSchema,
@@ -53,7 +45,7 @@ const ParticipantSchema = new mongoose.Schema(
     },
     blockedList: [BlockSchema],
     maxParticipants: { type: Number },
-    // sessionPassword: { type: String },
+    sessionPassword: { type: String },
     // features: [{ type: String }], // e.g., ["screenSharing", "recording"],
     // sessionTimeout: { type: Number }, // in minutes
   },

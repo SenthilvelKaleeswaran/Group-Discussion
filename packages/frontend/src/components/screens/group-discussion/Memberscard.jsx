@@ -2,7 +2,7 @@ import React from "react";
 
 export const MemberCard = ({ data, currentMember }) => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 px-4 py-8 bg-gray-900">
+    <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 gap-6 px-4 py-8 bg-gray-900">
       {data?.map((member) => {
         const isCurrentMember = member?._id === currentMember?._id;
 
