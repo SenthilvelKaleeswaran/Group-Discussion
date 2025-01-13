@@ -1,15 +1,32 @@
 const mongoose = require("mongoose");
 
-const GroupDiscussionSchema = new mongoose.Schema({
-
-  activeSession : {
-    type: [mongoose.Schema.Types.ObjectId],
-    ref : "Session"
-  },
+const SessionSchema = new mongoose.Schema({
   // Topic Settings
+  groupDiscussionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "GroupDiscussion",
+    required: true,
+  },
+  // moderators: {
+  //   type: Map,
+  //   of: new mongoose.Schema({
+  //     userId: { type: String, required: true, unique: true },
+  //     role: { type: String, required: true },
+  //     startAt: { type: Date, required: true },
+  //     endAt: { type: Date, required: true },
+  //   }),
+  //   default: {},
+  // },
+
+  defaultSettings: {
+    type: Boolean,
+    default: false,
+  },
+
   topic: {
     type: String,
   },
+
   topicSetting: {
     type: String,
     enum: ["manual", "ai", "dynamic"],
@@ -23,7 +40,7 @@ const GroupDiscussionSchema = new mongoose.Schema({
       ref: "AIModel",
     },
   ],
- 
+
   // Discussion Settings
   discussionMode: {
     type: String,
@@ -45,7 +62,7 @@ const GroupDiscussionSchema = new mongoose.Schema({
   // Points Settings
   pointsSetting: {
     type: String,
-    enum: ["limit","noLimit", "range"],
+    enum: ["limit", "noLimit", "range"],
     default: "noLimit",
   },
   minPoints: {
@@ -87,7 +104,7 @@ const GroupDiscussionSchema = new mongoose.Schema({
   },
   conclusionLengthSetting: {
     type: String,
-    enum: ["limit","noLimit", "range"],
+    enum: ["limit", "noLimit", "range"],
     default: "fixed",
   },
 
@@ -122,7 +139,6 @@ const GroupDiscussionSchema = new mongoose.Schema({
     default: false,
   },
 
-
   // Other Participants settings
   accessParticipantConversation: {
     type: Boolean,
@@ -145,11 +161,11 @@ const GroupDiscussionSchema = new mongoose.Schema({
     ref: "User",
     required: true,
   },
-  rounds: {
-    type: String,
-    enum: ["single", "multiple"],
-    default: "single",
-  },
+  // rounds: {
+  //   type: String,
+  //   enum: ["single", "multiple"],
+  //   default: "single",
+  // },
   createdAt: {
     type: Date,
     default: Date.now,
@@ -168,7 +184,6 @@ const GroupDiscussionSchema = new mongoose.Schema({
   },
 });
 
-const GroupDiscussion = mongoose.model("GroupDiscussion", GroupDiscussionSchema);
+const Session = mongoose.model("Session", SessionSchema);
 
-module.exports = GroupDiscussion;
-
+module.exports = Session;

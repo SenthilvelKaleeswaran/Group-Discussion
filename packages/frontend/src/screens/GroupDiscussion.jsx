@@ -6,9 +6,11 @@ import { useNavigate, useParams } from "react-router";
 import {
   generateConversation,
   generateFeedback,
+  getActiveSession,
   getGroupDiscussion,
 } from "../utils/api-call";
 import {
+  useAudioStreaming,
   useDiscussionSocket,
   useMembers,
   useSpeechRecognization,
@@ -18,13 +20,34 @@ import {
 import {
   Conversation,
   DiscussionIndicator,
+  DiscussionSettings,
   MemberCard,
 } from "../components/screens";
 import { TimeProgressBar } from "../components/shared";
 
+import { io } from "socket.io-client";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchGroupDiscussion } from "../store";
+
+const signalingServer = "http://localhost:5000";
+const www = io("http://localhost:5000");
+
 export const GroupDiscussion = () => {
   const { id } = useParams();
+  const [groupDiscussionId, sessionId] = id.split("-");
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  // const {
+  //   discussion : data,
+  //   loading : issLoading,
+  //   error: groupDiscussionError,
+  // } = useSelector((state) => state.groupDiscussion);
+
+  // useEffect(() => {
+  //   if (id) {
+  //     dispatch(fetchGroupDiscussion(id)); // Dispatch the thunk
+  //   }
+  // }, [dispatch, id]);
 
   const [conversation, setConversation] = useState([]);
   const [processingPoint, setProcessingPoint] = useState(null);
@@ -32,20 +55,37 @@ export const GroupDiscussion = () => {
 
   const {
     data,
-    error,
+    error: groupDiscussionError,
     isLoading: issLoading,
-  } = useQuery([`group-discussion-${id}`, id], () => getGroupDiscussion(id), {
+  } = useQuery([`group-discussion-${groupDiscussionId}`, groupDiscussionId], () => getActiveSession(id), {
     onSuccess: (data) => {
+      if (Array.isArray(data)) {
+      } else if (typeof data === "object") {
+        if (!sessionId) {
+          navigate(`/gd/${data.groupDiscussionId}-${data._id}`, {
+            replace: true,
+          }); 
+        }
+      }
       setConversation(data?.conversationId?.messages);
     },
   });
 
-  const { sendMessage, events, isConnected, closeSocket } = useWebSocket(
-    "ws://localhost:5000",
-    {
+
+  const { socket, sendMessage, events, isConnected, closeSocket } =
+    useWebSocket(signalingServer, {
       disconnect: data?.status === "COMPLETED" || status === "Completed",
-    }
-  );
+    });
+
+  console.log({ socket, sessionId: data?._id });
+
+  const { localStream, remoteStreams, callPeer } = useAudioStreaming({
+    socket,
+    sendMessage,
+    sessionId,
+    groupDiscussionId
+  });
+  console.log({ socket, localStream, remoteStreams, callPeer });
 
   const isConclusion = useMemo(() => {
     return conversation?.length > data?.discussionLength;
@@ -278,16 +318,62 @@ export const GroupDiscussion = () => {
     }
   };
 
+  const handleCallPeer = () => {
+    const targetPeerId = "peer-id-to-call"; // Replace with the actual peer ID
+    callPeer(targetPeerId);
+  };
+
+  if (issLoading) {
+    return (
+      <div className="text-blue-500 w-full h-full place-content-center">
+        Loading...
+      </div>
+    );
+  }
+
+  if (groupDiscussionError) {
+    return <div>Error: {groupDiscussionError}</div>;
+  }
+
   return (
-    <div className="flex gap-4 min-h-screen w-full bg-green-500 text-gray-200 p-4">
+    <div className="flex gap-4 min-h-screen w-full bg-gray-700 text-gray-200 p-4">
       <div className="max-w-3xl w-full flex-1.5  bg-gray-800 shadow-lg rounded-lg p-8">
         <p className="font-bold">{data?.topic}</p>
+        {/* <div>
+          <h1>Audio Streaming</h1>
+          <button onClick={handleCallPeer}>Call Peer</button>
 
-        <DiscussionIndicator
+          <h2>Local Stream</h2>
+          {/* {localStream && (
+        <audio
+          autoPlay
+          playsInline
+          ref={(audio) => {
+            if (audio) audio.srcObject = localStream;
+          }}
+        />
+      )} 
+
+          <h2>Remote Streams</h2>
+          {remoteStreams.map(({ peerId, stream }) => (
+            <div key={peerId}>
+              <h3>Peer: {peerId}</h3>
+              <audio
+                autoPlay
+                playsInline
+                ref={(audio) => {
+                  if (audio) audio.srcObject = stream;
+                }}
+              />
+            </div>
+          ))}
+        </div> */}
+
+        {/* <DiscussionIndicator
           data={data}
           conversation={conversation}
           currentMember={currentMember}
-        />
+        /> */}
 
         {!isCompleted && !isLoading && !isListening && status?.length > 0 ? (
           <TimeProgressBar duration={TIME_INTERVAL} />
@@ -356,7 +442,7 @@ export const GroupDiscussion = () => {
           />
         </div> */}
       </div>
-      <div className="w-full min-h-screen h-full overflow-scroll bg-gray-800 shadow-lg rounded-lg p-8">
+      <div className="w-full min-h-screen h-full overflow-scroll bg-gray-900 shadow-lg rounded-lg">
         <Conversation
           currentWord={currentWord}
           transcript={transcript}
@@ -373,6 +459,9 @@ export const GroupDiscussion = () => {
           events={events}
           processingPoint={processingPoint}
         />{" "}
+      </div>
+      <div className="w-full min-h-screen h-full overflow-scroll bg-gray-900 shadow-lg rounded-lg">
+        <DiscussionSettings />
       </div>
     </div>
   );

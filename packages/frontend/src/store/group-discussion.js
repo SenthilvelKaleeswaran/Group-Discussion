@@ -1,12 +1,13 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { getConversation } from "../utils/api-call";
+import { getActiveSession, getConversation } from "../utils/api-call";
 
 // Fetch group discussion by ID
 export const fetchGroupDiscussion = createAsyncThunk(
   "groupDiscussions/fetchGroupDiscussion",
   async (groupDiscussionId, { rejectWithValue }) => {
     try {
-      return await getConversation(groupDiscussionId); // Pass ID to API call
+      console.log({groupDiscussionId})
+      return await getActiveSession(groupDiscussionId); // Pass ID to API call
     } catch (error) {
       return rejectWithValue(
         error.response?.data || "Failed to fetch discussions"
@@ -18,7 +19,7 @@ export const fetchGroupDiscussion = createAsyncThunk(
 const groupDiscussionsSlice = createSlice({
   name: "groupDiscussions", // Renamed slice for clarity
   initialState: {
-    discussion: [], // Matches API data structure
+    discussion: {}, 
     loading: false,
     error: null,
   },
@@ -35,6 +36,7 @@ const groupDiscussionsSlice = createSlice({
       })
       .addCase(fetchGroupDiscussion.fulfilled, (state, action) => {
         state.loading = false;
+        console.log({action})
         state.discussion = action.payload; // Fix key to match initial state
       })
       .addCase(fetchGroupDiscussion.rejected, (state, action) => {

@@ -14,6 +14,7 @@ export const Login = () => {
     e.preventDefault();
     try {
       const data = await loginUser({ email, password });
+      console.log({data})
       login(data?.token);
     } catch (error) {
       alert(error.message); // Handle the error

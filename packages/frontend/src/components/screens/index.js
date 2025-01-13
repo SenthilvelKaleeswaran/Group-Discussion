@@ -5,12 +5,14 @@ import { PerformanceSection } from "./feedback/PerformanceSection";
 import { ConversationSection } from "./feedback/ConversationSection";
 import { ConversationSpace } from "./feedback/ConversationSpace";
 import { Section } from "./create-discussion/Section";
+import { DiscussionSettings } from "./group-discussion/DiscussionSettings";
 
 export {
   Conversation,
   ConversationSection,
   ConversationSpace,
   DiscussionIndicator,
+  DiscussionSettings,
   MemberCard,
   PerformanceSection,
   Section
