@@ -5,15 +5,15 @@ export const useWebSocket = (url, { disconnect = false }) => {
   const [socket, setSocket] = useState(null);
   const [events, setEvents] = useState({});
   const [isConnected, setIsConnected] = useState(false);
-  const [manualDisconnect, setManualDisconnect] = useState(disconnect); 
+  const [manualDisconnect, setManualDisconnect] = useState(disconnect);
 
   const connect = useCallback(() => {
-    if (manualDisconnect) return; 
+    if (manualDisconnect) return;
 
     const token = localStorage.getItem("token");
     const newSocket = io(url, {
-      auth: { token }, 
-      reconnectionAttempts: 3, 
+      auth: { token },
+      reconnectionAttempts: 3,
       autoConnect: true,
     });
 
@@ -33,7 +33,7 @@ export const useWebSocket = (url, { disconnect = false }) => {
       console.error("Socket.IO connection error:", error);
     });
 
-    // Listen for custom events dynamically
+    // Dynamically handle incoming events
     newSocket.onAny((eventType, data) => {
       console.log(`Event received: ${eventType}`, data);
       setEvents((prev) => ({ ...prev, [eventType]: data }));
@@ -48,19 +48,9 @@ export const useWebSocket = (url, { disconnect = false }) => {
       socket.disconnect();
       setSocket(null);
       setIsConnected(false);
-      setManualDisconnect(true); // Mark as manually disconnected
+      setManualDisconnect(true);
     }
   }, [socket]);
-
-  useEffect(() => {
-    const newSocket = connect();
-
-    // Cleanup on unmount
-    return () => {
-      console.log("Cleaning up Socket.IO connection...");
-      newSocket?.disconnect();
-    };
-  }, [connect]);
 
   const sendMessage = useCallback(
     (event, payload) => {
@@ -73,5 +63,15 @@ export const useWebSocket = (url, { disconnect = false }) => {
     [socket]
   );
 
-  return { sendMessage, events, closeSocket, isConnected };
+  useEffect(() => {
+    const newSocket = connect();
+
+    // Cleanup on unmount
+    return () => {
+      console.log("Cleaning up Socket.IO connection...");
+      newSocket?.disconnect();
+    };
+  }, [connect]);
+
+  return { socket, sendMessage, events, closeSocket, isConnected };
 };

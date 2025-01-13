@@ -57,9 +57,10 @@ const io = new Server(server, {
 });
 
 io.use(authSocketMiddleware);
+const connectedUsers = {};
 
 io.on("connection", (socket) => {
-  socketHandler(socket);
+  socketHandler(socket,connectedUsers);
 });
 
 // Start the server
