@@ -4,7 +4,6 @@ const Participant = require("../models/participant");
 const Conversation = require("../models/conversation");
 const { generateAIResponse } = require("../utils");
 const { DiscussionTopicPrompt } = require("../prompts");
-const SessionLog = require("../models/session-log");
 
 // const generateAiParticipants = (n) => {
 //   const aiNames = ["AI-Alpha", "AI-Beta", "AI-Gamma", "AI-Delta", "AI-Epsilon"]; // Example AI names
@@ -26,7 +25,7 @@ const createGroupDiscussion = async (req, res) => {
   try {
     // Generate AI participants
 
-    let topic = rest?.topic || "";
+    let topic = rest?.topic || ''
 
     // Generate topic by AI
     if (isTopicAiGenerated) {
@@ -43,19 +42,6 @@ const createGroupDiscussion = async (req, res) => {
     await newGroupDiscussion.save();
 
     const groupDiscussionId = newGroupDiscussion?._id;
-
-    await Promise.all([
-      new Participant({ _id: groupDiscussionId }).save(),
-      new SessionLog({
-        _id: groupDiscussionId,
-        events: [
-          {
-            action: "Group Discussion Created",
-            performedBy: req.user.userId,
-          },
-        ],
-      }).save(),
-    ]);
 
     // // Update participants list by adding the creator (user who made the request)
     // const updatedParticipants = [...participants];
@@ -92,7 +78,7 @@ const createGroupDiscussion = async (req, res) => {
     // Respond with the discussion ID
     res.status(201).json({ result: groupDiscussionId });
   } catch (error) {
-    console.error({ error });
+    console.error({error})
     res.status(500).json({ msg: "Server Error", error });
   }
 };
@@ -104,12 +90,13 @@ const getGroupDiscussion = async (req, res) => {
     const groupDiscussion = await GroupDiscussion.findById(groupDiscussionId)
       .populate({
         path: "participants",
-        select: "_id name",
+        select: "userId",
+        populate: {
+          path: "userId",
+          select: "_id name",
+        },
       })
-      .populate({
-        path: "aiParticipants",
-        select: "_id name avatar gender",
-      });
+      .populate("conversationId");
 
     if (!groupDiscussion) {
       return res.status(404).json({ msg: "Group Discussion not found" });

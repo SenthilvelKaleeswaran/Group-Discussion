@@ -108,26 +108,5 @@ export const deleteAiModel = async (id) => {
   return await apiCall({ endpoint: `/ai-model/${id}`, method: "DELETE" });
 };
 
-export const getConversation = async (id) => {
-  return await apiCall({ endpoint: `/conversation/${id}` });
-};
 
-export const createConversation = async (data) => {
-  return await apiCall({ endpoint: `/conversation`, method: "POST", data });
-};
 
-export const updateConversation = async (id, data) => {
-  return await apiCall({
-    endpoint: `/conversation/${id}`,
-    method: "PATCH",
-    data,
-  });
-};
-
-export const deleteConversation = async (id) => {
-  return await apiCall({ endpoint: `/conversation/${id}` });
-};
-
-export const getParticipants = async (id) => {
-  return await apiCall({ endpoint: `/participants/${id}` });
-};

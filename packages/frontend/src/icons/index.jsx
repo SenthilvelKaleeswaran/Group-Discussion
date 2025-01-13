@@ -14,14 +14,8 @@ import { FaStarOfLife } from "react-icons/fa6";
 import { LuTarget } from "react-icons/lu";
 import { FaChevronDown } from "react-icons/fa";
 import { FaChevronUp } from "react-icons/fa";
-import { FaUsers } from "react-icons/fa";
-import { FaUserShield } from "react-icons/fa6";
-import { IoSettings } from "react-icons/io5";
-
-
 const Icon = ({ name, ...props }) => {
   const IconsList = {
-    Admin : FaUserShield,
     Backward: IoPlayBack,
     ChevronDown: FaChevronDown,
     ChevronUp: FaChevronUp,
@@ -35,8 +29,6 @@ const Icon = ({ name, ...props }) => {
     Require: LuTarget,
     Robot: VscRobot,
     Rotate: FaRotate,
-    Settings :IoSettings ,
-    Users : FaUsers,
     Wave: PiWaveformBold,
   };
 

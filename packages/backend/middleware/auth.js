@@ -1,4 +1,4 @@
-const { verifyToken } = require("../utils");
+const { verifyToken } = require("./utils/verifyToken");
 
 const authMiddleware = (req, res, next) => {
   try {

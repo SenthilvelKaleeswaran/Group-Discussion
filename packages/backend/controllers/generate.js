@@ -44,7 +44,9 @@ const generateConversation = async (req, res) => {
 
   try {
     // Step 1: Retrieve Group Discussion
-    const groupDiscussion = await GroupDiscussion.findById(id);
+    const groupDiscussion = await GroupDiscussion.findById(id).populate(
+      "conversationId"
+    );
     if (!groupDiscussion) {
       if (isWebSocket)
         sendResponse({
@@ -422,7 +424,7 @@ const generateFeedback = async (req, res) => {
 
   try {
     const groupDiscussion = await GroupDiscussion.findById(id)
-      // .populate("conversationId")
+      .populate("conversationId")
       .populate({
         path: "participants",
         select: "userId",
