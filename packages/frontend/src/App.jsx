@@ -15,6 +15,8 @@ import {
 } from "./screens";
 import { NonAuthWrapper, ProtectedWrapper } from "./wrappers";
 import { AuthProvider } from "./context";
+import { Provider } from "react-redux";
+import { store } from "./store";
 
 function App() {
   const queryClient = new QueryClient();
@@ -31,7 +33,14 @@ function App() {
 
             <Route element={<ProtectedWrapper />}>
               <Route path="/gd">
-                <Route path=":id" element={<GroupDiscussion />} />
+                <Route
+                  path=":id"
+                  element={
+                    <Provider store={store}>
+                      <GroupDiscussion />
+                    </Provider>
+                  }
+                />
                 <Route path="" element={<CreateDiscussion />} />
               </Route>
               <Route path="/feedback" element={<Feedback />} />

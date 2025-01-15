@@ -131,3 +131,24 @@ export const deleteConversation = async (id) => {
 export const getParticipants = async (id) => {
   return await apiCall({ endpoint: `/participants/${id}` });
 };
+
+
+export const getActiveSession = async (id) => {
+  return await apiCall({ endpoint: `/session/active/${id}` });
+};
+
+export const createSession = async (data) => {
+  return await apiCall({ endpoint: `/session`, method: "POST", data });
+};
+
+export const updateSession = async (id, data) => {
+  return await apiCall({
+    endpoint: `/session/${id}`,
+    method: "PATCH",
+    data,
+  });
+};
+
+export const getParticipants = async (id) => {
+  return await apiCall({ endpoint: `/participants/${id}` });
+};

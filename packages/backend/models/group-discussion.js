@@ -1,6 +1,11 @@
 const mongoose = require("mongoose");
 
 const GroupDiscussionSchema = new mongoose.Schema({
+
+  activeSession : {
+    type: [mongoose.Schema.Types.ObjectId],
+    ref : "Session"
+  },
   // Topic Settings
   topic: {
     type: String,
@@ -18,27 +23,7 @@ const GroupDiscussionSchema = new mongoose.Schema({
       ref: "AIModel",
     },
   ],
-  participants: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-    },
-  ],
-  otherParticipants: [
-    {
-      userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: true,
-      },
-      role: {
-        type: String,
-        enum: ["admin", "listener"],
-        default: "listener",
-      },
-    },
-  ],
-
+ 
   // Discussion Settings
   discussionMode: {
     type: String,
@@ -183,4 +168,7 @@ const GroupDiscussionSchema = new mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model("GroupDiscussion", GroupDiscussionSchema);
+const GroupDiscussion = mongoose.model("GroupDiscussion", GroupDiscussionSchema);
+
+module.exports = GroupDiscussion;
+

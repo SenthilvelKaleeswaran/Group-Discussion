@@ -36,8 +36,8 @@ const updateParticipant = async ({
   const participantType =
     role === "admin"
       ? "admin"
-      : role === "moderator"
-      ? "moderators"
+      : role === "listener"
+      ? "listeners"
       : "participants";
   await Participant.findOneAndUpdate(
     { groupDiscussionId },
@@ -54,8 +54,8 @@ const deleteParticipant = async ({ groupDiscussionId, userId, role }) => {
   const participantType =
     role === "admin"
       ? "admin"
-      : role === "moderator"
-      ? "moderators"
+      : role === "listener"
+      ? "listeners"
       : "participants";
   await Participant.findOneAndUpdate(
     { groupDiscussionId },

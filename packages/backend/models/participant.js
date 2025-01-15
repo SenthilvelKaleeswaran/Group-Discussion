@@ -1,23 +1,34 @@
 const mongoose = require("mongoose");
 
-const ParticipantTimingSchema = new mongoose.Schema({
-  joinedAt: { type: Date, required: true },
-  leftAt: { type: Date, required: true },
-});
+const ParticipantTimingSchema = new mongoose.Schema(
+  {
+    joinedAt: { type: Date, required: true },
+    leftAt: { type: Date },
+  },
+  { _id: false } // Disable automatic _id generation
+);
 
 const DetailsSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     required: true,
   },
+  socketId: {
+    type: String,
+    required() {
+      return this.isActive;
+    },
+  },
   isActive: { type: Boolean, default: true },
-  name: { type: String, required: true },
+  switchedTo : {type : String , default : ''},
+  // name: { type: String, required: true },
   muteStatus: { type: Boolean, default: false },
   timing: [ParticipantTimingSchema],
 });
 
 const BlockSchema = new mongoose.Schema({
   userId: { type: String, required: true },
+
   blockedBy: {
     type: String,
     required: true,
@@ -31,11 +42,16 @@ const BlockSchema = new mongoose.Schema({
 
 const ParticipantSchema = new mongoose.Schema(
   {
-    _id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "GroupDiscussion",
-      required: true,
-    },
+    // sessionId: {
+    //   type: mongoose.Schema.Types.ObjectId,
+    //   ref: "Session",
+    //   required: true,
+    // },
+    // groupDiscussionId: {
+    //   type: mongoose.Schema.Types.ObjectId,
+    //   ref: "GroupDiscussion",
+    //   required: true,
+    // },
     participants: {
       type: Map,
       of: DetailsSchema,
@@ -46,7 +62,7 @@ const ParticipantSchema = new mongoose.Schema(
       of: DetailsSchema,
       default: {},
     },
-    moderators: {
+    listener: {
       type: Map,
       of: DetailsSchema,
       default: {},

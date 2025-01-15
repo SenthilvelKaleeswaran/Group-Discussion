@@ -5,6 +5,8 @@ const Conversation = require("../models/conversation");
 const { generateAIResponse } = require("../utils");
 const { DiscussionTopicPrompt } = require("../prompts");
 const SessionLog = require("../models/session-log");
+const Session = require("../models/session");
+
 
 // const generateAiParticipants = (n) => {
 //   const aiNames = ["AI-Alpha", "AI-Beta", "AI-Gamma", "AI-Delta", "AI-Epsilon"]; // Example AI names
@@ -43,6 +45,31 @@ const createGroupDiscussion = async (req, res) => {
     await newGroupDiscussion.save();
 
     const groupDiscussionId = newGroupDiscussion?._id;
+    const newSession = new Session({
+      ...rest,
+      groupDiscussionId,
+      topic,
+      createdBy: req.user.userId,
+    });
+
+    await newSession.save();
+    const sessionId = newSession?._id;
+
+    await Promise.all([
+      new Participant({ _id: sessionId }).save(),
+      new SessionLog({
+        _id: sessionId,
+        events: [
+          {
+            action: "Group Discussion Created",
+            performedBy: req.user.userId,
+          },
+        ],
+      }).save(),
+      GroupDiscussion.findByIdAndUpdate(groupDiscussionId, {
+        activeSession: [sessionId],
+      }),
+    ]);
 
     await Promise.all([
       new Participant({ _id: groupDiscussionId }).save(),

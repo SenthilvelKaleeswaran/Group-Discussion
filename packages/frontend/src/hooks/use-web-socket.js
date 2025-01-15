@@ -23,11 +23,11 @@ export const useWebSocket = (url, { disconnect = false }) => {
       setIsConnected(true);
     });
 
-    newSocket.on("disconnect", () => {
-      console.log("Disconnected from Socket.IO server");
-      setSocket(null);
-      setIsConnected(false);
-    });
+    // newSocket.on("disconnect", () => {
+    //   console.log("Disconnected from Socket.IO server");
+    //   setSocket(null);
+    //   setIsConnected(false);
+    // });
 
     newSocket.on("connect_error", (error) => {
       console.error("Socket.IO connection error:", error);
