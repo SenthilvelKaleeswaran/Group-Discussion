@@ -73,9 +73,9 @@ function TabPanel({ children, id }) {
   return <div>{children}</div>;
 }
 
-const TabComposed = ({list = [],onChange}) => {
+const TabComposed = ({defaultTab,list = [],onChange}) => {
     return (
-        <Tabs defaultTab="tab1">
+        <Tabs defaultTab={defaultTab}>
         <TabList>
           {list?.map((tab) => (
             <Tab key={tab.id} id={tab.id} icon={tab.icon} onChange={onChange}>

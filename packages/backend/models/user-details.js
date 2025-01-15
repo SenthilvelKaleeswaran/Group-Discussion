@@ -1,11 +1,11 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 // Define the User schema
 const UserDetailsSchema = new mongoose.Schema({
-  _id: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', 
-    required: true 
+  _id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
   },
   name: {
     type: String,
@@ -19,4 +19,6 @@ const UserDetailsSchema = new mongoose.Schema({
 });
 
 // Export the model
-module.exports = mongoose.model('UserDetails', UserDetailsSchema);
+const UserDetails = mongoose.model("UserDetails", UserDetailsSchema);
+
+module.exports = UserDetails;

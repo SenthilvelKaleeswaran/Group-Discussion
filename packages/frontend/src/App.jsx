@@ -17,6 +17,7 @@ import { NonAuthWrapper, ProtectedWrapper } from "./wrappers";
 import { AuthProvider } from "./context";
 import { Provider } from "react-redux";
 import { store } from "./store";
+import { Toaster } from "react-hot-toast";
 
 function App() {
   const queryClient = new QueryClient();
@@ -50,6 +51,7 @@ function App() {
           </Routes>
         </AuthProvider>
       </Router>
+      <Toaster/>
     </QueryClientProvider>
   );
 }
