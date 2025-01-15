@@ -1,5 +1,7 @@
 const Participant = require("../models/participant");
-const { getUserRole } = require("../shared/getUserRole");
+const UserDetails = require("../models/user-details");
+const User = require("../models/user");
+const { getUserRole, getRoleData } = require("../shared/getUserRole");
 
 const updateParticipant = async ({
   groupDiscussionId,
@@ -40,21 +42,16 @@ const deleteParticipant = async ({ groupDiscussionId, userId, role }) => {
 
 const addParticipant = async ({
   socket,
+  io,
   groupDiscussionId,
   sessionId,
   userId,
-  name,
 }) => {
   // console.log({ groupDiscussionId, userId, name });
 
-  if (!groupDiscussionId || !userId) {
+  if (!groupDiscussionId || !userId || !sessionId) {
     console.error("Error: groupDiscussionId and userId is required");
     return;
-  }
-
-  if (!sessionId) {
-    
-
   }
 
   try {
@@ -64,17 +61,27 @@ const addParticipant = async ({
 
     const type = getUserRole(participant, userId);
 
-    // Check if the user already exists type will be assigned otherwise he moves to participants
+    if (!participant[type]) {
+      participant[type] = new Map();
+    }
+
     if (type) {
       const user = participant[type].get(userId);
       user.isActive = true;
+      user.socketId = socket.id;
       user.timing.push({ joinedAt: new Date(), leftAt: null });
       participant[type].set(userId, user);
     } else {
       console.log("flag2");
+
+      const userDetail =
+        (await UserDetails.findById(userId)) || (await User.findById(userId));
+
       // Add new participant
-      participant.participants.set(userId, {
+      participant.participant.set(userId, {
         userId,
+        socketId: socket.id,
+        name: userDetail?.name || userDetail?.email,
         isActive: true,
         muteStatus: false,
         timing: [{ joinedAt: new Date(), leftAt: null }],
@@ -84,34 +91,48 @@ const addParticipant = async ({
     await participant.save(); // Save the session
 
     // Join socket room and notify others
-    const currentSession = `${groupDiscussionId}_${sessionId}`
+    const currentSession = `${groupDiscussionId}_${sessionId}`;
+
     socket.join(currentSession);
     socket.to(currentSession).emit("USER_JOINED", { userId });
+
+    const particpantList = getRoleData(participant, userId);
+    io.to(currentSession).emit("PARTICIPANTS_UPDATED", particpantList);
   } catch (err) {
     console.error("Error joining session:", err);
   }
 };
 
-const leftParticipant = async ({ groupDiscussionId, userId }) => {
+const leftParticipant = async ({
+  io,
+  socket,
+  sessionId,
+  groupDiscussionId,
+  userId,
+}) => {
   try {
-    const session = await Participant.findById(groupDiscussionId);
+    let participant = await Participant.findById(sessionId);
 
-    console.log({ session });
+    const type = getUserRole(participant, userId);
 
-    if (session && session.participants.has(userId)) {
-      const user = session.participants.get(userId);
+    if (type) {
+      const user = participant[type].get(userId);
       user.isActive = false;
       user.timing[user.timing.length - 1].leftAt = new Date();
-      session.participants.set(userId, user);
-      await session.save();
+      participant[type].set(userId, user);
+      await participant.save();
 
-      console.log({ session });
 
       socket.to(groupDiscussionId).emit("USER_LEFT", { userId });
 
+      const currentSession = `${groupDiscussionId}_${sessionId}`;
+
+      const particpantList = getRoleData(participant, userId);
+      io.to(currentSession).emit("PARTICIPANTS_UPDATED", particpantList);
+
       // Remove session if no active participants
       // const activeParticipants = Array.from(
-      //   session.participants.values()
+      //   session.participant.values()
       // ).filter((participant) => participant.isActive);
 
       // if (activeParticipants.length === 0) {

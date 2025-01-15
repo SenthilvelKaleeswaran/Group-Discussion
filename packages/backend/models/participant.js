@@ -20,15 +20,14 @@ const DetailsSchema = new mongoose.Schema({
     },
   },
   isActive: { type: Boolean, default: true },
-  switchedTo : {type : String , default : ''},
-  // name: { type: String, required: true },
+  switchedTo: { type: String, default: "" },
+  name: { type: String },
   muteStatus: { type: Boolean, default: false },
   timing: [ParticipantTimingSchema],
 });
 
 const BlockSchema = new mongoose.Schema({
-  userId: { type: String, required: true },
-
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "UserDetails" },
   blockedBy: {
     type: String,
     required: true,
@@ -52,7 +51,7 @@ const ParticipantSchema = new mongoose.Schema(
     //   ref: "GroupDiscussion",
     //   required: true,
     // },
-    participants: {
+    participant: {
       type: Map,
       of: DetailsSchema,
       default: {},

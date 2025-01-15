@@ -1,6 +1,7 @@
 import React from "react";
 import { Tab, TabList, TabPanel, TabPanels, Tabs } from "../../ui";
 import { TabComposed } from "../../ui";
+import ParticipantList from "./ParticipantList";
 
 export function DiscussionSettings() {
   const DISCUSSION_TAB_LIST = [
@@ -8,7 +9,7 @@ export function DiscussionSettings() {
       id: "participants",
     //   label: "Participants",
       icon: "Users",
-      component: <p>This is the Home content.</p>,
+      component: <ParticipantList />,
     },
     {
       id: "admin-controls",
@@ -25,7 +26,7 @@ export function DiscussionSettings() {
   ];
   return (
     <div>
-      <TabComposed list={DISCUSSION_TAB_LIST} />
+      <TabComposed defaultTab='participants' list={DISCUSSION_TAB_LIST} />
     </div>
   );
 }
