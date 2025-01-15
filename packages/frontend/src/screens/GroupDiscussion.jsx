@@ -26,8 +26,10 @@ import {
 import { TimeProgressBar } from "../components/shared";
 
 import { io } from "socket.io-client";
+
 import { useDispatch, useSelector } from "react-redux";
 import { fetchGroupDiscussion } from "../store";
+
 
 const signalingServer = "http://localhost:5000";
 const www = io("http://localhost:5000");
@@ -86,6 +88,8 @@ export const GroupDiscussion = () => {
     groupDiscussionId
   });
   console.log({ socket, localStream, remoteStreams, callPeer });
+
+ 
 
   const isConclusion = useMemo(() => {
     return conversation?.length > data?.discussionLength;
@@ -323,7 +327,7 @@ export const GroupDiscussion = () => {
     callPeer(targetPeerId);
   };
 
-  if (issLoading) {
+ if (issLoading) {
     return (
       <div className="text-blue-500 w-full h-full place-content-center">
         Loading...
@@ -334,40 +338,15 @@ export const GroupDiscussion = () => {
   if (groupDiscussionError) {
     return <div>Error: {groupDiscussionError}</div>;
   }
-
+  
   return (
     <div className="flex gap-4 min-h-screen w-full bg-gray-700 text-gray-200 p-4">
       <div className="max-w-3xl w-full flex-1.5  bg-gray-800 shadow-lg rounded-lg p-8">
         <p className="font-bold">{data?.topic}</p>
-        {/* <div>
-          <h1>Audio Streaming</h1>
-          <button onClick={handleCallPeer}>Call Peer</button>
 
-          <h2>Local Stream</h2>
-          {/* {localStream && (
-        <audio
-          autoPlay
-          playsInline
-          ref={(audio) => {
-            if (audio) audio.srcObject = localStream;
-          }}
-        />
-      )} 
+      
+  
 
-          <h2>Remote Streams</h2>
-          {remoteStreams.map(({ peerId, stream }) => (
-            <div key={peerId}>
-              <h3>Peer: {peerId}</h3>
-              <audio
-                autoPlay
-                playsInline
-                ref={(audio) => {
-                  if (audio) audio.srcObject = stream;
-                }}
-              />
-            </div>
-          ))}
-        </div> */}
 
         {/* <DiscussionIndicator
           data={data}

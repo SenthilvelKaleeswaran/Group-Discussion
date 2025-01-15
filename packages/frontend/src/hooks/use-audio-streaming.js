@@ -11,7 +11,7 @@ export const useAudioStreaming = ({ socket, sessionId, groupDiscussionId }) => {
   };
 
   useEffect(() => {
-    if (sessionId && socket) {
+ if (sessionId && socket) {
       // Join session
       socket.emit("JOIN_SESSION", { sessionId, groupDiscussionId, userId });
 
@@ -64,7 +64,7 @@ export const useAudioStreaming = ({ socket, sessionId, groupDiscussionId }) => {
     (peerId) => {
       const peerConnection = new RTCPeerConnection(iceServers);
 
-      localStream.current?.getTracks().forEach((track) => {
+ localStream.current?.getTracks().forEach((track) => {
         peerConnection.addTrack(track, localStream.current);
       });
 
@@ -77,7 +77,7 @@ export const useAudioStreaming = ({ socket, sessionId, groupDiscussionId }) => {
 
       peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
-          socket.emit("CANDIDATE", {
+ socket.emit("CANDIDATE", {
             sessionId,
             receiverId: peerId,
             candidate: event.candidate,
@@ -86,7 +86,7 @@ export const useAudioStreaming = ({ socket, sessionId, groupDiscussionId }) => {
       };
 
       peerConnections.current[peerId] = peerConnection;
-      return peerConnection;
+ return peerConnection;
     },
     [sessionId]
   );
@@ -97,7 +97,7 @@ export const useAudioStreaming = ({ socket, sessionId, groupDiscussionId }) => {
     const offer = await peerConnection.createOffer();
     await peerConnection.setLocalDescription(offer);
 
-    socket.emit("OFFER", {
+socket.emit("OFFER", {
       sessionId,
       receiverId: peerId,
       sdp: offer,
@@ -112,7 +112,7 @@ export const useAudioStreaming = ({ socket, sessionId, groupDiscussionId }) => {
     const answer = await peerConnection.createAnswer();
     await peerConnection.setLocalDescription(answer);
 
-    socket.emit("ANSWER", {
+ socket.emit("ANSWER", {
       sessionId,
       receiverId: peerId,
       sdp: answer,
@@ -135,7 +135,7 @@ export const useAudioStreaming = ({ socket, sessionId, groupDiscussionId }) => {
     }
   };
 
-  const removePeerConnection = (peerId) => {
+const removePeerConnection = (peerId) => {
     if (peerConnections.current[peerId]) {
       peerConnections.current[peerId].close();
       delete peerConnections.current[peerId];
@@ -152,7 +152,6 @@ export const useAudioStreaming = ({ socket, sessionId, groupDiscussionId }) => {
     peerConnections.current = {};
     setRemoteStreams([]);
   };
-
   return {
     localStream: localStream.current,
     remoteStreams,

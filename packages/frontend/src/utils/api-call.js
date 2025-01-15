@@ -149,3 +149,6 @@ export const updateSession = async (id, data) => {
   });
 };
 
+export const getParticipants = async (id) => {
+  return await apiCall({ endpoint: `/participants/${id}` });
+};
