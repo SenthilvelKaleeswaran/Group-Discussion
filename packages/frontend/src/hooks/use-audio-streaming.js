@@ -11,74 +11,100 @@ export const useAudioStreaming = ({ socket, sessionId, groupDiscussionId }) => {
   };
 
   useEffect(() => {
-    if (sessionId && socket) {
-      // Join session
-      socket.emit("JOIN_SESSION", { sessionId, groupDiscussionId, userId });
+    navigator.mediaDevices
+      .getUserMedia({ audio: true })
+      .then((stream) => {
+        localStream.current = stream;
+      })
+      .catch((err) => console.error("Error accessing local audio:", err));
+  }, []); // Initialize once on mount
 
-      // Get local audio stream
-      navigator.mediaDevices
-        .getUserMedia({ audio: true })
-        .then((stream) => {
-          localStream.current = stream;
-        })
-        .catch((err) => console.error("Error accessing local audio:", err));
+  useEffect(() => {
+    // if (sessionId && socket) {
+    // Join session
+    socket.emit("JOIN_SESSION", { sessionId, groupDiscussionId, userId });
 
-      // Handle incoming socket events
-      socket.on("USER_JOINED", ({ userId }) => {
-        callPeer(userId);
-      });
+    // Handle incoming events
 
-      socket.on("OFFER", async ({ senderId, sdp }) => {
-        await handleOffer(senderId, sdp);
-      });
+    socket.on("offer", async ({ senderId, sdp }) => {
+      console.log("Received offer from:", senderId);
+      await handleOffer(senderId, sdp);
+    });
 
-      socket.on("ANSWER", async ({ senderId, sdp }) => {
-        await handleAnswer(senderId, sdp);
-      });
+    socket.on("answer", async ({ senderId, sdp }) => {
+      console.log("Received answer from:", senderId);
+      await handleAnswer(senderId, sdp);
+    });
 
-      socket.on("CANDIDATE", async ({ senderId, candidate }) => {
-        await handleCandidate(senderId, candidate);
-      });
+    socket.on("candidate", async ({ senderId, candidate }) => {
+      console.log("Received candidate from:", senderId);
+      await handleCandidate(senderId, candidate);
+    });
 
-      socket.on("USER_LEFT", ({ userId }) => {
-        removePeerConnection(userId);
-      });
+    socket.on("USER_JOINED", ({ userId }) => {
+      callPeer(userId);
+    });
 
-      // Handle tab/browser close
-      const handleBeforeUnload = () => {
-        socket.emit("LEAVE_SESSION", { sessionId, groupDiscussionId, userId });
-        socket.disconnect();
-        cleanupConnections();
-      };
+    socket.on("USER_LEFT", ({ userId }) => {
+      removePeerConnection(userId);
+    });
 
-      window.addEventListener("beforeunload", handleBeforeUnload);
+    // Handle tab/browser close
+    const handleBeforeUnload = () => {
+      socket.emit("LEAVE_SESSION", { sessionId, groupDiscussionId, userId });
+      socket.disconnect();
+      cleanupConnections();
+    };
 
-      // Cleanup
-      return () => {
-        window.removeEventListener("beforeunload", handleBeforeUnload);
-      };
-    }
-  }, [sessionId, userId, socket]);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      cleanupConnections();
+    };
+    // }
+  }, [sessionId, userId, groupDiscussionId, socket]);
 
   const createPeerConnection = useCallback(
     (peerId) => {
       const peerConnection = new RTCPeerConnection(iceServers);
 
-      localStream.current?.getTracks().forEach((track) => {
-        peerConnection.addTrack(track, localStream.current);
-      });
+      console.log({ localStream });
+
+      if (localStream.current) {
+        localStream.current.getTracks().forEach((track) => {
+          console.log({ aaaaa: track });
+          // peerConnection.addTrack(track, localStream.current);
+          peerConnection.addStream(localStream.current);
+        });
+      } else {
+        console.error("No localStream available to add tracks.");
+      }
 
       peerConnection.ontrack = (event) => {
-        setRemoteStreams((prev) => [
-          ...prev.filter((stream) => stream.peerId !== peerId),
-          { peerId, stream: event.streams[0] },
-        ]);
+        console.log(
+          "ontrack event fired. Streams:",
+          event.streams,
+          peerId,
+          remoteStreams
+        );
+        if (event.streams[0]) {
+          setRemoteStreams((prev) => [
+            ...prev.filter((stream) => stream.peerId !== peerId),
+            { peerId, stream: event.streams[0] },
+          ]);
+        } else {
+          console.error("No streams in ontrack event.");
+        }
       };
 
       peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
-          socket.emit("CANDIDATE", {
+          console.log("Sending ICE candidate:", event.candidate);
+          socket.emit("candidate", {
             sessionId,
+            groupDiscussionId,
             receiverId: peerId,
             candidate: event.candidate,
           });
@@ -86,9 +112,9 @@ export const useAudioStreaming = ({ socket, sessionId, groupDiscussionId }) => {
       };
 
       peerConnections.current[peerId] = peerConnection;
-      return peerConnection;
+      return peerConnections.current[peerId];
     },
-    [sessionId]
+    [sessionId, socket]
   );
 
   const callPeer = async (peerId) => {
@@ -97,9 +123,10 @@ export const useAudioStreaming = ({ socket, sessionId, groupDiscussionId }) => {
     const offer = await peerConnection.createOffer();
     await peerConnection.setLocalDescription(offer);
 
-    socket.emit("OFFER", {
+    socket.emit("offer", {
       sessionId,
       receiverId: peerId,
+      groupDiscussionId,
       sdp: offer,
     });
   };
@@ -112,19 +139,42 @@ export const useAudioStreaming = ({ socket, sessionId, groupDiscussionId }) => {
     const answer = await peerConnection.createAnswer();
     await peerConnection.setLocalDescription(answer);
 
-    socket.emit("ANSWER", {
+    socket.emit("answer", {
       sessionId,
       receiverId: peerId,
+      groupDiscussionId,
       sdp: answer,
     });
   };
 
   const handleAnswer = async (peerId, answer) => {
     const peerConnection = peerConnections.current[peerId];
-    if (peerConnection) {
-      await peerConnection.setRemoteDescription(
+    if (!peerConnection) {
+      console.error(`Peer connection not found for ${peerId}`);
+      return;
+    }
+
+    // Log the current signaling state
+    console.log(
+      `Signaling state for ${peerId}:`,
+      peerConnection.signalingState,
+      peerConnection.remoteDescription
+    );
+
+    // Ensure the remote description isn't already set
+    if (peerConnection.remoteDescription) {
+      console.warn(`Remote description already set for ${peerId}`);
+      return;
+    }
+
+    try {
+      // Set the remote description
+      const a = await peerConnection.setRemoteDescription(
         new RTCSessionDescription(answer)
       );
+      console.log(`Remote description set successfully for ${peerId}`, a);
+    } catch (error) {
+      console.error(`Error setting remote description for ${peerId}:`, error);
     }
   };
 
@@ -152,6 +202,7 @@ export const useAudioStreaming = ({ socket, sessionId, groupDiscussionId }) => {
     peerConnections.current = {};
     setRemoteStreams([]);
   };
+
   return {
     localStream: localStream.current,
     remoteStreams,
