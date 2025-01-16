@@ -16,17 +16,35 @@ async function socketHandler(io, socket) {
     await leftParticipant({ io, socket, ...data })
   );
 
-  socket.on("OFFER", ({ groupDiscussionId, userId, sdp }) => {
-    io.to(userId).emit("OFFER", { senderId: socket.id, sdp });
+  socket.on('offer', ({ sessionId, receiverId, sdp, groupDiscussionId }) => {
+    console.log(`Received offer from ${socket.id} for ${receiverId}:`, sdp);
+    socket.emit('offer', { senderId: socket.id, sdp });
   });
 
-  socket.on("ANSWER", ({ groupDiscussionId, userId, sdp }) => {
-    io.to(userId).emit("ANSWER", { senderId: socket.id, sdp });
+  socket.on('answer', ({ sessionId, receiverId, sdp, groupDiscussionId }) => {
+    console.log(`Received answer from ${socket.id} for ${receiverId}:`, sdp);
+    socket.emit('answer', { senderId: socket.id, sdp });
   });
 
-  socket.on("CANDIDATE", ({ groupDiscussionId, userId, candidate }) => {
-    io.to(userId).emit("CANDIDATE", { senderId: socket.id, candidate });
+  socket.on('candidate', ({ sessionId, receiverId, candidate, groupDiscussionId }) => {
+    console.log(`Received candidate from ${socket.id} for ${receiverId}:`, candidate);
+    socket .emit('candidate', { senderId: socket.id, candidate });
   });
+
+  // socket.on("offer", ({ groupDiscussionId,sessionId, userId, sdp }) => {
+  //   console.log({sdp,offer : ''})
+  //   io.to(`${groupDiscussionId}-${sessionId}`).emit("offer", { senderId: socket.id, sdp });
+  // });
+
+  // socket.on("answer", ({ groupDiscussionId,sessionId, userId, sdp }) => {
+  //   console.log({sdp, answer : ''})
+  //   io.to(`${groupDiscussionId}-${sessionId}`).emit("answer", { senderId: socket.id, sdp });
+  // });
+
+  // socket.on("candidate", ({ groupDiscussionId,sessionId, userId, candidate }) => {
+  //   console.log({sdp,candidate})
+  //   io.to(`${groupDiscussionId}-${sessionId}`).emit("candidate", { senderId: socket.id, candidate });
+  // });
 
   socket.on("disconnect", async () => {
     // try {

@@ -77,8 +77,10 @@ const addParticipant = async ({
       const userDetail =
         (await UserDetails.findById(userId)) || (await User.findById(userId));
 
+      console.log({userId})
+
       // Add new participant
-      participant.participant.set(userId, {
+      participant.admin.set(userId, {
         userId,
         socketId: socket.id,
         name: userDetail?.name || userDetail?.email,
@@ -93,11 +95,13 @@ const addParticipant = async ({
     // Join socket room and notify others
     const currentSession = `${groupDiscussionId}_${sessionId}`;
 
-    socket.join(currentSession);
-    socket.to(currentSession).emit("USER_JOINED", { userId });
+    // socket.join(currentSession);
+    // socket.to(currentSession).emit("USER_JOINED", { userId });
+    socket.emit("USER_JOINED", { userId });
 
     const particpantList = getRoleData(participant, userId);
-    io.to(currentSession).emit("PARTICIPANTS_UPDATED", particpantList);
+    console.log({particpantList})
+    io.emit("PARTICIPANTS_UPDATED", particpantList);
   } catch (err) {
     console.error("Error joining session:", err);
   }

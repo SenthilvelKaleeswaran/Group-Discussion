@@ -2,31 +2,37 @@ import React from "react";
 import { Tab, TabList, TabPanel, TabPanels, Tabs } from "../../ui";
 import { TabComposed } from "../../ui";
 import ParticipantList from "./ParticipantList";
+import ModeratorsList from "./ModeratorsList";
 
 export function DiscussionSettings() {
   const DISCUSSION_TAB_LIST = [
     {
       id: "participants",
-    //   label: "Participants",
+      //   label: "Participants",
       icon: "Users",
       component: <ParticipantList />,
     },
     {
       id: "admin-controls",
-    //   label: "Settings",
+      //   label: "Settings",
       icon: "Admin",
-      component: <p>This is the Settings content.</p>,
+      component: <ModeratorsList />,
     },
     {
       id: "settings",
-    //   label: "Profile",
+      //   label: "Profile",
       icon: "Settings",
       component: <p>This is the Profile content.</p>,
+    },
+    {
+      id: "blocked",
+      icon: "Block",
+      component: <p>Blocked</p>,
     },
   ];
   return (
     <div>
-      <TabComposed defaultTab='participants' list={DISCUSSION_TAB_LIST} />
+      <TabComposed defaultTab="participants" list={DISCUSSION_TAB_LIST} />
     </div>
   );
 }

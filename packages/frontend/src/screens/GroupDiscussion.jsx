@@ -29,7 +29,7 @@ import { io } from "socket.io-client";
 
 import { useDispatch, useSelector } from "react-redux";
 import { fetchGroupDiscussion } from "../store";
-
+import { AudioStreamingComponent } from "../components/screens/group-discussion/AudioStreaminComponent";
 
 const signalingServer = "http://localhost:5000";
 const www = io("http://localhost:5000");
@@ -59,20 +59,23 @@ export const GroupDiscussion = () => {
     data,
     error: groupDiscussionError,
     isLoading: issLoading,
-  } = useQuery([`group-discussion-${groupDiscussionId}`, groupDiscussionId], () => getActiveSession(id), {
-    onSuccess: (data) => {
-      if (Array.isArray(data)) {
-      } else if (typeof data === "object") {
-        if (!sessionId) {
-          navigate(`/gd/${data.groupDiscussionId}-${data._id}`, {
-            replace: true,
-          }); 
+  } = useQuery(
+    [`group-discussion-${groupDiscussionId}`, groupDiscussionId],
+    () => getActiveSession(id),
+    {
+      onSuccess: (data) => {
+        if (Array.isArray(data)) {
+        } else if (typeof data === "object") {
+          if (!sessionId) {
+            navigate(`/gd/${data.groupDiscussionId}-${data._id}`, {
+              replace: true,
+            });
+          }
         }
-      }
-      setConversation(data?.conversationId?.messages);
-    },
-  });
-
+        setConversation(data?.conversationId?.messages);
+      },
+    }
+  );
 
   const { socket, sendMessage, events, isConnected, closeSocket } =
     useWebSocket(signalingServer, {
@@ -81,15 +84,13 @@ export const GroupDiscussion = () => {
 
   console.log({ socket, sessionId: data?._id });
 
-  const { localStream, remoteStreams, callPeer } = useAudioStreaming({
-    socket,
-    sendMessage,
-    sessionId,
-    groupDiscussionId
-  });
-  console.log({ socket, localStream, remoteStreams, callPeer });
-
- 
+  // const { localStream, remoteStreams, callPeer } = useAudioStreaming({
+  //   socket,
+  //   sendMessage,
+  //   sessionId,
+  //   groupDiscussionId,
+  // });
+  // console.log({ socket, localStream, remoteStreams, callPeer });
 
   const isConclusion = useMemo(() => {
     return conversation?.length > data?.discussionLength;
@@ -327,7 +328,7 @@ export const GroupDiscussion = () => {
     callPeer(targetPeerId);
   };
 
- if (issLoading) {
+  if (issLoading) {
     return (
       <div className="text-blue-500 w-full h-full place-content-center">
         Loading...
@@ -338,15 +339,19 @@ export const GroupDiscussion = () => {
   if (groupDiscussionError) {
     return <div>Error: {groupDiscussionError}</div>;
   }
-  
+
   return (
     <div className="flex gap-4 min-h-screen w-full bg-gray-700 text-gray-200 p-4">
       <div className="max-w-3xl w-full flex-1.5  bg-gray-800 shadow-lg rounded-lg p-8">
         <p className="font-bold">{data?.topic}</p>
-
-      
-  
-
+        <AudioStreamingComponent
+          socket={socket}
+          sessionId={sessionId}
+          groupDiscussionId={groupDiscussionId}
+        />
+        {/* {remoteStreams.map(({ peerId, stream }) => (
+          <audio key={peerId} srcObject={stream} autoPlay />
+        ))} */}
 
         {/* <DiscussionIndicator
           data={data}

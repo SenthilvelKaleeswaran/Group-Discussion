@@ -17,12 +17,14 @@ import { FaChevronUp } from "react-icons/fa";
 import { FaUsers } from "react-icons/fa";
 import { FaUserShield } from "react-icons/fa6";
 import { IoSettings } from "react-icons/io5";
+import { ImBlocked } from "react-icons/im";
 
 
 const Icon = ({ name, ...props }) => {
   const IconsList = {
     Admin : FaUserShield,
     Backward: IoPlayBack,
+    Block : ImBlocked,
     ChevronDown: FaChevronDown,
     ChevronUp: FaChevronUp,
     Correct: IoCheckmarkCircle,
