@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const http = require("http");
 const { Server } = require("socket.io");
+const { instrument } = require("@socket.io/admin-ui");
 
 dotenv.config();
 
@@ -43,26 +44,43 @@ app.use("/api/ai-model", aiModelRoutes);
 app.use("/api/session", sessionRoutes);
 
 // Default route for errors or undefined routes
-app.use((_, res) => {
-  res.status(404).json({ error: "Route not found" });
-});
 
 // Create an HTTP server
 const server = http.createServer(app);
 
-// Attach Socket.IO to the HTTP server
 const io = new Server(server, {
+  transports: ["websocket", "polling"],
   cors: {
-    origin: "*", // Update as per your client origin
-    methods: ["GET", "POST"],
+    origin: (origin, callback) => {
+      callback(null, true); 
+    },
+    methods: ["GET", "POST", "PATCH", "HEAD", "OPTIONS"],
   },
 });
 
-io.use(authSocketMiddleware);
-const connectedUsers = {};
+io.engine.on("headers", (headers, req) => {
+  const origin = req.headers.origin; 
+  if (origin === "https://admin.socket.io") {
+    headers["Access-Control-Allow-Origin"] = origin;
+    headers["Access-Control-Allow-Credentials"] = "true";
+  } else {
+    headers["Access-Control-Allow-Origin"] = "*"; 
+    headers["Access-Control-Allow-Credentials"] = "false";
+  }
+});
 
+instrument(io, {
+  auth: false,
+  mode: "development",
+});
+
+io.use(authSocketMiddleware);
 io.on("connection", (socket) => {
   socketHandler(io, socket);
+});
+
+app.use((_, res) => {
+  res.status(404).json({ error: "Route not found" });
 });
 
 // Start the server
