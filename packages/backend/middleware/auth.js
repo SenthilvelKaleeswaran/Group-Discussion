@@ -8,7 +8,8 @@ const authMiddleware = (req, res, next) => {
     req.user = verifyToken(token); // Attach decoded user to request
     next(); // Proceed to the next middleware or route handler
   } catch (err) {
-    res.status(401).json({ msg: err.message });
+    next()
+    // res.status(401).json({ msg: err.message });
   }
 };
 
