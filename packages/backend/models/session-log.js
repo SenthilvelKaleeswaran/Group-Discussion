@@ -2,11 +2,12 @@ const mongoose = require("mongoose");
 
 const SessionLogSchema = new mongoose.Schema(
   {
-    _id: {
+    groupDiscussionId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "GroupDiscussion",
       required: true,
     },
+    
     events: [
       {
         action: {

@@ -32,7 +32,6 @@ const DiscussionPoints = ({ data, isLiveDiscussion = false, events }) => {
   const [generatingMetrics, setGeneratingMetrics] = useState(false);
   const [currentMessageId, setCurrentMessageId] = useState(null);
 
-  console.log({ conversation, data });
 
   useEffect(() => {
     if (events && events.PERFORMANCE_METRICS) {

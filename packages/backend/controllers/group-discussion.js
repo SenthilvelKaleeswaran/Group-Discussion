@@ -7,7 +7,6 @@ const { DiscussionTopicPrompt } = require("../prompts");
 const SessionLog = require("../models/session-log");
 const Session = require("../models/session");
 
-
 // const generateAiParticipants = (n) => {
 //   const aiNames = ["AI-Alpha", "AI-Beta", "AI-Gamma", "AI-Delta", "AI-Epsilon"]; // Example AI names
 //   const aiParticipants = [];
@@ -56,9 +55,9 @@ const createGroupDiscussion = async (req, res) => {
     const sessionId = newSession?._id;
 
     await Promise.all([
-      new Participant({ _id: sessionId }).save(),
+      new Participant({ sessionId }).save(),
       new SessionLog({
-        _id: sessionId,
+        groupDiscussionId,
         events: [
           {
             action: "Group Discussion Created",
@@ -69,19 +68,6 @@ const createGroupDiscussion = async (req, res) => {
       GroupDiscussion.findByIdAndUpdate(groupDiscussionId, {
         activeSession: [sessionId],
       }),
-    ]);
-
-    await Promise.all([
-      new Participant({ _id: groupDiscussionId }).save(),
-      new SessionLog({
-        _id: groupDiscussionId,
-        events: [
-          {
-            action: "Group Discussion Created",
-            performedBy: req.user.userId,
-          },
-        ],
-      }).save(),
     ]);
 
     // // Update participants list by adding the creator (user who made the request)

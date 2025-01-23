@@ -41,11 +41,11 @@ const BlockSchema = new mongoose.Schema({
 
 const ParticipantSchema = new mongoose.Schema(
   {
-    // sessionId: {
-    //   type: mongoose.Schema.Types.ObjectId,
-    //   ref: "Session",
-    //   required: true,
-    // },
+    sessionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Session",
+      required: true,
+    },
     // groupDiscussionId: {
     //   type: mongoose.Schema.Types.ObjectId,
     //   ref: "GroupDiscussion",

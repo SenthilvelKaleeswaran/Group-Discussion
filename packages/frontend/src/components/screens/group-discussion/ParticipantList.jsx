@@ -10,7 +10,6 @@ export default function ParticipantList() {
     participants?.participant?.participant || participants?.participant || {}
   );
 
-  console.log({participants})
 
   return (
     <div>
