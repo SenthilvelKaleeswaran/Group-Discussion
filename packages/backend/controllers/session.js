@@ -9,7 +9,7 @@ const getActiveSession = async (req, res) => {
   console.log({ groupDiscussionId });
 
   const fetchSessionDetails = async (sessionId) => {
-    const participant = await Participant.findById(sessionId);
+    const participant = await Participant.findOne({ sessionId });
     const roleData = getRoleData(participant, req.user.userId);
 
     const session = await Session.findById(sessionId).populate({

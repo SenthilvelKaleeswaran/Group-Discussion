@@ -74,7 +74,7 @@ instrument(io, {
   mode: "development",
 });
 
-io.use(authSocketMiddleware);
+// io.use(authSocketMiddleware);
 io.on("connection", (socket) => {
   socketHandler(io, socket);
 });

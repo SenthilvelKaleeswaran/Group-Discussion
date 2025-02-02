@@ -8,13 +8,12 @@ export default function ModeratorsList() {
     (state) => state.participants
   );
 
-  const adminList = Object?.values(participants?.participant?.admin || {});
+  const adminList = Object?.values(participants?.admin || {});
   const listenerList = Object?.values(
     participants?.participant?.listener || {}
   );
-  const hostList = Object?.values(participants?.participant?.host || {});
+  const hostList = Object?.values(participants?.moderator || {});
 
-  console.log({ participants });
 
   return (
     <div>
