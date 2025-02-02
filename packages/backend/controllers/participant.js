@@ -1,12 +1,10 @@
 const Participant = require("../models/participant");
 
 const getParticipants = async (req, res) => {
-  console.log({req,res})
   const { sessionId } = req.params;
 
   try {
     const participants = await Participant.findOne({ sessionId })
-    console.log({participantsparticipants : participants})
     res.json(participants);
   } catch (error) {
     res.status(500).json({ msg: "Server Error" });

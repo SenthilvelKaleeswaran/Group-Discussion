@@ -23,13 +23,19 @@ const socketHandler = (io, socket) => {
 
     const { participant, role } = participantList;
 
-    const existingUsers = Array.from(participant?.values())
+    const list = [
+      ...participant?.participant,
+      ...participant?.listener,
+      ...participant?.admin,
+      ...participant?.moderator,
+    ];
+
+    const existingUsers = list
       .filter((value) => value.isActive && value.socketId !== socket.id)
       .map((value) => ({
         socketId: value.socketId,
         userId: value.userId,
       }));
-
 
     socket.emit("user-list", existingUsers);
 
@@ -46,6 +52,7 @@ const socketHandler = (io, socket) => {
         socket,
         userId,
         sessionId,
+        io
       });
     });
   });

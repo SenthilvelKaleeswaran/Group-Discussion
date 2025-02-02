@@ -6,7 +6,6 @@ const { getRoleData } = require("../shared/getUserRole");
 const getActiveSession = async (req, res) => {
   const { id } = req.params;
   const [groupDiscussionId, sessionId] = id.split("-");
-  console.log({ groupDiscussionId });
 
   const fetchSessionDetails = async (sessionId) => {
     const participant = await Participant.findOne({ sessionId });
