@@ -10,7 +10,6 @@ import {
   getGroupDiscussion,
 } from "../utils/api-call";
 import {
-  useAudioStreaming,
   useDiscussionSocket,
   useMembers,
   useSpeechRecognization,
@@ -32,7 +31,6 @@ import { fetchGroupDiscussion } from "../store";
 import { AudioStreamingComponent } from "../components/screens/group-discussion/AudioStreaminComponent";
 
 const signalingServer = "http://localhost:5000";
-const www = io("http://localhost:5000");
 
 export const GroupDiscussion = () => {
   const { id } = useParams();
@@ -445,7 +443,7 @@ export const GroupDiscussion = () => {
         />{" "}
       </div>
       <div className="w-full min-h-screen h-full overflow-scroll bg-gray-900 shadow-lg rounded-lg">
-        <DiscussionSettings />
+        <DiscussionSettings sessionId={sessionId} />
       </div>
     </div>
   );

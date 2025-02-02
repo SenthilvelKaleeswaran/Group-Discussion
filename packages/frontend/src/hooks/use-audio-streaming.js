@@ -1,210 +1,118 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
+import SimplePeer from "simple-peer";
 
-export const useAudioStreaming = ({ socket, sessionId, groupDiscussionId }) => {
-  const localStream = useRef(null);
+export const useStreaming = ({ socket, sessionId, groupDiscussionId }) => {
+  const [localStream, setLocalStream] = useState(null);
   const [remoteStreams, setRemoteStreams] = useState([]);
-  const peerConnections = useRef({});
+  const peersRef = useRef({});
   const userId = localStorage.getItem("userId");
 
-  const iceServers = {
-    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-  };
-
   useEffect(() => {
-    navigator.mediaDevices
-      .getUserMedia({ audio: true })
-      .then((stream) => {
-        localStream.current = stream;
-      })
-      .catch((err) => console.error("Error accessing local audio:", err));
-  }, []); // Initialize once on mount
+    if (!socket || !sessionId) return;
 
-  useEffect(() => {
-    // if (sessionId && socket) {
-    // Join session
-    socket.emit("JOIN_SESSION", { sessionId, groupDiscussionId, userId });
+    const initMedia = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        setLocalStream(stream);
+        socket.emit("join-room", { sessionId, userId, groupDiscussionId });
 
-    // Handle incoming events
+        socket.on("user-list", (users) => {
+          users.forEach(({ socketId }) => createPeer(socketId, stream));
+        });
 
-    socket.on("offer", async ({ senderId, sdp }) => {
-      console.log("Received offer from:", senderId);
-      await handleOffer(senderId, sdp);
-    });
+        socket.on("receive-signal", ({ socketId, signal }) => {
+          if (!peersRef.current[socketId]) {
+            handleIncomingPeer(socketId, signal, stream);
+          } else {
+            peersRef.current[socketId].signal(signal);
+          }
+        });
 
-    socket.on("answer", async ({ senderId, sdp }) => {
-      console.log("Received answer from:", senderId);
-      await handleAnswer(senderId, sdp);
-    });
+        socket.on("user-left", ({socketId}) => {
+          console.log("User left:", socketId);  // Log user leaving
+          removePeer(socketId);
+        });
+      } catch (error) {
+        console.error("Error accessing media devices:", error);
+      }
+    };
 
-    socket.on("candidate", async ({ senderId, candidate }) => {
-      console.log("Received candidate from:", senderId);
-      await handleCandidate(senderId, candidate);
-    });
+    initMedia();
 
-    socket.on("USER_JOINED", ({ userId }) => {
-      callPeer(userId);
-    });
-
-    socket.on("USER_LEFT", ({ userId }) => {
-      removePeerConnection(userId);
-    });
-
-    // Handle tab/browser close
+    // Handle tab close/refresh or browser navigation events
     const handleBeforeUnload = () => {
-      socket.emit("LEAVE_SESSION", { sessionId, groupDiscussionId, userId });
-      socket.disconnect();
-      cleanupConnections();
+      socket.emit("user-left", {  userId, sessionId });
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
 
-    // Cleanup
     return () => {
+      // Clean up listeners and stop local stream
       window.removeEventListener("beforeunload", handleBeforeUnload);
-      cleanupConnections();
+      
+      socket.off("user-list");
+      socket.off("receive-signal");
+
+      if (localStream) localStream.getTracks().forEach((track) => track.stop());
+
+      Object.values(peersRef.current).forEach((peer) => peer.destroy());
+      peersRef.current = {};
+
+      // Emit 'user-left' when the user disconnects or leaves
+      socket.emit("user-left", {  userId, sessionId });
     };
-    // }
-  }, [sessionId, userId, groupDiscussionId, socket]);
+  }, [socket, sessionId, groupDiscussionId]);
 
-  const createPeerConnection = useCallback(
-    (peerId) => {
-      const peerConnection = new RTCPeerConnection(iceServers);
+  const createPeer = (socketId, stream) => {
+    if (peersRef.current[socketId]) return;
 
-      console.log({ localStream });
+    const peer = new SimplePeer({ initiator: true, trickle: false, stream });
 
-      if (localStream.current) {
-        localStream.current.getTracks().forEach((track) => {
-          console.log({ aaaaa: track });
-          // peerConnection.addTrack(track, localStream.current);
-          peerConnection.addStream(localStream.current);
-        });
-      } else {
-        console.error("No localStream available to add tracks.");
-      }
-
-      peerConnection.ontrack = (event) => {
-        console.log(
-          "ontrack event fired. Streams:",
-          event.streams,
-          peerId,
-          remoteStreams
-        );
-        if (event.streams[0]) {
-          setRemoteStreams((prev) => [
-            ...prev.filter((stream) => stream.peerId !== peerId),
-            { peerId, stream: event.streams[0] },
-          ]);
-        } else {
-          console.error("No streams in ontrack event.");
-        }
-      };
-
-      peerConnection.onicecandidate = (event) => {
-        if (event.candidate) {
-          console.log("Sending ICE candidate:", event.candidate);
-          socket.emit("candidate", {
-            sessionId,
-            groupDiscussionId,
-            receiverId: peerId,
-            candidate: event.candidate,
-          });
-        }
-      };
-
-      peerConnections.current[peerId] = peerConnection;
-      return peerConnections.current[peerId];
-    },
-    [sessionId, socket]
-  );
-
-  const callPeer = async (peerId) => {
-    const peerConnection = createPeerConnection(peerId);
-
-    const offer = await peerConnection.createOffer();
-    await peerConnection.setLocalDescription(offer);
-
-    socket.emit("offer", {
-      sessionId,
-      receiverId: peerId,
-      groupDiscussionId,
-      sdp: offer,
+    peer.on("signal", (signal) => {
+      socket.emit("send-signal", { signal, to: socketId });
     });
-  };
 
-  const handleOffer = async (peerId, offer) => {
-    const peerConnection = createPeerConnection(peerId);
-
-    await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-
-    const answer = await peerConnection.createAnswer();
-    await peerConnection.setLocalDescription(answer);
-
-    socket.emit("answer", {
-      sessionId,
-      receiverId: peerId,
-      groupDiscussionId,
-      sdp: answer,
+    peer.on("stream", (remoteStream) => {
+      setRemoteStreams((prev) => [
+        ...prev.filter((p) => p.socketId !== socketId),
+        { socketId, stream: remoteStream },
+      ]);
     });
+
+    peer.on("error", (error) => console.error("Peer error:", error));
+
+    peersRef.current[socketId] = peer;
   };
 
-  const handleAnswer = async (peerId, answer) => {
-    const peerConnection = peerConnections.current[peerId];
-    if (!peerConnection) {
-      console.error(`Peer connection not found for ${peerId}`);
-      return;
-    }
+  const handleIncomingPeer = (socketId, incomingSignal, stream) => {
+    const peer = new SimplePeer({ initiator: false, trickle: false, stream });
 
-    // Log the current signaling state
-    console.log(
-      `Signaling state for ${peerId}:`,
-      peerConnection.signalingState,
-      peerConnection.remoteDescription
-    );
-
-    // Ensure the remote description isn't already set
-    if (peerConnection.remoteDescription) {
-      console.warn(`Remote description already set for ${peerId}`);
-      return;
-    }
-
-    try {
-      // Set the remote description
-      const a = await peerConnection.setRemoteDescription(
-        new RTCSessionDescription(answer)
-      );
-      console.log(`Remote description set successfully for ${peerId}`, a);
-    } catch (error) {
-      console.error(`Error setting remote description for ${peerId}:`, error);
-    }
-  };
-
-  const handleCandidate = async (peerId, candidate) => {
-    const peerConnection = peerConnections.current[peerId];
-    if (peerConnection) {
-      await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-    }
-  };
-
-  const removePeerConnection = (peerId) => {
-    if (peerConnections.current[peerId]) {
-      peerConnections.current[peerId].close();
-      delete peerConnections.current[peerId];
-      setRemoteStreams((prev) =>
-        prev.filter((stream) => stream.peerId !== peerId)
-      );
-    }
-  };
-
-  const cleanupConnections = () => {
-    Object.values(peerConnections.current).forEach((peerConnection) => {
-      peerConnection.close();
+    peer.on("signal", (signal) => {
+      socket.emit("send-signal", { signal, to: socketId });
     });
-    peerConnections.current = {};
-    setRemoteStreams([]);
+
+    peer.on("stream", (remoteStream) => {
+      setRemoteStreams((prev) => [
+        ...prev.filter((p) => p.socketId !== socketId),
+        { socketId, stream: remoteStream },
+      ]);
+    });
+
+    peer.signal(incomingSignal);
+    peer.on("error", (error) => console.error("Peer error:", error));
+
+    peersRef.current[socketId] = peer;
   };
 
-  return {
-    localStream: localStream.current,
-    remoteStreams,
+  const removePeer = (socketId) => {
+    console.log({peersRef,remoteStreams})
+    if (peersRef.current[socketId]) {
+      console.log({ removePeer: socketId });
+      peersRef.current[socketId].destroy();
+      delete peersRef.current[socketId];
+    }
+    setRemoteStreams((prev) => prev.filter((p) => p.socketId !== socketId));
   };
+
+  return { localStream, remoteStreams };
 };

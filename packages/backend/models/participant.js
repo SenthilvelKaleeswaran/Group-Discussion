@@ -61,6 +61,11 @@ const ParticipantSchema = new mongoose.Schema(
       of: DetailsSchema,
       default: {},
     },
+    moderator: {
+      type: Map,
+      of: DetailsSchema,
+      default: {},
+    },
     listener: {
       type: Map,
       of: DetailsSchema,

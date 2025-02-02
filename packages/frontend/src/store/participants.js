@@ -4,9 +4,11 @@ import { getParticipants } from "../utils/api-call";
 // Thunk to fetch participants by groupDiscussionId
 export const fetchParticipants = createAsyncThunk(
   "participants/fetchParticipants",
-  async (groupDiscussionId, { rejectWithValue }) => {
+  async (sessionId, { rejectWithValue }) => {
     try {
-      return await getParticipants(groupDiscussionId);
+      const data=  await getParticipants(sessionId);
+      console.log({dataaaa : data})
+      return data
     } catch (error) {
       return rejectWithValue(
         error.response?.data || "Failed to fetch participants"
@@ -44,5 +46,5 @@ const participantsSlice = createSlice({
   },
 });
 
-export const { updateParticipants } = participantsSlice.actions;
+export const { updateParticipants} = participantsSlice.actions;
 export default participantsSlice.reducer;

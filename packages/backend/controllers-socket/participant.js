@@ -42,24 +42,25 @@ const deleteParticipant = async ({ groupDiscussionId, userId, role }) => {
 
 const addParticipant = async ({
   socket,
-  io,
   groupDiscussionId,
   sessionId,
   userId,
 }) => {
-  // console.log({ groupDiscussionId, userId, name });
-
   if (!groupDiscussionId || !userId || !sessionId) {
-    console.error("Error: groupDiscussionId and userId is required");
+    console.error(
+      "Error: groupDiscussionId and userId is required",
+      groupDiscussionId,
+      userId,
+      sessionId
+    );
     return;
   }
 
   try {
-    // Fetch the participants
-    let participant = await Participant.findById(sessionId);
-    console.log({ participant });
-
+    let participant = await Participant.findOne({ sessionId });
     const type = getUserRole(participant, userId);
+
+    console.log({ttt :participant})
 
     if (!participant[type]) {
       participant[type] = new Map();
@@ -72,15 +73,13 @@ const addParticipant = async ({
       user.timing.push({ joinedAt: new Date(), leftAt: null });
       participant[type].set(userId, user);
     } else {
-      console.log("flag2");
+      const admins = ['67850bd81755c252af4a35fb','67541f953969247972408a47']
+
+      const type = admins.includes(userId) ? 'admin' : 'participant'
 
       const userDetail =
         (await UserDetails.findById(userId)) || (await User.findById(userId));
-
-      console.log({userId})
-
-      // Add new participant
-      participant.admin.set(userId, {
+      participant[type].set(userId, {
         userId,
         socketId: socket.id,
         name: userDetail?.name || userDetail?.email,
@@ -90,32 +89,23 @@ const addParticipant = async ({
       });
     }
 
-    await participant.save(); // Save the session
+    await participant.save();
+    socket.join(sessionId);
 
-    // Join socket room and notify others
-    const currentSession = `${groupDiscussionId}_${sessionId}`;
-
-    // socket.join(currentSession);
-    // socket.to(currentSession).emit("USER_JOINED", { userId });
-    socket.emit("USER_JOINED", { userId });
-
-    const particpantList = getRoleData(participant, userId);
-    console.log({particpantList})
-    io.emit("PARTICIPANTS_UPDATED", particpantList);
+    const participantList = getRoleData(participant, userId, type);
+    return participantList;
   } catch (err) {
     console.error("Error joining session:", err);
   }
 };
 
 const leftParticipant = async ({
-  io,
   socket,
   sessionId,
-  groupDiscussionId,
   userId,
 }) => {
   try {
-    let participant = await Participant.findById(sessionId);
+    let participant = await Participant.findOne({ sessionId });
 
     const type = getUserRole(participant, userId);
 
@@ -126,22 +116,7 @@ const leftParticipant = async ({
       participant[type].set(userId, user);
       await participant.save();
 
-
-      socket.to(groupDiscussionId).emit("USER_LEFT", { userId });
-
-      const currentSession = `${groupDiscussionId}_${sessionId}`;
-
-      const particpantList = getRoleData(participant, userId);
-      io.to(currentSession).emit("PARTICIPANTS_UPDATED", particpantList);
-
-      // Remove session if no active participants
-      // const activeParticipants = Array.from(
-      //   session.participant.values()
-      // ).filter((participant) => participant.isActive);
-
-      // if (activeParticipants.length === 0) {
-      //   await Participant.findByIdAndDelete(groupDiscussionId);
-      // }
+      socket.to(sessionId).emit("user-left", {socketId : socket.id});  
     }
   } catch (err) {
     console.error("Error leaving session:", err);

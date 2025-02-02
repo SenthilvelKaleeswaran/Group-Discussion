@@ -4,9 +4,9 @@ import { useWebSocket } from "./use-web-socket";
 import { useDiscussionSocket } from "./use-discussion-socket";
 import { useMembers } from "./useMembers";
 import { useOutsideClickListener } from "./use-outside-listener";
-import { useAudioStreaming } from "./use-audio-streaming";
+import { useStreaming } from "./use-audio-streaming";
 export {
-    useAudioStreaming,
+    useStreaming,
     useDiscussionSocket,
     useMembers,
     useOutsideClickListener,

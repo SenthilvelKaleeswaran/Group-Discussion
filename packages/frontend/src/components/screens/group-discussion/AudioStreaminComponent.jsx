@@ -1,65 +1,46 @@
-import React, { useEffect } from "react";
-import { useAudioStreaming } from "../../../hooks";
-import { RenderSpace } from "../../shared";
+import React, { useRef, useEffect } from "react";
+import { useStreaming } from "../../../hooks";
 
-export const AudioStreamingComponent = ({
-  socket,
-  sessionId,
-  groupDiscussionId,
-}) => {
-  const { localStream, remoteStreams } = useAudioStreaming({
+export const AudioStreamingComponent = ({socket,sessionId,groupDiscussionId}) => {
+  const { localStream, remoteStreams } = useStreaming({
     socket,
     sessionId,
     groupDiscussionId,
   });
-  console.log({ localStream, remoteStreams });
+
+  const localVideoRef = useRef();
 
   useEffect(() => {
-    remoteStreams.forEach(({ peerId, stream }) => {
-      const audioElement = document.getElementById(`audio-${peerId}`);
-      if (audioElement && stream) {
-        audioElement.srcObject = stream;
-        audioElement.play().catch((err) => console.error("Error playing audio:", err));
-      }
-    });
-  }, [remoteStreams]);
+    if (localStream && localVideoRef.current) {
+      localVideoRef.current.srcObject = localStream;
+    }
+  }, [localStream]);
 
   return (
-    <div>
-      <h1>Audio Streaming</h1>
-      {/* <RenderSpace condition={localStream}>
-        <div>
-          <h2>Your Audio</h2>
-          <audio
-            autoPlay
-            ref={(audio) => {
-              if (audio) audio.srcObject = localStream;
-            }}
-          />
-        </div>
-      </RenderSpace> */}
-
-      <RenderSpace condition={remoteStreams?.length > 0}>
-        <div>
-          <h2>Remote Audio Streams</h2>
-          {/* {remoteStreams.map(({ peerId, stream }) => (
-  <audio key={peerId} id={`audio-${peerId}`} srcObject={stream} autoPlay />
-))} */}
-          {remoteStreams.map(({ peerId, stream }) => (
-            <div key={peerId}>
-              <h3>Peer {peerId}</h3>
-              <audio
-                autoPlay
-                ref={(audio) => {
-                  if (audio) audio.srcObject = stream;
-                }}
-                key={peerId}
-                id={`audio-${peerId}`}
-              />
-            </div>
-          ))}
-        </div>
-      </RenderSpace>
+    <div className="p-8">
+      <h2>Video Conference</h2>
+      <video ref={localVideoRef} autoPlay muted style={{ width: "300px", border: "2px solid black" }} />
+      <div className="p-4">
+        <h3>Remote Streams</h3>
+        {remoteStreams.map(({ socketId, stream }) => (
+          <>
+          <RemoteVideo key={socketId} stream={stream} />
+          <div>{socketId}</div>
+          </>
+        ))}
+      </div>
     </div>
   );
+};
+
+const RemoteVideo = ({ stream }) => {
+  const ref = useRef();
+
+  useEffect(() => {
+    if (stream && ref.current) {
+      ref.current.srcObject = stream;
+    }
+  }, [stream]);
+
+  return <video ref={ref} autoPlay playsInline className="border w-40 h-20 border-red-500 rounded-md" />;
 };
