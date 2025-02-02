@@ -3,6 +3,7 @@ import { updateMessage } from "./conversation";
 import {
   fetchGroupDiscussion,
   updateGroupDiscussion,
+  updateUserRole,
 } from "./group-discussion";
 import { updateParticipants, fetchParticipants } from "./participants";
 
@@ -13,4 +14,5 @@ export {
   updateMessage,
   updateParticipants,
   fetchParticipants,
+  updateUserRole
 };

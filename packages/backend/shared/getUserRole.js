@@ -13,20 +13,19 @@ const getUserRole = (participant, userId) => {
 };
 
 const getRoleData = (participant, userId, type) => {
-  console.log({participant})
   const {
-    listener={},
-    moderator={},
-    admin={},
-    participant: participantList={},
+    listener = {},
+    moderator = {},
+    admin = {},
+    participant: participantList = {},
   } = participant;
 
-  let list = [
-    ...Array.from((listener)?.values()),
-    ...Array.from((moderator)?.values()),
-    ...Array.from((admin)?.values()),
-    ...Array.from((participantList)?.values()),
-  ];
+  let list = {
+    listener: Array.from(listener?.values()),
+    moderator: Array.from(moderator?.values()),
+    admin: Array.from(admin?.values()),
+    participant: Array.from(participantList?.values()),
+  };
 
   if (type === "admin") {
   } else if (type === "listener") {

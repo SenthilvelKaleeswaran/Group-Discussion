@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
-import { updateParticipants } from "../store";
+import { updateGroupDiscussion, updateParticipants } from "../store";
 
 export const useDiscussionSocket = ({
   events,
@@ -16,7 +16,7 @@ export const useDiscussionSocket = ({
 }) => {
 
   const dispatch = useDispatch();
-  
+
   useEffect(() => {
     if (events.RANDOM_MEMBER) {
       const { isLoading, randomMember } = events.RANDOM_MEMBER;
@@ -90,9 +90,11 @@ export const useDiscussionSocket = ({
   }, [events.COMPLETED]);
 
   useEffect(() => {
-    if (events.PARTICIPANTS_UPDATED) {
-      const participants = events.PARTICIPANTS_UPDATED
-      dispatch(updateParticipants(participants));
+    if (events.PARTICIPANT_LIST) {
+      const { participant, role } = events.PARTICIPANT_LIST;
+      console.log({ PARTICIPANT_LIST: participant, role });
+      dispatch(updateParticipants(participant));
+      dispatch(updateGroupDiscussion(role));
     }
-  }, [events.PARTICIPANTS_UPDATED]);
+  }, [events.PARTICIPANT_LIST]);
 };
