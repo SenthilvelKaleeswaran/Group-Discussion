@@ -4,8 +4,7 @@ import { fetchParticipants } from "../../../store";
 import { RenderSpace } from "../../shared";
 import { PeopleList } from "./Components";
 
-export default function ParticipantList({ sessionId }) {
-  const dispatch = useDispatch();
+export default function ParticipantList({socket, sessionId }) {
   const { participants, loading, error } = useSelector(
     (state) => state.participants
   );
@@ -22,7 +21,7 @@ export default function ParticipantList({ sessionId }) {
 
       <RenderSpace condition={participantList.length}>
         
-        <PeopleList list={participantList} title={'Participants List'} />
+        <PeopleList list={participantList} title={'Participants List'} socket={socket} sessionId={sessionId} />
       </RenderSpace>
     </div>
   );

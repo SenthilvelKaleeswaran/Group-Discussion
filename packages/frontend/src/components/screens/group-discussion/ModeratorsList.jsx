@@ -3,28 +3,22 @@ import { useSelector } from "react-redux";
 import { PeopleList } from "./Components";
 import { RenderSpace } from "../../shared";
 
-export default function ModeratorsList() {
-  const { participants, loading, error } = useSelector(
-    (state) => state.participants
-  );
+export default function ModeratorsList({ sessionId, socket }) {
+  const { participants } = useSelector((state) => state.participants);
 
-  const adminList = Object?.values(participants?.admin || {});
-  const listenerList = Object?.values(
-    participants?.participant?.listener || {}
-  );
-  const hostList = Object?.values(participants?.moderator || {});
+  const listData = [
+    { title: "Admin List", list: Object.values(participants?.admin || {}) },
+    { title: "Moderators List", list: Object.values(participants?.moderator || {}) },
+    { title: "Listeners List", list: Object.values(participants?.participant?.listener || {}) },
+  ];
 
   return (
     <div>
-      <RenderSpace condition={adminList.length}>
-        <PeopleList list={adminList} title={"Admin List"} />
-      </RenderSpace>
-      <RenderSpace condition={hostList.length}>
-        <PeopleList list={hostList} title={"Moderators List"} />
-      </RenderSpace>
-      <RenderSpace condition={listenerList.length}>
-        <PeopleList list={listenerList} title={"Listeners List"} />
-      </RenderSpace>
+      {listData.map(({ title, list }) => (
+        <RenderSpace key={title} condition={list.length}>
+          <PeopleList list={list} title={title} socket={socket} sessionId={sessionId} />
+        </RenderSpace>
+      ))}
     </div>
   );
 }

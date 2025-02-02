@@ -17,8 +17,8 @@ import { FaChevronUp } from "react-icons/fa";
 import { FaUsers } from "react-icons/fa";
 import { FaUserShield } from "react-icons/fa6";
 import { IoSettings } from "react-icons/io5";
+import { FiMicOff } from "react-icons/fi";
 import { ImBlocked } from "react-icons/im";
-
 
 const Icon = ({ name, ...props }) => {
   const IconsList = {
@@ -30,6 +30,7 @@ const Icon = ({ name, ...props }) => {
     Correct: IoCheckmarkCircle,
     Forward: IoPlayForward,
     MicrophoneOn: FiMic,
+    MicrophoneOff : FiMicOff,
     HorizontalDots: HiDotsHorizontal,
     Loader: FiLoader,
     Pause: FaPause,

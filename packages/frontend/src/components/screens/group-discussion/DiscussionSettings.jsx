@@ -4,19 +4,19 @@ import { TabComposed } from "../../ui";
 import ParticipantList from "./ParticipantList";
 import ModeratorsList from "./ModeratorsList";
 
-export function DiscussionSettings({sessionId}) {
+export function DiscussionSettings({socket,sessionId}) {
   const DISCUSSION_TAB_LIST = [
     {
       id: "participants",
       //   label: "Participants",
       icon: "Users",
-      component: <ParticipantList  sessionId={sessionId}  />,
+      component: <ParticipantList  sessionId={sessionId} socket={socket}  />,
     },
     {
       id: "admin-controls",
       //   label: "Settings",
       icon: "Admin",
-      component: <ModeratorsList />,
+      component: <ModeratorsList sessionId={sessionId} socket={socket} />,
     },
     {
       id: "settings",

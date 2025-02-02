@@ -1,6 +1,7 @@
 const {
   addParticipant,
   leftParticipant,
+  updateMuteStatus,
 } = require("./controllers-socket/participant");
 
 const getRoomSockets = (io, roomId) => {
@@ -44,7 +45,11 @@ const socketHandler = (io, socket) => {
       .emit("user-joined", { newUserSocketId: socket.id, userId });
 
     socket.on("send-signal", ({ signal, to }) => {
-      io.to(to).emit("receive-signal", { signal, userId, socketId: socket.id });
+      io.to(to).emit("receive-signal", {
+        signal,
+        userId,
+        socketId: socket.id,
+      });
     });
 
     socket.on("user-left", async ({ userId, sessionId }) => {
@@ -52,9 +57,22 @@ const socketHandler = (io, socket) => {
         socket,
         userId,
         sessionId,
-        io
+        io,
       });
     });
+
+    socket.on(
+      "toggle-mute",
+      async ({ sessionId, userId, targetUserId, isMuted }) => {
+        await updateMuteStatus({
+          userId,
+          sessionId,
+          isMuted,
+          io,
+          targetUserId,
+        });
+      }
+    );
   });
 };
 

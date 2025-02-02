@@ -1,14 +1,28 @@
-import React, { useRef, useEffect } from "react";
-import { useStreaming } from "../../../hooks";
+import React, { useRef, useEffect, useState } from "react";
+import { useAudioControls, useStreaming } from "../../../hooks";
+import { Button } from "../../ui";
+import { RenderSpace } from "../../shared";
 
-export const AudioStreamingComponent = ({socket,sessionId,groupDiscussionId}) => {
+export const AudioStreamingComponent = ({
+  socket,
+  sessionId,
+  groupDiscussionId,
+}) => {
   const { localStream, remoteStreams } = useStreaming({
     socket,
     sessionId,
     groupDiscussionId,
   });
 
+  const { mutedUsers, toggleMute, isMuteLoading, muteInitialLoad, mutingList } =
+    useAudioControls({
+      localStream,
+      socket,
+      sessionId,
+    });
+
   const localVideoRef = useRef();
+  const userId = localStorage.getItem("userId");
 
   useEffect(() => {
     if (localStream && localVideoRef.current) {
@@ -16,24 +30,60 @@ export const AudioStreamingComponent = ({socket,sessionId,groupDiscussionId}) =>
     }
   }, [localStream]);
 
+  const isMuted = mutedUsers?.includes(userId);
+
   return (
     <div className="p-8">
       <h2>Video Conference</h2>
-      <video ref={localVideoRef} autoPlay muted style={{ width: "300px", border: "2px solid black" }} />
+
+      <video
+        ref={localVideoRef}
+        autoPlay
+        playsInline
+        muted={isMuted || muteInitialLoad}
+        style={{ width: "300px", border: "2px solid black" }}
+      />
+
+      <RenderSpace condition={!muteInitialLoad}>
+        <Button
+          onClick={() => toggleMute(userId, !isMuted)}
+          label={
+            mutingList?.includes(userId)
+              ? "Loading..."
+              : isMuted
+              ? "Unmute Myself"
+              : "Mute Myself"
+          }
+          disabled={mutingList?.includes(userId) || muteInitialLoad}
+        />
+      </RenderSpace>
+
       <div className="p-4">
         <h3>Remote Streams</h3>
-        {remoteStreams.map(({ socketId, stream }) => (
-          <>
-          <RemoteVideo key={socketId} stream={stream} />
-          <div>{socketId}</div>
-          </>
+        {remoteStreams.map(({ socketId, stream, userId }) => (
+          <RemoteVideo
+            key={socketId}
+            stream={stream}
+            userId={userId}
+            mutedUsers={mutedUsers}
+            toggleMute={toggleMute}
+            muteInitialLoad={muteInitialLoad}
+            mutingList={mutingList}
+          />
         ))}
       </div>
     </div>
   );
 };
 
-const RemoteVideo = ({ stream }) => {
+const RemoteVideo = ({
+  stream,
+  userId,
+  mutedUsers,
+  toggleMute,
+  muteInitialLoad,
+  mutingList,
+}) => {
   const ref = useRef();
 
   useEffect(() => {
@@ -42,5 +92,29 @@ const RemoteVideo = ({ stream }) => {
     }
   }, [stream]);
 
-  return <video ref={ref} autoPlay playsInline className="border w-40 h-20 border-red-500 rounded-md" />;
+  const isMuted = mutedUsers?.includes(userId);
+
+  return (
+    <div>
+      <video
+        ref={ref}
+        autoPlay
+        playsInline
+        muted={isMuted || muteInitialLoad}
+      />
+      <p>User: {userId}</p>
+
+      <Button
+        onClick={() => toggleMute(userId, !isMuted)}
+        label={
+          mutingList?.includes(userId)
+            ? "Loading..."
+            : isMuted
+            ? "Unmute"
+            : "Mute"
+        }
+        disabled={mutingList?.includes(userId) || muteInitialLoad}
+      />
+    </div>
+  );
 };
