@@ -24,8 +24,6 @@ const apiCall = async ({ endpoint, method = "GET", data = null }) => {
   try {
     const response = await axios(apiUrl, requestOptions);
     const data = response.data;
-    console.log({ data });
-
     return data;
   } catch (error) {
     console.error("API call error:", error);

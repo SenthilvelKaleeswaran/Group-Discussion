@@ -1,10 +1,12 @@
 const Participant = require("../models/participant");
 
 const getParticipants = async (req, res) => {
-  const { groupDiscussionId } = req.params;
+  console.log({req,res})
+  const { sessionId } = req.params;
 
   try {
-    const participants = await Participant.find({ groupDiscussionId })
+    const participants = await Participant.findOne({ sessionId })
+    console.log({participantsparticipants : participants})
     res.json(participants);
   } catch (error) {
     res.status(500).json({ msg: "Server Error" });
@@ -64,35 +66,7 @@ const deleteParticipant = async ({ groupDiscussionId, userId, role }) => {
   );
 };
 
-const addParticipant = async ({})=>{
-  try {
-    // Find or create the session
-    let session = await Participant.findOne({ sessionId });
-    if (!session) {
-      session = new Participant({ sessionId, participants: [] });
-      await session.save();
-    }
 
-    // Add the participant to the session
-    const participant = new Participant({
-      socketId: socket.id,
-      sessionId,
-      userId,
-    });
-    await participant.save();
-
-    session.participants.push(participant._id);
-    await session.save();
-
-    console.log(`User ${userId} joined session ${sessionId}`);
-
-    // Notify other participants in the session
-    socket.join(sessionId);
-    socket.to(sessionId).emit("USER_JOINED", { userId, socketId: socket.id });
-  } catch (error) {
-    console.error("Error joining session:", error);
-  }
-}
 
 module.exports = {
   createParticipant,
