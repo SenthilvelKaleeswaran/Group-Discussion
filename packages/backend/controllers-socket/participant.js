@@ -1,7 +1,11 @@
 const Participant = require("../models/participant");
 const UserDetails = require("../models/user-details");
 const User = require("../models/user");
-const { getUserRole, getRoleData } = require("../shared/getUserRole");
+const {
+  getUserRole,
+  getRoleData,
+  getUserData,
+} = require("../shared/getUserRole");
 
 const updateParticipant = async ({
   groupDiscussionId,
@@ -123,25 +127,54 @@ const leftParticipant = async ({ socket, sessionId, userId, io }) => {
   }
 };
 
-const updateMuteStatus = async ({ io, userId,targetUserId, sessionId, isMuted }) => {
+const updateMuteStatus = async ({
+  io,
+  socket,
+  userId,
+  targetUserId,
+  sessionId,
+  isMuted,
+}) => {
   try {
     let participant = await Participant.findOne({ sessionId });
 
-    const type = getUserRole(participant, targetUserId);
+    const { role, user } = getUserData(participant, targetUserId);
 
-    if (type) {
-      const user = participant[type].get(targetUserId);
+    if (user) {
+      const user = participant[role].get(targetUserId);
       user.muteStatus = isMuted;
-      participant[type].set(targetUserId, user);
+      participant[role].set(targetUserId, user);
 
       await participant.save();
 
-      io.to(sessionId).emit("mute-status-changed", { targetUserId, isMuted,userId });
+      io.to(sessionId).emit("mute-status-changed", {
+        targetUserId,
+        isMuted,
+        userId,
+      });
+
+      if (userId !== targetUserId) {
+        socket.emit("MUTE_SUCCESS", {
+          message: `Successfully ${isMuted ? "muted" : "unmuted"} ${user.name}`,
+        });
+
+        const { user: mutedBy } = getUserData(participant, userId);
+
+        if (mutedBy) {
+          io.to(user.socketId).emit("USER_MUTED", {
+            message: `You were ${isMuted ? "muted" : "unmuted"} by ${
+              mutedBy.name
+            }`,
+          });
+        }
+      }
     }
   } catch (err) {
-    console.error("Error toggling mute status:", err);
+    console.error(err);
+    socket.emit("MUTE_ERROR", {
+      message: "Error muting user. Please try again.",
+    });
   }
- 
 };
 
 module.exports = {
@@ -149,6 +182,5 @@ module.exports = {
   leftParticipant,
   updateMuteStatus,
   updateParticipant,
-
   deleteParticipant,
 };

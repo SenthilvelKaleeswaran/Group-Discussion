@@ -7,6 +7,7 @@ import {
   updateParticipants,
   updateUserRole,
 } from "../store";
+import toast from "react-hot-toast";
 
 export const useDiscussionSocket = ({
   events,
@@ -130,4 +131,27 @@ export const useDiscussionSocket = ({
     if (events.UPDATED_CONTROLS) {
     }
   }, [events.UPDATED_CONTROLS]);
+  console.log({ events });
+
+  useEffect(() => {
+    if (events.MUTE_SUCCESS) {
+      const { message } = events.MUTE_SUCCESS;
+      toast.success(message);
+    }
+  }, [events.MUTE_SUCCESS]);
+
+  useEffect(() => {
+    if (events.USER_MUTED) {
+      const { message } = events.USER_MUTED;
+      toast.success(message);
+    }
+  }, [events.USER_MUTED]);
+
+  useEffect(() => {
+    if (events.MUTE_ERROR) {
+      const { message } = events.MUTE_ERROR;
+      toast.error(message);
+    }
+  }, [events.MUTE_ERROR]);
+
 };

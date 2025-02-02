@@ -12,7 +12,6 @@ import {
   setMutingList,
   setMuteInitialLoad,
 } from "./controls";
-import { setSocket } from "./socket";
 
 export {
   store,
@@ -26,5 +25,4 @@ export {
   setMuteInitialLoad,
   setMutingList,
   updateMutedParticipants,
-  setSocket,
 };

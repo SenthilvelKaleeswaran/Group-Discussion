@@ -12,6 +12,13 @@ const getUserRole = (participant, userId) => {
   }
 };
 
+const getUserData = (participant, userId) => {
+  const type = getUserRole(participant, userId);
+  if (type) {
+    return { role: type, user: participant[type].get(userId) };
+  }
+};
+
 const getRoleData = (participant, userId, type) => {
   const {
     listener = {},
@@ -39,6 +46,7 @@ const getRoleData = (participant, userId, type) => {
 };
 
 module.exports = {
+  getUserData,
   getUserRole,
   getRoleData,
 };
