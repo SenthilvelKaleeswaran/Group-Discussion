@@ -61,18 +61,9 @@ const socketHandler = (io, socket) => {
       });
     });
 
-    socket.on(
-      "toggle-mute",
-      async ({ sessionId, userId, targetUserId, isMuted }) => {
-        await updateMuteStatus({
-          userId,
-          sessionId,
-          isMuted,
-          io,
-          targetUserId,
-        });
-      }
-    );
+    socket.on("toggle-mute", async (data) => {
+      await updateMuteStatus({ socket, io, ...data });
+    });
   });
 };
 

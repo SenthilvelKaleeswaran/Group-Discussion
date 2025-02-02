@@ -22,7 +22,7 @@ export const PeopleList = ({ list, title, socket, sessionId }) => {
                 className=""
                 onClick={(e) => {
                   e.stopPropagation();
-                  toggleMute(item?.userId, mutedUsers?.includes(item?.userId));
+                  toggleMute(item?.userId, !mutedUsers?.includes(item?.userId));
                 }}
               >
                 <IconWithLoader
