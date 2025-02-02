@@ -1,61 +1,95 @@
 const Conversation = require('../models/conversation');
 
+const getConversation = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ msg: "Conversation ID is required." });
+    }
+
+    const conversation = await Conversation.findById(id);
+
+    if (!conversation) {
+      return res.status(404).json({ msg: "Conversation not found." });
+    }
+
+    res.status(200).json(conversation);
+  } catch (error) {
+    console.error("Error fetching conversation:", error);
+    res.status(500).json({ msg: "Internal server error." });
+  }
+};
+
 // Create a new conversation
 const createConversation = async (req, res) => {
-  const { groupDiscussionId, messages } = req.body;
-
   try {
-    const newConversation = new Conversation({
-      groupDiscussionId,
-      messages,
-    });
+    const { title, participants, messages } = req.body;
 
+    if (!title || !participants) {
+      return res.status(400).json({ msg: "Title and participants are required." });
+    }
+
+    const newConversation = new Conversation({ title, participants, messages });
     await newConversation.save();
+
     res.status(201).json(newConversation);
   } catch (error) {
-    res.status(500).json({ msg: 'Server Error' });
+    console.error("Error creating conversation:", error);
+    res.status(500).json({ msg: "Internal server error." });
   }
 };
 
-// Update an existing conversation with a new message
+// Update an existing conversation
 const updateConversation = async (req, res) => {
-  const { groupDiscussionId, message } = req.body;
-
   try {
-    const conversation = await Conversation.findOne({ groupDiscussionId });
+    const { id } = req.params;
+    const updateData = req.body;
 
-    if (!conversation) {
-      return res.status(404).json({ msg: 'Conversation not found' });
+    if (!id) {
+      return res.status(400).json({ msg: "Conversation ID is required." });
     }
 
-    conversation.messages.push(message);
-    await conversation.save();
+    const updatedConversation = await Conversation.findByIdAndUpdate(id, updateData, {
+      new: true, // Return the updated document
+    });
 
-    res.json(conversation);
+    if (!updatedConversation) {
+      return res.status(404).json({ msg: "Conversation not found." });
+    }
+
+    res.status(200).json(updatedConversation);
   } catch (error) {
-    res.status(500).json({ msg: 'Server Error' });
+    console.error("Error updating conversation:", error);
+    res.status(500).json({ msg: "Internal server error." });
   }
 };
 
-// Get all messages of a conversation
-const getConversation = async (req, res) => {
-  const groupDiscussionId = req.params.groupDiscussionId;
-
+// Delete a conversation
+const deleteConversation = async (req, res) => {
   try {
-    const conversation = await Conversation.findOne({ groupDiscussionId });
+    const { id } = req.params;
 
-    if (!conversation) {
-      return res.status(404).json({ msg: 'Conversation not found' });
+    if (!id) {
+      return res.status(400).json({ msg: "Conversation ID is required." });
     }
 
-    res.json(conversation);
+    const deletedConversation = await Conversation.findByIdAndDelete(id);
+
+    if (!deletedConversation) {
+      return res.status(404).json({ msg: "Conversation not found." });
+    }
+
+    res.status(200).json({ msg: "Conversation deleted successfully." });
   } catch (error) {
-    res.status(500).json({ msg: 'Server Error' });
+    console.error("Error deleting conversation:", error);
+    res.status(500).json({ msg: "Internal server error." });
   }
 };
 
 module.exports = {
-    createConversation,
-    getConversation,
-    updateConversation
-}
+  getConversation,
+  createConversation,
+  updateConversation,
+  deleteConversation,
+};

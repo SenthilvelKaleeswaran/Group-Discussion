@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { loginUser } from "../utils/api-call";
 import { useAuth } from "../context/auth";
 
-const Login = () => {
+export const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
@@ -14,6 +14,7 @@ const Login = () => {
     e.preventDefault();
     try {
       const data = await loginUser({ email, password });
+      console.log({data})
       login(data?.token);
     } catch (error) {
       alert(error.message); // Handle the error
@@ -73,5 +74,3 @@ const Login = () => {
     </div>
   );
 };
-
-export default Login;

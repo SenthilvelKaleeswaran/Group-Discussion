@@ -17,9 +17,13 @@
     ]
   },
   "devDependencies": {
-    "concurrently": "^9.1.0"
+    "concurrently": "^9.1.0",
+    "typescript": "^5.7.2"
   },
   "dependencies": {
+    "@reduxjs/toolkit": "^2.5.0",
+    "@socket.io/admin-ui": "^0.5.1",
+    "axios": "^1.7.9",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",
     "clsx": "^2.1.1",
@@ -27,7 +31,12 @@
     "mongodb": "^6.11.0",
     "mongoose": "^8.8.4",
     "partial-json": "^0.1.7",
+    "react-hot-toast": "^2.5.1",
     "react-icons": "^5.4.0",
-    "react-query": "^3.39.3"
+    "react-query": "^3.39.3",
+    "react-redux": "^9.2.0",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
+    "ws": "^8.18.0"
   }
 }

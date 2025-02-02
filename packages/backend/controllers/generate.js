@@ -1,5 +1,7 @@
 const GroupDiscussion = require("../models/group-discussion");
 const Conversation = require("../models/conversation");
+const { ObjectId } = require("mongoose").Types;
+
 const {
   AIConversationPrompt,
   PerformanceMetricsPrompt,
@@ -11,7 +13,6 @@ const {
 } = require("../prompts");
 const { generateAIResponse } = require("../utils");
 
-
 const getConversationData = (data) => {
   return data?.map((item) => {
     return {
@@ -21,19 +22,36 @@ const getConversationData = (data) => {
 };
 
 const generateConversation = async (req, res) => {
-  const { id, participant, conversation: receivedConversation } = req.body;
+  const {
+    id,
+    participant,
+    conversation: receivedConversation,
+    isWebSocket,
+    ws,
+    event,
+    sendResponse,
+    user,
+  } = req.body;
 
   if (!id) {
-    return res.status(400).json({ error: "Id not found" });
+    if (isWebSocket)
+      sendResponse({
+        event: "ERROR",
+        data: { error: "Id not found" },
+      });
+    // return res.status(400).json({ error: "Id not found" });
   }
 
   try {
     // Step 1: Retrieve Group Discussion
-    const groupDiscussion = await GroupDiscussion.findById(id).populate(
-      "conversationId"
-    );
+    const groupDiscussion = await GroupDiscussion.findById(id);
     if (!groupDiscussion) {
-      return res.status(404).json({ error: "Group discussion not found" });
+      if (isWebSocket)
+        sendResponse({
+          event: "ERROR",
+          data: { error: "Group discussion not found" },
+        });
+      // return res.status(404).json({ error: "Group discussion not found" });
     }
 
     const {
@@ -63,7 +81,55 @@ const generateConversation = async (req, res) => {
 
     const [isConclusion, isTerminatable] = getStatusValues();
 
+    console.log({ isConclusion, isTerminatable });
+
     const isLastDiscussionPoint = messageLength === discussionLength - 1;
+
+    console.log({ isLastDiscussionPoint, www: req.user });
+
+    if (isWebSocket) {
+      if (!isTerminatable)
+        sendResponse({
+          event: "RANDOM_MEMBER",
+          data: {
+            isLoading: true,
+          },
+        });
+      sendResponse({
+        event: "PERFORMANCE_METRICS",
+        data: {
+          isLoading: participant?.type !== "AI",
+        },
+      });
+    }
+
+    const getRandomMember = () => {
+      let randomMember = "";
+
+      console.log({
+        isLastDiscussionPoint,
+        conclusionBy,
+        participant,
+        discussionLength,
+        messageLength,
+        conclusionBy,
+      });
+
+      if (
+        (isLastDiscussionPoint &&
+          conclusionBy === "AI" &&
+          participant?.type === "AI") ||
+        (discussionLength === messageLength && conclusionBy === "You")
+      ) {
+        console.log("conclusionB", req?.user);
+        randomMember = req?.user || user;
+      } else {
+        const randomIndex = Math.floor(Math.random() * aiParticipants.length);
+        randomMember = aiParticipants[randomIndex];
+      }
+
+      return randomMember;
+    };
 
     const updateConversationStatus = async () => {
       const conversation = await Conversation.findOne({
@@ -74,7 +140,7 @@ const generateConversation = async (req, res) => {
         const lastIndex = conversation.messages.length - 1;
         const lastMessage = conversation.messages[lastIndex];
         if (lastMessage?.status) {
-          return await Conversation.findOneAndUpdate(
+          const updated = await Conversation.findOneAndUpdate(
             { groupDiscussionId: id },
             {
               $set: {
@@ -84,9 +150,42 @@ const generateConversation = async (req, res) => {
             },
             { new: true }
           );
+          return updated
         }
       }
     };
+
+    let randomMember = null;
+
+    if (!isTerminatable) {
+      randomMember = getRandomMember();
+
+      if (randomMember?.userId) {
+        const updatedConversation = await updateConversationStatus();
+
+        console.log({qqqq :updatedConversation, llll:updatedConversation?.messages ,length : updatedConversation?.messages?.length})
+
+        if (isWebSocket)
+          sendResponse({
+            event: "CONVERSATION",
+            data: {
+              conversation: updatedConversation?.messages,
+              userSpeak: true,
+            },
+          });
+      }
+
+      if (isWebSocket)
+        sendResponse({
+          event: "RANDOM_MEMBER",
+          data: {
+            randomMember: randomMember?.id || randomMember?.userId,
+            isLoading: false,
+          },
+        });
+
+      if (randomMember?.userId) return;
+    }
 
     const updateNewConversation = async (
       metadata = {},
@@ -94,9 +193,12 @@ const generateConversation = async (req, res) => {
       randomMember = {}
     ) => {
       let newMessages = [];
+      let userMessageId = "";
 
       if (participant?.type !== "AI") {
+        userMessageId = new ObjectId();
         newMessages.push({
+          _id: userMessageId,
           userId: participant?._id,
           name: participant?.name,
           conversation: receivedConversation,
@@ -114,7 +216,7 @@ const generateConversation = async (req, res) => {
         });
       }
 
-      return await Conversation.findOneAndUpdate(
+      const updatedConversation = await Conversation.findOneAndUpdate(
         { groupDiscussionId: id },
         {
           $push: {
@@ -125,6 +227,12 @@ const generateConversation = async (req, res) => {
         },
         { new: true, upsert: true }
       );
+
+      console.log({
+        updatedConversation: updatedConversation?.messages?.length,
+      });
+
+      return { updatedConversation, userMessageId };
     };
 
     const promptTemplate = generateConversationTemplate(
@@ -138,7 +246,7 @@ const generateConversation = async (req, res) => {
             prompt: `${promptTemplate}${PerformanceMetricsPrompt(
               isConclusion
             )}`,
-            isParse : true
+            isParse: true,
           })
         : Promise.resolve(null);
     };
@@ -156,12 +264,29 @@ const generateConversation = async (req, res) => {
         updatedConversation = await updateNewConversation(metricsText);
       }
       await GroupDiscussion.findByIdAndUpdate(id, { status: "COMPLETED" });
-      console.log({ updatedConversation: updatedConversation?.messages });
-      return res.status(200).json({
-        completed: true,
-        id,
+      console.log({
+        updatedConversation,
         conversation: updatedConversation?.messages,
+        aaa: updatedConversation?.updatedConversation?.messages,
       });
+      if (isWebSocket)
+        sendResponse({
+          event: "COMPLETED",
+          data: {
+            completed: true,
+            id,
+            conversation:
+              updatedConversation?.messages ||
+              updatedConversation?.updatedConversation?.messages,
+          },
+        });
+      return;
+
+      // return res.status(200).json({
+      //   completed: true,
+      //   id,
+      //   conversation: updatedConversation?.messages,
+      // });
     }
 
     if (
@@ -172,10 +297,16 @@ const generateConversation = async (req, res) => {
     ) {
       const updatedConversation = await updateConversationStatus();
 
-      return res.status(200).json({
-        randomMember: req?.user?.userId,
-        conversation: updatedConversation?.messages,
-      });
+      if (isWebSocket)
+        sendResponse({
+          event: "CONVERSATION",
+          data: { conversation: updatedConversation?.messages },
+        });
+
+      // return res.status(200).json({
+      //   randomMember: req?.user?.userId,
+      //   conversation: updatedConversation?.messages,
+      // });
     }
 
     let conversationPrompt = "";
@@ -206,37 +337,77 @@ const generateConversation = async (req, res) => {
       prompt: conversationPrompt,
     });
 
-    const [responseText, metricsText] = await Promise.all([
-      aiResponsePromise,
-      metricsResponsePromise,
-    ]);
+    const [responseText] = await Promise.all([aiResponsePromise]);
 
-    console.log({responseText})
+    console.log({ responseText });
 
     if (!responseText) {
-      return res.status(500).json({
-        error: "No valid response text generated.",
-      });
+      if (!isWebSocket)
+        sendResponse({
+          event: "ERROR",
+          data: {
+            message: "No valid response text generated.",
+          },
+        });
+      // return res.status(500).json({
+      //   error: "No valid response text generated.",
+      // });
     }
 
     // Update last message's status to "SPOKEN"
     await updateConversationStatus();
 
-    const randomIndex = Math.floor(Math.random() * aiParticipants.length);
-    const randomMember = aiParticipants[randomIndex];
-
     // Push new messages into the conversation
-    const updatedConversation = await updateNewConversation(
-      metricsText,
+    const { updatedConversation, userMessageId } = await updateNewConversation(
+      {},
       responseText,
       randomMember
     );
 
-    return res.status(200).json({
-      generatedText: responseText,
-      randomMember: randomMember?._id,
-      conversation: updatedConversation?.messages,
-    });
+    if (isWebSocket)
+      sendResponse({
+        event: "GENERATED_TEXT",
+        data: {
+          aiGeneratedText: responseText,
+          conversation: updatedConversation?.messages,
+        },
+      });
+
+    if (isWebSocket) {
+      sendResponse({
+        event: "PERFORMANCE_METRICS",
+        data: {
+          isLoading: participant?.type !== "AI",
+          messageId: userMessageId,
+        },
+      });
+    }
+
+    if (userMessageId) {
+      const [metricsText] = await Promise.all([metricsResponsePromise]);
+
+      await Conversation.findOneAndUpdate(
+        { groupDiscussionId: id, "messages._id": userMessageId },
+        {
+          $set: {
+            "messages.$.metadata": metricsText,
+          },
+        },
+        { new: true, upsert: true }
+      );
+
+      setTimeout(() => {
+        if (isWebSocket)
+          sendResponse({
+            event: "PERFORMANCE_METRICS",
+            data: {
+              isLoading: false,
+              metadata: metricsText,
+              messageId: userMessageId,
+            },
+          });
+      }, 4000);
+    }
   } catch (error) {
     console.error("Server Error:", error);
     res.status(500).json({
@@ -251,7 +422,7 @@ const generateFeedback = async (req, res) => {
 
   try {
     const groupDiscussion = await GroupDiscussion.findById(id)
-      .populate("conversationId")
+      // .populate("conversationId")
       .populate({
         path: "participants",
         select: "userId",
@@ -316,7 +487,7 @@ const generateFeedback = async (req, res) => {
 
     // Sequential generation of user analysis
     for (const item of participants) {
-      const {_id,name} = item?.userId;
+      const { _id, name } = item?.userId;
       const feedback = await generateAIResponse({
         prompt:
           discussionInstructionPrompt({
@@ -326,7 +497,7 @@ const generateFeedback = async (req, res) => {
             conclusionPoints,
             conclusionBy,
             noOfUsers,
-            user : name,
+            user: name,
           }) +
           `\nFull Discussion : ${JSON.stringify(modifiedConversation)}\n` +
           OverAllAnalysisPrompt +
@@ -358,13 +529,12 @@ const generateFeedback = async (req, res) => {
     ]);
 
     // Return feedback response
-    return res.status(200).json({ msg : "Success"});
+    return res.status(200).json({ msg: "Success" });
   } catch (error) {
     console.error("Error generating feedback:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
 };
-
 
 module.exports = {
   generateConversation,

@@ -1,24 +1,23 @@
 import React from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import "./App.css";
 import "./index.css";
-import { DiscussionDetails } from "./components/DiscussionDetails";
-import Signup from "./screens/SignUp";
-import Login from "./screens/Login";
-import DiscussionWrapper from "./routes/DiscussionWrapper";
-import ProtectedWrapper from "./routes/ProtectedWrapper";
-import Home from "./screens/Home";
-import NonAuthWrapper from "./routes/NonAuthWrapper";
-import { AuthProvider } from "./context/auth";
-import { QueryClient, QueryClientProvider } from 'react-query';
-import Profile from "./screens/Profile";
-import DiscussionSpace from "./components/DiscussionSpace";
-import Feedback from "./screens/Feedback";
+
+import { QueryClient, QueryClientProvider } from "react-query";
+import {
+  CreateDiscussion,
+  Feedback,
+  GroupDiscussion,
+  Home,
+  Login,
+  Profile,
+  Signup,
+} from "./screens";
+import { NonAuthWrapper, ProtectedWrapper } from "./wrappers";
+import { AuthProvider } from "./context";
+import { Provider } from "react-redux";
+import { store } from "./store";
+import { Toaster } from "react-hot-toast";
 
 function App() {
   const queryClient = new QueryClient();
@@ -34,18 +33,25 @@ function App() {
             </Route>
 
             <Route element={<ProtectedWrapper />}>
-              <Route path="/gd" element={<DiscussionWrapper />}>
-                <Route path=":id" element={<DiscussionSpace />} />
-                <Route path="" element={<DiscussionDetails />} />
+              <Route path="/gd">
+                <Route
+                  path=":id"
+                  element={
+                    <Provider store={store}>
+                      <GroupDiscussion />
+                    </Provider>
+                  }
+                />
+                <Route path="" element={<CreateDiscussion />} />
               </Route>
               <Route path="/feedback" element={<Feedback />} />
 
               <Route path="/profile" element={<Profile />} />
-
             </Route>
           </Routes>
         </AuthProvider>
       </Router>
+      <Toaster/>
     </QueryClientProvider>
   );
 }

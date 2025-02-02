@@ -1,19 +1,32 @@
-const jwt = require("jsonwebtoken");
+const { verifyToken } = require("../utils");
 
 const authMiddleware = (req, res, next) => {
-  const token = req.header("Authorization")?.split(" ")[1]; // Extract Bearer token
-
-  if (!token) {
-    return res.status(401).json({ msg: "No token, authorization denied" });
-  }
-
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // Attach decoded user data to request object
+    const token = req.header("Authorization")?.split(" ")[1]; // Extract Bearer token
+    console.log({ token });
+
+    req.user = verifyToken(token); // Attach decoded user to request
     next(); // Proceed to the next middleware or route handler
   } catch (err) {
-    res.status(401).json({ msg: "Invalid token" });
+    next()
+    // res.status(401).json({ msg: err.message });
   }
 };
 
-module.exports = authMiddleware;
+const authSocketMiddleware = (socket, next) => {
+  try {
+    const token =
+      socket.handshake.auth.token ||
+      socket.handshake.headers.authorization?.split(" ")[1]; // Extract token
+    console.log({ token });
+
+    socket.user = verifyToken(token); // Attach decoded user to socket
+    next(); // Proceed to the next middleware
+  } catch (err) {
+    const error = new Error(err.message);
+    error.data = { status: 401 }; // Custom error data
+    next(error); // Pass error to the next middleware
+  }
+};
+
+module.exports = { authMiddleware, authSocketMiddleware };

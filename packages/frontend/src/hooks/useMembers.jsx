@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
 export const useMembers = (data) => {
-  // console.log("2 ->", data);
 
   const [currentMember, setCurrentMember] = useState(null);
   const userId = localStorage.getItem("userId");
@@ -34,13 +33,11 @@ export const useMembers = (data) => {
   };
 
   const selectMember = (randomMember) => {
-    console.log({randomMember})
 
     const id  = randomMember || userId
     const selectedMember = members?.find(
       (member) => member?._id === id
     );
-    console.log({selectedMember})
 
     if (selectedMember) {
       setCurrentMember(selectedMember);
