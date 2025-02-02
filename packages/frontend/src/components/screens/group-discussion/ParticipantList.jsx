@@ -10,11 +10,6 @@ export default function ParticipantList({ sessionId }) {
     (state) => state.participants
   );
 
-  useEffect(() => {
-    if (sessionId) {
-      dispatch(fetchParticipants(sessionId));
-    }
-  }, [dispatch, sessionId]);
 
   const participantList = Object?.values(
     participants?.participant?.participant || participants?.participant || {}
