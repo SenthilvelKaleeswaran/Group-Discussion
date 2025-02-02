@@ -443,7 +443,7 @@ export const GroupDiscussion = () => {
         />{" "}
       </div>
       <div className="w-full min-h-screen h-full overflow-scroll bg-gray-900 shadow-lg rounded-lg">
-        <DiscussionSettings sessionId={sessionId} />
+        <DiscussionSettings sessionId={sessionId} socket={socket} />
       </div>
     </div>
   );

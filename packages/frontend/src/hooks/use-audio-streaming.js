@@ -17,19 +17,18 @@ export const useStreaming = ({ socket, sessionId, groupDiscussionId }) => {
         socket.emit("join-room", { sessionId, userId, groupDiscussionId });
 
         socket.on("user-list", (users) => {
-          users.forEach(({ socketId }) => createPeer(socketId, stream));
+          users.forEach(({ socketId,userId }) => createPeer({socketId,userId,stream}));
         });
 
-        socket.on("receive-signal", ({ socketId, signal }) => {
+        socket.on("receive-signal", ({ socketId,userId, signal }) => {
           if (!peersRef.current[socketId]) {
-            handleIncomingPeer(socketId, signal, stream);
+            handleIncomingPeer({socketId,userId, incomingSignal :signal, stream});
           } else {
             peersRef.current[socketId].signal(signal);
           }
         });
 
-        socket.on("user-left", ({socketId}) => {
-          console.log("User left:", socketId);  // Log user leaving
+        socket.on("user-left", ({ socketId }) => {
           removePeer(socketId);
         });
       } catch (error) {
@@ -63,7 +62,7 @@ export const useStreaming = ({ socket, sessionId, groupDiscussionId }) => {
     };
   }, [socket, sessionId, groupDiscussionId]);
 
-  const createPeer = (socketId, stream) => {
+  const createPeer = ({socketId,userId, stream}) => {
     if (peersRef.current[socketId]) return;
 
     const peer = new SimplePeer({ initiator: true, trickle: false, stream });
@@ -75,7 +74,7 @@ export const useStreaming = ({ socket, sessionId, groupDiscussionId }) => {
     peer.on("stream", (remoteStream) => {
       setRemoteStreams((prev) => [
         ...prev.filter((p) => p.socketId !== socketId),
-        { socketId, stream: remoteStream },
+        { socketId, userId,stream: remoteStream },
       ]);
     });
 
@@ -84,7 +83,7 @@ export const useStreaming = ({ socket, sessionId, groupDiscussionId }) => {
     peersRef.current[socketId] = peer;
   };
 
-  const handleIncomingPeer = (socketId, incomingSignal, stream) => {
+  const handleIncomingPeer = ({socketId,userId,incomingSignal, stream}) => {
     const peer = new SimplePeer({ initiator: false, trickle: false, stream });
 
     peer.on("signal", (signal) => {
@@ -94,7 +93,7 @@ export const useStreaming = ({ socket, sessionId, groupDiscussionId }) => {
     peer.on("stream", (remoteStream) => {
       setRemoteStreams((prev) => [
         ...prev.filter((p) => p.socketId !== socketId),
-        { socketId, stream: remoteStream },
+        { socketId,userId, stream: remoteStream },
       ]);
     });
 

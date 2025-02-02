@@ -100,7 +100,7 @@ const addParticipant = async ({
   }
 };
 
-const leftParticipant = async ({ socket, sessionId, userId,io }) => {
+const leftParticipant = async ({ socket, sessionId, userId, io }) => {
   try {
     let participant = await Participant.findOne({ sessionId });
 
@@ -123,9 +123,32 @@ const leftParticipant = async ({ socket, sessionId, userId,io }) => {
   }
 };
 
+const updateMuteStatus = async ({ io, userId,targetUserId, sessionId, isMuted }) => {
+  try {
+    let participant = await Participant.findOne({ sessionId });
+
+    const type = getUserRole(participant, targetUserId);
+
+    if (type) {
+      const user = participant[type].get(targetUserId);
+      user.muteStatus = isMuted;
+      participant[type].set(targetUserId, user);
+
+      await participant.save();
+
+      io.to(sessionId).emit("mute-status-changed", { targetUserId, isMuted,userId });
+    }
+  } catch (err) {
+    console.error("Error toggling mute status:", err);
+  }
+ 
+};
+
 module.exports = {
   addParticipant,
   leftParticipant,
+  updateMuteStatus,
   updateParticipant,
+
   deleteParticipant,
 };

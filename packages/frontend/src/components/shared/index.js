@@ -5,10 +5,12 @@ import { RenderSpace } from "./RenderSpace.jsx";
 import { SelectableContainer } from "./SelectableContainer.jsx";
 import { TimeProgressBar } from "./TimeProgressBar.jsx";
 import { AiModelCard } from "./AiModelCard.jsx";
+import {IconWithLoader} from "./IconWithLoader.jsx"
 
 export {
   AiModelCard,
   BlinkingIcon,
+  IconWithLoader,
   Loader,
   MessageBadges,
   RenderSpace,

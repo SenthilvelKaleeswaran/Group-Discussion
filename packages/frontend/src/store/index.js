@@ -6,6 +6,13 @@ import {
   updateUserRole,
 } from "./group-discussion";
 import { updateParticipants, fetchParticipants } from "./participants";
+import {
+  updateMutedParticipants,
+  setMuteLoading,
+  setMutingList,
+  setMuteInitialLoad,
+} from "./controls";
+import { setSocket } from "./socket";
 
 export {
   store,
@@ -14,5 +21,10 @@ export {
   updateMessage,
   updateParticipants,
   fetchParticipants,
-  updateUserRole
+  updateUserRole,
+  setMuteLoading,
+  setMuteInitialLoad,
+  setMutingList,
+  updateMutedParticipants,
+  setSocket,
 };

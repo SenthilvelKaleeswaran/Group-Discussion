@@ -21,6 +21,7 @@ const participantsSlice = createSlice({
   name: "participants", // Correct slice name
   initialState: {
     participants: [], // Proper state key for participants
+    mutedParticipants : [],
     loading: false,
     error: null,
   },
@@ -28,6 +29,9 @@ const participantsSlice = createSlice({
     updateParticipants: (state, action) => {
       state.participants = action.payload;
     },
+    updateMutedParticipants:(state, action) => {
+      state.mutedParticipants = action.payload;
+    }
   },
   extraReducers: (builder) => {
     builder

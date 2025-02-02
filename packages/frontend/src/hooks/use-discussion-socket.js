@@ -1,6 +1,12 @@
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
-import { updateGroupDiscussion, updateParticipants } from "../store";
+import {
+  setMuteInitialLoad,
+  updateGroupDiscussion,
+  updateMutedParticipants,
+  updateParticipants,
+  updateUserRole,
+} from "../store";
 
 export const useDiscussionSocket = ({
   events,
@@ -14,7 +20,6 @@ export const useDiscussionSocket = ({
   setStatus,
   closeSocket,
 }) => {
-
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -64,7 +69,11 @@ export const useDiscussionSocket = ({
   useEffect(() => {
     if (events.CONVERSATION) {
       const { conversation, userSpeak } = events.CONVERSATION;
-      console.log({aaaaaa : conversation,userSpeak,cccc: events.CONVERSATION})
+      console.log({
+        aaaaaa: conversation,
+        userSpeak,
+        cccc: events.CONVERSATION,
+      });
 
       if (conversation) setConversation(conversation);
 
@@ -94,7 +103,31 @@ export const useDiscussionSocket = ({
       const { participant, role } = events.PARTICIPANT_LIST;
       console.log({ PARTICIPANT_LIST: participant, role });
       dispatch(updateParticipants(participant));
-      dispatch(updateGroupDiscussion(role));
+      dispatch(updateUserRole(role));
     }
   }, [events.PARTICIPANT_LIST]);
+
+  useEffect(() => {
+    if (events.PARTICIPANT_LIST) {
+      const { participant } = events.PARTICIPANT_LIST;
+
+      const list = [
+        ...participant?.participant,
+        ...participant?.listener,
+        ...participant?.admin,
+        ...participant?.moderator,
+      ];
+      const mutedParticipants = list
+        .filter((value) => value.isActive && value.muteStatus)
+        .map((_) => _.userId);
+
+      dispatch(updateMutedParticipants({ mutedParticipants }));
+      dispatch(setMuteInitialLoad(false));
+    }
+  }, [events.PARTICIPANT_LIST]);
+
+  useEffect(() => {
+    if (events.UPDATED_CONTROLS) {
+    }
+  }, [events.UPDATED_CONTROLS]);
 };
