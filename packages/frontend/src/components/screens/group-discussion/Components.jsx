@@ -1,6 +1,7 @@
-export const PeopleList = ({list}) => {
+export const PeopleList = ({list,title}) => {
   return (
     <div className="space-y-2">
+      <p>{title}</p>
       {list
         ?.filter((item) => item?.isActive)
         ?.map((item, index) => (

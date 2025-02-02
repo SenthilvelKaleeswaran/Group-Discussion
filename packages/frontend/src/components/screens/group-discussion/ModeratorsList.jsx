@@ -14,20 +14,16 @@ export default function ModeratorsList() {
   );
   const hostList = Object?.values(participants?.moderator || {});
 
-
   return (
     <div>
       <RenderSpace condition={adminList.length}>
-        <p>Admin List </p>
-        <PeopleList list={adminList} />
+        <PeopleList list={adminList} title={"Admin List"} />
       </RenderSpace>
       <RenderSpace condition={hostList.length}>
-        <p>Host List</p>
-        <PeopleList list={hostList} />
+        <PeopleList list={hostList} title={"Moderators List"} />
       </RenderSpace>
       <RenderSpace condition={listenerList.length}>
-        <p>Listeners List</p>
-        <PeopleList list={listenerList} />
+        <PeopleList list={listenerList} title={"Listeners List"} />
       </RenderSpace>
     </div>
   );

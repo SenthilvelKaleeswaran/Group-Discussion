@@ -1,6 +1,8 @@
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchParticipants } from "../../../store";
+import { RenderSpace } from "../../shared";
+import { PeopleList } from "./Components";
 
 export default function ParticipantList({ sessionId }) {
   const dispatch = useDispatch();
@@ -14,7 +16,6 @@ export default function ParticipantList({ sessionId }) {
     }
   }, [dispatch, sessionId]);
 
-
   const participantList = Object?.values(
     participants?.participant?.participant || participants?.participant || {}
   );
@@ -23,21 +24,11 @@ export default function ParticipantList({ sessionId }) {
     <div>
       {loading && <p>Loading...</p>}
       {error && <p>Error: {error}</p>}
-      <div className="space-y-2">
-        {participantList
-          ?.filter((item) => item?.isActive)
-          ?.map((item, index) => (
-            <div
-              className="cursor-pointer hover:bg-gray-800 px-2 py-1 rounded-md"
-              key={index}
-            >
-              <p className="text-left">
-                {index + 1}. {item?.name}
-              </p>
-              <div></div>
-            </div>
-          ))}
-      </div>
+
+      <RenderSpace condition={participantList.length}>
+        
+        <PeopleList list={participantList} title={'Participants List'} />
+      </RenderSpace>
     </div>
   );
 }
