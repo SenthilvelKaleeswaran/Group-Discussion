@@ -9,6 +9,7 @@ import {
   getActiveSession,
   getGroupDiscussion,
 } from "../utils/api-call";
+import "regenerator-runtime/runtime";
 import {
   useDiscussionSocket,
   useMembers,
@@ -21,7 +22,11 @@ import {
   DiscussionIndicator,
   DiscussionSettings,
   MemberCard,
+  SessionButton,
 } from "../components/screens";
+import SpeechRecognition, {
+  useSpeechRecognition,
+} from "react-speech-recognition";
 import { TimeProgressBar } from "../components/shared";
 
 import { io } from "socket.io-client";
@@ -29,6 +34,7 @@ import { io } from "socket.io-client";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchGroupDiscussion } from "../store";
 import { AudioStreamingComponent } from "../components/screens/group-discussion/AudioStreaminComponent";
+import { Button } from "../components/ui";
 
 const signalingServer = "http://localhost:5000";
 
@@ -321,10 +327,15 @@ export const GroupDiscussion = () => {
     }
   };
 
-  const handleCallPeer = () => {
-    const targetPeerId = "peer-id-to-call"; // Replace with the actual peer ID
-    callPeer(targetPeerId);
-  };
+  console.log({ data });
+  const {
+    transcript: transcripts,
+    listening: listenings,
+    resetTranscript: resetTranscripts,
+    browserSupportsSpeechRecognition,
+  } = useSpeechRecognition();
+  const startListenings = () =>
+    SpeechRecognition.startListening({ continuous: true });
 
   if (issLoading) {
     return (
@@ -338,18 +349,26 @@ export const GroupDiscussion = () => {
     return <div>Error: {groupDiscussionError}</div>;
   }
 
+  console.log({ transcripts, resetTranscripts, startListenings, listenings });
+
   return (
     <div className="flex gap-4 min-h-screen w-full bg-gray-700 text-gray-200 p-4">
       <div className="max-w-3xl w-full flex-1.5  bg-gray-800 shadow-lg rounded-lg p-8">
+        <div>
+          <button onClick={startListenings}>Start</button>
+          <button onClick={resetTranscripts}>Reset</button>
+          <p>{transcripts}</p>
+          <p>{listenings}</p>
+        </div>
         <p className="font-bold">{data?.topic}</p>
+
+        <SessionButton status={data?.status} socket={socket} />
+
         <AudioStreamingComponent
           socket={socket}
           sessionId={sessionId}
           groupDiscussionId={groupDiscussionId}
         />
-        {/* {remoteStreams.map(({ peerId, stream }) => (
-          <audio key={peerId} srcObject={stream} autoPlay />
-        ))} */}
 
         {/* <DiscussionIndicator
           data={data}

@@ -173,7 +173,7 @@ const SessionSchema = new mongoose.Schema({
   sessionPassword: { type: String },
   status: {
     type: String,
-    enum: ["notStarted", "inProgress", "completed", "holded", "paused"],
+    enum: ["NOT_STARTED", "IN_PROGRESS", "COMPLETED", "HOLDED"],
     default: "notStarted",
   },
   sessionStartTime: {

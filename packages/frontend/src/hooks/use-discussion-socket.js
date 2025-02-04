@@ -2,12 +2,12 @@ import { useEffect } from "react";
 import { useDispatch } from "react-redux";
 import {
   setMuteInitialLoad,
-  updateGroupDiscussion,
   updateMutedParticipants,
   updateParticipants,
-  updateUserRole,
+  setUserRole,
 } from "../store";
 import toast from "react-hot-toast";
+import { displayToast } from "../components/shared";
 
 export const useDiscussionSocket = ({
   events,
@@ -104,7 +104,7 @@ export const useDiscussionSocket = ({
       const { participant, role } = events.PARTICIPANT_LIST;
       console.log({ PARTICIPANT_LIST: participant, role });
       dispatch(updateParticipants(participant));
-      dispatch(updateUserRole(role));
+      dispatch(setUserRole(role));
     }
   }, [events.PARTICIPANT_LIST]);
 
@@ -154,4 +154,100 @@ export const useDiscussionSocket = ({
     }
   }, [events.MUTE_ERROR]);
 
+  // session
+
+  useEffect(() => {
+    if (events.START_SESSION_LOADING) {
+      displayToast({
+        id: "START_SESSION_LOADING",
+        data: events.START_SESSION_LOADING,
+      });
+    }
+  }, [events.START_SESSION_LOADING]);
+
+  useEffect(() => {
+    if (events.START_SESSION_LOADED) {
+      displayToast({
+        id: "START_SESSION_LOADED",
+        remove: ["START_SESSION_LOADING"],
+        data: events.START_SESSION_LOADED,
+      });
+    }
+  }, [events.START_SESSION_LOADED]);
+
+  useEffect(() => {
+    if (events.PAUSE_SESSION_LOADING) {
+      displayToast({
+        id: "PAUSE_SESSION_LOADING",
+        data: events.PAUSE_SESSION_LOADING,
+      });
+    }
+  }, [events.PAUSE_SESSION_LOADING]);
+
+  useEffect(() => {
+    if (events.PAUSE_SESSION_LOADED) {
+      displayToast({
+        id: "PAUSE_SESSION_LOADED",
+        remove: ["PAUSE_SESSION_LOADING"],
+        data: events.PAUSE_SESSION_LOADED,
+      });
+    }
+  }, [events.PAUSE_SESSION_LOADED]);
+
+  useEffect(() => {
+    if (events.RESUME_SESSION_LOADING) {
+      displayToast({
+        id: "RESUME_SESSION_LOADING",
+        data: events.RESUME_SESSION_LOADING,
+      });
+    }
+  }, [events.RESUME_SESSION_LOADING]);
+
+  useEffect(() => {
+    if (events.RESUME_SESSION_LOADED) {
+      displayToast({
+        id: "RESUME_SESSION_LOADED",
+        remove: ["RESUME_SESSION_LOADING"],
+        data: events.RESUME_SESSION_LOADED,
+      });
+    }
+  }, [events.RESUME_SESSION_LOADED]);
+
+  useEffect(() => {
+    if (events.END_SESSION_LOADING) {
+      displayToast({
+        id: "END_SESSION_LOADING",
+        data: events.END_SESSION_LOADING,
+      });
+    }
+  }, [events.END_SESSION_LOADING]);
+
+  useEffect(() => {
+    if (events.END_SESSION_LOADED) {
+      displayToast({
+        id: "END_SESSION_LOADED",
+        remove: ["END_SESSION_LOADING"],
+        data: events.END_SESSION_LOADED,
+      });
+    }
+  }, [events.END_SESSION_LOADED]);
+
+  useEffect(() => {
+    if (events.COMPLETED_SESSION_LOADING) {
+      displayToast({
+        id: "COMPLETED_SESSION_LOADING",
+        data: events.COMPLETED_SESSION_LOADING,
+      });
+    }
+  }, [events.COMPLETED_SESSION_LOADING]);
+
+  useEffect(() => {
+    if (events.COMPLETED_SESSION_LOADED) {
+      displayToast({
+        id: "COMPLETED_SESSION_LOADED",
+        remove: ["COMPLETED_SESSION_LOADING"],
+        data: events.COMPLETED_SESSION_LOADED,
+      });
+    }
+  }, [events.COMPLETED_SESSION_LOADED]);
 };
