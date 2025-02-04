@@ -7,9 +7,7 @@ import {
   generateConversation,
   generateFeedback,
   getActiveSession,
-  getGroupDiscussion,
 } from "../utils/api-call";
-import "regenerator-runtime/runtime";
 import {
   useDiscussionSocket,
   useMembers,
@@ -19,52 +17,44 @@ import {
 } from "../hooks";
 import {
   Conversation,
-  DiscussionIndicator,
   DiscussionSettings,
   MemberCard,
   SessionButton,
 } from "../components/screens";
-import SpeechRecognition, {
-  useSpeechRecognition,
-} from "react-speech-recognition";
-import { TimeProgressBar } from "../components/shared";
 
-import { io } from "socket.io-client";
+import { TimeProgressBar, InitialTimer } from "../components/shared";
 
-import { useDispatch, useSelector } from "react-redux";
-import { fetchGroupDiscussion } from "../store";
 import { AudioStreamingComponent } from "../components/screens/group-discussion/AudioStreaminComponent";
-import { Button } from "../components/ui";
+import { useSelector } from "react-redux";
 
 const signalingServer = "http://localhost:5000";
+
+const queue = [
+  "67541f953969247972408a47",
+  "67890bdcd6796f74dd9424af",
+  "677ea6d25be00f8dfa4c1933",
+  "677ea7985be00f8dfa4c1935",
+];
 
 export const GroupDiscussion = () => {
   const { id } = useParams();
   const [groupDiscussionId, sessionId] = id.split("-");
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  // const {
-  //   discussion : data,
-  //   loading : issLoading,
-  //   error: groupDiscussionError,
-  // } = useSelector((state) => state.groupDiscussion);
-
-  // useEffect(() => {
-  //   if (id) {
-  //     dispatch(fetchGroupDiscussion(id)); // Dispatch the thunk
-  //   }
-  // }, [dispatch, id]);
+  const userId = localStorage.getItem("userId");
 
   const [conversation, setConversation] = useState([]);
+  const [currentSpeech, setCurrentSpeech] = useState("");
   const [processingPoint, setProcessingPoint] = useState(null);
   const [status, setStatus] = useState("");
+  const [choosingRandomMember, setChoosingRandomMember] = useState(false);
+
+  const { mutedParticipants = [] } = useSelector((state) => state.controls);
 
   const {
     data,
     error: groupDiscussionError,
     isLoading: issLoading,
     refetch,
-    isRefetching,
   } = useQuery(
     [`group-discussion-${groupDiscussionId}`, groupDiscussionId],
     () => getActiveSession(id),
@@ -83,20 +73,106 @@ export const GroupDiscussion = () => {
     }
   );
 
+  const { members, currentMember, selectMember, resetCurrentMember } =
+    useMembers(data);
+
+  // Hooks
+
+  const { isSpeaking, currentWord } = useSpeechSynthesis({
+    text: currentSpeech,
+    voice: currentMember?.voice,
+  });
+
+  const strictPermission = () => {
+    if (mutedParticipants.includes(userId)) return true;
+
+    const lastPoint = conversation?.length === data?.discussionLength - 1;
+    const conclusionBy = data?.conclusionBy;
+
+    if (lastPoint && conclusionBy === "AI")
+      return (conversation || [])?.pop()?._id !== userId;
+
+    if (data?.conclusionPoint === 1 && conclusionBy === "You") return true;
+
+    return false;
+  };
+
+  const strictUserPermission = strictPermission();
+
+  const checkPermission = () => {
+    if (strictUserPermission) return true;
+    if (conversation?.length === data?.discussionLength - 1) return false;
+
+    return !isSpeaking || allowConclusion || !isCompleted;
+  };
+
+  const grantPermission = checkPermission();
+
   const { socket, sendMessage, events, isConnected, closeSocket } =
     useWebSocket(signalingServer, {
       disconnect: data?.status === "COMPLETED" || status === "Completed",
     });
 
-  console.log({ socket, sessionId: data?._id });
+  const { transcript, isListening, resetTranscript } = useSpeechRecognization({
+    isSpeaking,
+    grantPermission,
+    selectMember,
+    resetCurrentMember,
+  });
 
-  // const { localStream, remoteStreams, callPeer } = useAudioStreaming({
-  //   socket,
-  //   sendMessage,
-  //   sessionId,
-  //   groupDiscussionId,
-  // });
-  // console.log({ socket, localStream, remoteStreams, callPeer });
+  const isListeningRef = useRef(isListening);
+
+  const isCompleted = data?.status === "COMPLETED" || status === "Completed";
+
+  useEffect(() => {
+    isListeningRef.current = isListening;
+  }, [isListening]);
+
+  useEffect(() => {
+    if (
+      !isCompleted &&
+      transcript.length > 0 &&
+      currentSpeech.length === 0 &&
+      !isListening
+    ) {
+      handleGenerateConversation();
+    }
+  }, [isListening, transcript, currentSpeech, isCompleted]);
+
+  useEffect(() => {
+    if (currentSpeech?.length > 0 && isSpeaking) {
+      resetTranscript();
+    }
+  }, [isSpeaking]);
+
+  useEffect(() => {
+    if (!isCompleted && currentSpeech.length > 0 && !isSpeaking) {
+      setCurrentSpeech("");
+      setStatus("Your time to access the session");
+
+      setTimeout(() => {
+        if (!isListeningRef.current) {
+          handleGenerateConversation();
+        }
+        setStatus("");
+      }, THREE_SECOND_TIME_INTERVAL + 500);
+    }
+  }, [isListening, isSpeaking, isCompleted]);
+
+  useDiscussionSocket({
+    events,
+    sendMessage,
+    currentSpeech,
+    conversation,
+    closeSocket,
+    setChoosingRandomMember,
+    selectMember,
+    setCurrentSpeech,
+    setConversation,
+    setProcessingPoint,
+    setStatus,
+    refetch,
+  });
 
   const isConclusion = useMemo(() => {
     return conversation?.length > data?.discussionLength;
@@ -105,10 +181,6 @@ export const GroupDiscussion = () => {
   const allowConclusion = useMemo(() => {
     return isConclusion && data?.conclusionBy !== "AI";
   }, []);
-
-  // Hooks
-  const { members, currentMember, selectMember, resetCurrentMember } =
-    useMembers(data);
 
   const { mutate, isLoading } = useMutation(generateConversation, {
     onSuccess: (data) => {
@@ -144,77 +216,6 @@ export const GroupDiscussion = () => {
       },
     });
 
-  const [currentSpeech, setCurrentSpeech] = useState("");
-
-  const { isSpeaking, currentWord } = useSpeechSynthesis({
-    text: currentSpeech,
-    voice: currentMember?.voice,
-  });
-
-  const userId = localStorage.getItem("userId");
-
-  const strictPermission = () => {
-    const lastPoint = conversation?.length === data?.discussionLength - 1;
-    const conclusionBy = data?.conclusionBy;
-
-    // Last point should speaken by user
-    if (lastPoint && conclusionBy === "AI")
-      return (conversation || [])?.pop()?._id !== userId;
-
-    // You need to conclude and only one conclusion point
-    if (data?.conclusionPoint === 1 && conclusionBy === "You") return true;
-
-    return false;
-  };
-
-  const strictUserPermission = strictPermission();
-  const isCompleted = data?.status === "COMPLETED" || status === "Completed";
-
-  const checkPermission = () => {
-    if (strictUserPermission) return true;
-    if (conversation?.length === data?.discussionLength - 1) {
-      return false;
-    }
-    return !isSpeaking || allowConclusion || !isCompleted;
-  };
-
-  const grantPermission = checkPermission();
-
-  const {
-    transcript,
-    isListening,
-    startListening,
-    stopListening,
-    resetTranscript,
-  } = useSpeechRecognization({
-    isSpeaking,
-    grantPermission,
-    selectMember,
-    resetCurrentMember,
-  });
-
-  const isListeningRef = useRef(isListening);
-
-  useEffect(() => {
-    isListeningRef.current = isListening;
-  }, [isListening]);
-
-  const [choosingRandomMember, setChoosingRandomMember] = useState(false);
-
-  useDiscussionSocket({
-    events,
-    currentSpeech,
-    conversation,
-    closeSocket,
-    setChoosingRandomMember,
-    selectMember,
-    setCurrentSpeech,
-    setConversation,
-    setProcessingPoint,
-    setStatus,
-    refetch,
-  });
-
   const handleGenerateConversation = () => {
     // mutate({
     //   id,
@@ -237,37 +238,6 @@ export const GroupDiscussion = () => {
       });
     }
   };
-
-  useEffect(() => {
-    if (
-      !isCompleted &&
-      transcript.length > 0 &&
-      currentSpeech.length === 0 &&
-      !isListening
-    ) {
-      handleGenerateConversation();
-    }
-  }, [isListening, transcript, currentSpeech, isCompleted]);
-
-  useEffect(() => {
-    if (currentSpeech?.length > 0 && isSpeaking) {
-      resetTranscript();
-    }
-  }, [isSpeaking]);
-
-  useEffect(() => {
-    if (!isCompleted && currentSpeech.length > 0 && !isSpeaking) {
-      setCurrentSpeech("");
-      setStatus("Your time to access the session");
-
-      setTimeout(() => {
-        if (!isListeningRef.current) {
-          handleGenerateConversation();
-        }
-        setStatus("");
-      }, THREE_SECOND_TIME_INTERVAL + 500);
-    }
-  }, [isListening, isSpeaking, isCompleted]);
 
   const getStatus = () => {
     switch (true) {
@@ -330,16 +300,6 @@ export const GroupDiscussion = () => {
     }
   };
 
-  console.log({ data });
-  const {
-    transcript: transcripts,
-    listening: listenings,
-    resetTranscript: resetTranscripts,
-    browserSupportsSpeechRecognition,
-  } = useSpeechRecognition();
-  const startListenings = () =>
-    SpeechRecognition.startListening({ continuous: true });
-
   if (issLoading) {
     return (
       <div className="text-blue-500 w-full h-full place-content-center">
@@ -352,24 +312,13 @@ export const GroupDiscussion = () => {
     return <div>Error: {groupDiscussionError}</div>;
   }
 
-  console.log({
-    transcripts,
-    resetTranscripts,
-    startListenings,
-    listenings,
-    status: data?.status,
-  });
-
   return (
-    <div className="flex gap-4 min-h-screen w-full bg-gray-700 text-gray-200 p-4">
-      <div className="max-w-3xl w-full flex-1.5  bg-gray-800 shadow-lg rounded-lg p-8">
-        <div>
-          <button onClick={startListenings}>Start</button>
-          <button onClick={resetTranscripts}>Reset</button>
-          <p>{transcripts}</p>
-          <p>{listenings}</p>
-        </div>
+    <div className="flex gap-4 min-h-screen w-full bg-gray-700 text-gray-200 p-4 relative overflow-hidden">
+      <InitialTimer socket={socket} />
+
+      <div className="max-w-3xl w-full flex-1.5 p-8 bg-gray-800 shadow-lg rounded-lg">
         <p className="font-bold">{data?.topic}</p>
+        <p>{transcript}</p>
 
         <SessionButton status={data?.status} socket={socket} />
 
@@ -384,7 +333,6 @@ export const GroupDiscussion = () => {
           conversation={conversation}
           currentMember={currentMember}
         /> */}
-
         {!isCompleted && !isLoading && !isListening && status?.length > 0 ? (
           <TimeProgressBar duration={TIME_INTERVAL} />
         ) : null}

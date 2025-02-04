@@ -1,4 +1,4 @@
-import useSpeechRecognization from "./useSpeechRecognisation";
+import useSpeechRecognization from "./use-speech-recognisation";
 import useSpeechSynthesis from "./useSpeechSynthesis";
 import { useWebSocket } from "./use-web-socket";
 import { useDiscussionSocket } from "./use-discussion-socket";

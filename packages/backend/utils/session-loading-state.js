@@ -19,7 +19,7 @@ const sessionLoadingState = {
     PAUSE_SESSION_LOADED: {
       message: "Discussion has been paused",
     },
-    status: "PAUSED",
+    status: "NOT_STARTED",
   },
   RESUME_SESSION: {
     to: "admin",
@@ -29,7 +29,7 @@ const sessionLoadingState = {
     RESUME_SESSION_LOADED: {
       message: "Discussion has resumed",
     },
-    status: "IN_PROGRESS",
+    status: "NOT_STARTED",
   },
   END_SESSION: {
     to: "admin",

@@ -176,6 +176,10 @@ const updateMuteStatus = async ({
             }`,
           });
         }
+      } else if (userId === "DISCUSISSION") {
+        io.to(targetUserId).emit("TURN_TO_SPEAK", {
+          message: "Your turn to speak",
+        });
       }
     }
   } catch (err) {

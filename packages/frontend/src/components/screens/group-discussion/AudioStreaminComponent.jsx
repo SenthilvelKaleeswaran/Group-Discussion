@@ -41,8 +41,9 @@ export const AudioStreamingComponent = ({
         autoPlay
         playsInline
         muted={isMuted || muteInitialLoad}
-        style={{ width: "300px", border: "2px solid black" }}
+        style={{ width: "100px", border: "2px solid black" }}
       />
+      <p>User: {userId}</p>
 
       <RenderSpace condition={!muteInitialLoad}>
         <Button

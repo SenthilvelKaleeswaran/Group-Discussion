@@ -11,6 +11,7 @@ import { displayToast } from "../components/shared";
 
 export const useDiscussionSocket = ({
   events,
+  sendMessage,
   currentSpeech,
   conversation,
   setChoosingRandomMember,
@@ -173,16 +174,32 @@ export const useDiscussionSocket = ({
         data: events.START_SESSION_LOADED,
       });
       localStorage.removeItem("START_SESSION");
-      refetch();
+  
+      refetch()
+        .then(() => {
+          console.log("i came")
+          sendMessage("START_TIMER", { duration : 10 });
+        })
+        .catch((error) => {
+          console.error("Error in refetch:", error);
+          displayToast({
+            id: "REFETCH_ERROR",
+            type: "error",
+            message: "Failed to update session. Please try again.",
+          });
+        });
     }
   }, [events.START_SESSION_LOADED]);
+
+ 
+  
 
   useEffect(() => {
     if (events.PAUSE_SESSION_LOADING) {
       displayToast({
         id: "PAUSE_SESSION_LOADING",
         data: events.PAUSE_SESSION_LOADING,
-        remove : ['START_SESSION_LOADED']
+        remove: ["START_SESSION_LOADED"],
       });
     }
   }, [events.PAUSE_SESSION_LOADING]);
@@ -204,7 +221,7 @@ export const useDiscussionSocket = ({
       displayToast({
         id: "RESUME_SESSION_LOADING",
         data: events.RESUME_SESSION_LOADING,
-        remove : ['PAUSE_SESSION_LOADED']
+        remove: ["PAUSE_SESSION_LOADED"],
       });
     }
   }, [events.RESUME_SESSION_LOADING]);
@@ -226,7 +243,7 @@ export const useDiscussionSocket = ({
       displayToast({
         id: "END_SESSION_LOADING",
         data: events.END_SESSION_LOADING,
-        remove : ['RESUME_SESSION_LOADED']
+        remove: ["RESUME_SESSION_LOADED"],
       });
     }
   }, [events.END_SESSION_LOADING]);
@@ -242,4 +259,20 @@ export const useDiscussionSocket = ({
       refetch();
     }
   }, [events.END_SESSION_LOADED]);
+
+  useEffect(() => {
+    if (events.TURN_TO_SPEAK) {
+      displayToast({
+        id: "TURN_TO_SPEAK",
+        data: events.TURN_TO_SPEAK,
+      });
+    }
+  }, [events.TURN_TO_SPEAK]);
+
+  useEffect(() => {
+    if (events.TIMER_UPDATE) {
+      console.log({aaaaaa :events.TIMER_UPDATE })
+    }
+  }, [events.TIMER_UPDATE]);
+
 };

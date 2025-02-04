@@ -7,6 +7,7 @@ import { TimeProgressBar } from "./TimeProgressBar.jsx";
 import { AiModelCard } from "./AiModelCard.jsx";
 import {IconWithLoader} from "./IconWithLoader.jsx"
 import { displayToast } from "./displayToast.js";
+import { InitialTimer } from "./InitialTimer.jsx";
 
 export {
   AiModelCard,
@@ -18,4 +19,5 @@ export {
   RenderSpace,
   SelectableContainer,
   TimeProgressBar,
+  InitialTimer,
 };
