@@ -63,6 +63,8 @@ export const GroupDiscussion = () => {
     data,
     error: groupDiscussionError,
     isLoading: issLoading,
+    refetch,
+    isRefetching,
   } = useQuery(
     [`group-discussion-${groupDiscussionId}`, groupDiscussionId],
     () => getActiveSession(id),
@@ -210,6 +212,7 @@ export const GroupDiscussion = () => {
     setConversation,
     setProcessingPoint,
     setStatus,
+    refetch,
   });
 
   const handleGenerateConversation = () => {
@@ -349,7 +352,13 @@ export const GroupDiscussion = () => {
     return <div>Error: {groupDiscussionError}</div>;
   }
 
-  console.log({ transcripts, resetTranscripts, startListenings, listenings });
+  console.log({
+    transcripts,
+    resetTranscripts,
+    startListenings,
+    listenings,
+    status: data?.status,
+  });
 
   return (
     <div className="flex gap-4 min-h-screen w-full bg-gray-700 text-gray-200 p-4">

@@ -1,4 +1,5 @@
 import React from "react";
+import { LoaderButton } from "../../shared/LoaderButton";
 import { Button } from "../../ui";
 
 export function SessionButton({ status, socket }) {
@@ -10,34 +11,47 @@ export function SessionButton({ status, socket }) {
     switch (status) {
       case "NOT_STARTED":
         return (
-          <Button
-            label="Start Discussion"
+          <LoaderButton
+            id="START_SESSION"
+            condition={status === "IN_PROGRESS"}
             onClick={() => handleSessionUpdate("START_SESSION")}
+            buttonProps={{ label: "Start Discussion" }}
           />
         );
+
       case "IN_PROGRESS":
         return (
-          <Button
-            label="End Discussion"
-            onClick={() => handleSessionUpdate("END_SESSION")}
-          />
+          <div className="flex gap-2">
+            <LoaderButton
+              id="PAUSE_SESSION"
+              condition={status === "PAUSED"}
+              onClick={() => handleSessionUpdate("PAUSE_SESSION")}
+              buttonProps={{ label: "Pause" }}
+            />
+            <LoaderButton
+              id="END_SESSION"
+              condition={status === "COMPLETED"}
+              onClick={() => handleSessionUpdate("END_SESSION")}
+              buttonProps={{ label: "End Discussion" }}
+            />
+          </div>
         );
+
       case "PAUSED":
         return (
-          <Button
-            label="Resume Discussion"
+          <LoaderButton
+            id="RESUME_SESSION"
+            condition={status === "IN_PROGRESS"}
             onClick={() => handleSessionUpdate("RESUME_SESSION")}
+            buttonProps={{ label: "Resume Discussion" }}
           />
         );
+
       case "COMPLETED":
-        return <Button label="Completed" variant="success" />;
+        return <Button label="Completed" variant="success" disabled />;
+
       default:
-        return (
-          <Button
-            label="Start Discussion"
-            onClick={() => handleSessionUpdate("START_SESSION")}
-          />
-        );
+        return null;
     }
   };
 

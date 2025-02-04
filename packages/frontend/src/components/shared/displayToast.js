@@ -11,7 +11,7 @@ export const displayToast = ({ id, remove, data, customComponent }) => {
   }
 
   const toastOptions = {
-    id: id || `${type}_${message}`;,
+    id: id || `${type}_${message}`,
     duration: type === "loading" ? Infinity : 4000,
   };
 

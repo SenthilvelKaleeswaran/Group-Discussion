@@ -20,6 +20,7 @@ export const useDiscussionSocket = ({
   setProcessingPoint,
   setStatus,
   closeSocket,
+  refetch,
 }) => {
   const dispatch = useDispatch();
 
@@ -155,7 +156,6 @@ export const useDiscussionSocket = ({
   }, [events.MUTE_ERROR]);
 
   // session
-
   useEffect(() => {
     if (events.START_SESSION_LOADING) {
       displayToast({
@@ -172,6 +172,8 @@ export const useDiscussionSocket = ({
         remove: ["START_SESSION_LOADING"],
         data: events.START_SESSION_LOADED,
       });
+      localStorage.removeItem("START_SESSION");
+      refetch();
     }
   }, [events.START_SESSION_LOADED]);
 
@@ -180,6 +182,7 @@ export const useDiscussionSocket = ({
       displayToast({
         id: "PAUSE_SESSION_LOADING",
         data: events.PAUSE_SESSION_LOADING,
+        remove : ['START_SESSION_LOADED']
       });
     }
   }, [events.PAUSE_SESSION_LOADING]);
@@ -191,6 +194,8 @@ export const useDiscussionSocket = ({
         remove: ["PAUSE_SESSION_LOADING"],
         data: events.PAUSE_SESSION_LOADED,
       });
+      localStorage.removeItem("PAUSE_SESSION");
+      refetch();
     }
   }, [events.PAUSE_SESSION_LOADED]);
 
@@ -199,6 +204,7 @@ export const useDiscussionSocket = ({
       displayToast({
         id: "RESUME_SESSION_LOADING",
         data: events.RESUME_SESSION_LOADING,
+        remove : ['PAUSE_SESSION_LOADED']
       });
     }
   }, [events.RESUME_SESSION_LOADING]);
@@ -210,6 +216,8 @@ export const useDiscussionSocket = ({
         remove: ["RESUME_SESSION_LOADING"],
         data: events.RESUME_SESSION_LOADED,
       });
+      localStorage.removeItem("RESUME_SESSION");
+      refetch();
     }
   }, [events.RESUME_SESSION_LOADED]);
 
@@ -218,6 +226,7 @@ export const useDiscussionSocket = ({
       displayToast({
         id: "END_SESSION_LOADING",
         data: events.END_SESSION_LOADING,
+        remove : ['RESUME_SESSION_LOADED']
       });
     }
   }, [events.END_SESSION_LOADING]);
@@ -229,25 +238,8 @@ export const useDiscussionSocket = ({
         remove: ["END_SESSION_LOADING"],
         data: events.END_SESSION_LOADED,
       });
+      localStorage.removeItem("END_SESSION");
+      refetch();
     }
   }, [events.END_SESSION_LOADED]);
-
-  useEffect(() => {
-    if (events.COMPLETED_SESSION_LOADING) {
-      displayToast({
-        id: "COMPLETED_SESSION_LOADING",
-        data: events.COMPLETED_SESSION_LOADING,
-      });
-    }
-  }, [events.COMPLETED_SESSION_LOADING]);
-
-  useEffect(() => {
-    if (events.COMPLETED_SESSION_LOADED) {
-      displayToast({
-        id: "COMPLETED_SESSION_LOADED",
-        remove: ["COMPLETED_SESSION_LOADING"],
-        data: events.COMPLETED_SESSION_LOADED,
-      });
-    }
-  }, [events.COMPLETED_SESSION_LOADED]);
 };

@@ -7,7 +7,7 @@ import React from 'react';
 //   variant?: 'primary' | 'secondary' | 'ghost' | 'outline' | 'dotted';
 // }
 
-const Button = ({ label, onClick, className = '', variant = 'primary',type='button',...rest }) => {
+const Button = ({ label,children, onClick, className = '', variant = 'primary',type='button',...rest }) => {
   const baseClasses = 'px-4 py-2 rounded';
   const variantClasses = {
     primary: 'bg-blue-500 text-white hover:bg-blue-700',
@@ -25,7 +25,7 @@ const Button = ({ label, onClick, className = '', variant = 'primary',type='butt
       type={type}
       {...rest}
     >
-      {label}
+      {children ||label}
     </button>
   );
 };
