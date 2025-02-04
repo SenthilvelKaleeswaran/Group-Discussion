@@ -87,7 +87,7 @@ const socketHandler = (io, socket) => {
         io,
         socket,
       });
-
+      
       io.to(sessionId).emit(`${type}_LOADED`, event[`${type}_LOADED`]);
     });
 
