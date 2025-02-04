@@ -6,10 +6,12 @@ import { SelectableContainer } from "./SelectableContainer.jsx";
 import { TimeProgressBar } from "./TimeProgressBar.jsx";
 import { AiModelCard } from "./AiModelCard.jsx";
 import {IconWithLoader} from "./IconWithLoader.jsx"
+import { displayToast } from "./displayToast.js";
 
 export {
   AiModelCard,
   BlinkingIcon,
+  displayToast,
   IconWithLoader,
   Loader,
   MessageBadges,

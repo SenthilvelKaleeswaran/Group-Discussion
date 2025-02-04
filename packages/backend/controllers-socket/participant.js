@@ -44,6 +44,11 @@ const deleteParticipant = async ({ groupDiscussionId, userId, role }) => {
   );
 };
 
+const joinRooms = (id, role, socket) => {
+  socket.join(id);
+  socket.join(`${id}-${role}`);
+};
+
 const addParticipant = async ({
   socket,
   groupDiscussionId,
@@ -63,26 +68,26 @@ const addParticipant = async ({
 
   try {
     let participant = await Participant.findOne({ sessionId });
-    const type = getUserRole(participant, userId);
+    const role = getUserRole(participant, userId);
 
-    if (!participant[type]) {
-      participant[type] = new Map();
+    if (!participant[role]) {
+      participant[role] = new Map();
     }
 
-    if (type) {
-      const user = participant[type].get(userId);
+    if (role) {
+      const user = participant[role].get(userId);
       user.isActive = true;
       user.socketId = socket.id;
       user.timing.push({ joinedAt: new Date(), leftAt: null });
-      participant[type].set(userId, user);
+      participant[role].set(userId, user);
     } else {
       const admins = ["67850bd81755c252af4a35fb", "67541f953969247972408a47"];
 
-      const type = admins.includes(userId) ? "admin" : "participant";
+      const role = admins.includes(userId) ? "admin" : "participant";
 
       const userDetail =
         (await UserDetails.findById(userId)) || (await User.findById(userId));
-      participant[type].set(userId, {
+      participant[role].set(userId, {
         userId,
         socketId: socket.id,
         name: userDetail?.name || userDetail?.email,
@@ -93,9 +98,13 @@ const addParticipant = async ({
     }
 
     await participant.save();
-    socket.join(sessionId);
 
-    const participantList = getRoleData(participant, userId, type);
+    const room = sessionId;
+
+    socket.join(room);
+    socket.join(`${room}-${role}`);
+
+    const participantList = getRoleData(participant, userId, role);
 
     io.to(sessionId).emit("PARTICIPANT_LIST", participantList);
     return participantList;

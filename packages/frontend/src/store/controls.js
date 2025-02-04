@@ -5,6 +5,7 @@ const controlsSlice = createSlice({
   initialState: {
     mutedParticipants: [],
     mutingList: [],
+    userRole : '',
     isMuteLoading: false,
     muteInitialLoad: true,
   },
@@ -18,6 +19,9 @@ const controlsSlice = createSlice({
       if (mutedMember) {
         state.mutingList = state.mutingList.filter((id) => id !== mutedMember);
       }
+    },
+    setUserRole : (state, action) => {
+      state.userRole = action.payload;
     },
 
     setMuteLoading: (state, action) => {
@@ -39,6 +43,7 @@ export const {
   setMuteLoading,
   setMutingList,
   setMuteInitialLoad,
+  setUserRole
 } = controlsSlice.actions;
 
 export default controlsSlice.reducer;

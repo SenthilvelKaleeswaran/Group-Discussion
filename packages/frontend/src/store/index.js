@@ -3,7 +3,6 @@ import { updateMessage } from "./conversation";
 import {
   fetchGroupDiscussion,
   updateGroupDiscussion,
-  updateUserRole,
 } from "./group-discussion";
 import { updateParticipants, fetchParticipants } from "./participants";
 import {
@@ -11,6 +10,7 @@ import {
   setMuteLoading,
   setMutingList,
   setMuteInitialLoad,
+  setUserRole,
 } from "./controls";
 
 export {
@@ -20,7 +20,7 @@ export {
   updateMessage,
   updateParticipants,
   fetchParticipants,
-  updateUserRole,
+  setUserRole,
   setMuteLoading,
   setMuteInitialLoad,
   setMutingList,

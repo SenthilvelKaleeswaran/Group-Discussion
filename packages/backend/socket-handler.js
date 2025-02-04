@@ -3,6 +3,8 @@ const {
   leftParticipant,
   updateMuteStatus,
 } = require("./controllers-socket/participant");
+const { updateSession } = require("./controllers-socket/session");
+const { sessionLoadingState } = require("./utils/session-loading-state");
 
 const getRoomSockets = (io, roomId) => {
   const room = io.sockets.adapter.rooms.get(roomId);
@@ -13,6 +15,7 @@ const socketHandler = (io, socket) => {
   const socketId = socket.id;
 
   socket.on("join-room", async ({ sessionId, userId, groupDiscussionId }) => {
+    const room = sessionId;
     const roomSocketId = getRoomSockets(io, sessionId);
     const participantList = await addParticipant({
       io,
@@ -64,6 +67,34 @@ const socketHandler = (io, socket) => {
     socket.on("toggle-mute", async (data) => {
       await updateMuteStatus({ socket, io, ...data });
     });
+
+    socket.on("UPDATE_SESSION_STATUS", async ({ type }) => {
+      const event = sessionLoadingState[type];
+
+      const targetRoom = `${sessionId}${event.to ? `-${event.to}` : ""}`;
+
+      io.to(targetRoom).emit(`${type}_LOADING`, event[`${type}_LOADING`]);
+
+      const data = {};
+
+      if (event?.status) data["status"] = event?.status;
+
+      if (event.id) data[event.id] = new Date();
+
+      await updateSession({
+        id: sessionId,
+        ...data,
+        io,
+        socket,
+      });
+
+      io.to(sessionId).emit(`${type}_LOADED`, event[`${type}_LOADED`]);
+    });
+
+    socket.on(
+      "UPDATE_SESSION",
+      async (data) => await updateSession({ socket, io, ...data })
+    );
   });
 };
 

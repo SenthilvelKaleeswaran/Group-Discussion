@@ -6,6 +6,7 @@ import { ConversationSection } from "./feedback/ConversationSection";
 import { ConversationSpace } from "./feedback/ConversationSpace";
 import { Section } from "./create-discussion/Section";
 import { DiscussionSettings } from "./group-discussion/DiscussionSettings";
+import {SessionButton} from "./group-discussion/SessionButton";
 
 export {
   Conversation,
@@ -15,5 +16,6 @@ export {
   DiscussionSettings,
   MemberCard,
   PerformanceSection,
-  Section
+  Section,
+  SessionButton
 };

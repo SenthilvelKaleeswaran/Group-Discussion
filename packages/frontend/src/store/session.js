@@ -2,8 +2,8 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { getActiveSession, getConversation } from "../utils/api-call";
 
 // Fetch group discussion by ID
-export const fetchGroupDiscussion = createAsyncThunk(
-  "groupDiscussions/fetchGroupDiscussion",
+export const fetchActiveSession = createAsyncThunk(
+  "groupDiscussions/fetchActiveSession",
   async (groupDiscussionId, { rejectWithValue }) => {
     try {
       console.log({groupDiscussionId})
@@ -16,37 +16,37 @@ export const fetchGroupDiscussion = createAsyncThunk(
   }
 );
 
-const groupDiscussionsSlice = createSlice({
-  name: "groupDiscussions", // Renamed slice for clarity
+const sessionSlice = createSlice({
+  name: "session", // Renamed slice for clarity
   initialState: {
     discussion: {}, 
     loading: false,
     error: null,
   },
   reducers: {
-    updateGroupDiscussion: (state, action) => {
+    updateSession: (state, action) => {
       state.discussion = action.payload;
     },
     
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchGroupDiscussion.pending, (state) => {
+      .addCase(fetchActiveSession.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchGroupDiscussion.fulfilled, (state, action) => {
+      .addCase(fetchActiveSession.fulfilled, (state, action) => {
         state.loading = false;
         console.log({action})
         state.discussion = action.payload; // Fix key to match initial state
       })
-      .addCase(fetchGroupDiscussion.rejected, (state, action) => {
+      .addCase(fetchActiveSession.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });
   },
 });
 
-export const { updateGroupDiscussion } = groupDiscussionsSlice.actions;
+export const { updateGroupDiscussion } = sessionSlice.actions;
 
-export default groupDiscussionsSlice.reducer;
+export default sessionSlice.reducer;
