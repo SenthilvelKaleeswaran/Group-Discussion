@@ -8,11 +8,13 @@ import { AiModelCard } from "./AiModelCard.jsx";
 import {IconWithLoader} from "./IconWithLoader.jsx"
 import { displayToast } from "./displayToast.js";
 import { InitialTimer } from "./InitialTimer.jsx";
+import { DoubleTapPopup } from "./DoubleTapPopup.jsx";
 
 export {
   AiModelCard,
   BlinkingIcon,
   displayToast,
+  DoubleTapPopup,
   IconWithLoader,
   Loader,
   MessageBadges,
