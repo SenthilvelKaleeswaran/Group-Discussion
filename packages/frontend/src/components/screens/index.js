@@ -7,6 +7,7 @@ import { ConversationSpace } from "./feedback/ConversationSpace";
 import { Section } from "./create-discussion/Section";
 import { DiscussionSettings } from "./group-discussion/DiscussionSettings";
 import {SessionButton} from "./group-discussion/SessionButton";
+import {QueuePopup} from './group-discussion/QueuePopup'
 
 export {
   Conversation,
@@ -16,6 +17,7 @@ export {
   DiscussionSettings,
   MemberCard,
   PerformanceSection,
+  QueuePopup,
   Section,
   SessionButton
 };

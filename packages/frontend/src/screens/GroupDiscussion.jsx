@@ -19,13 +19,19 @@ import {
   Conversation,
   DiscussionSettings,
   MemberCard,
+  QueuePopup,
   SessionButton,
 } from "../components/screens";
 
-import { InitialTimer, TimeProgressBar } from "../components/shared";
+import {
+  DoubleTapPopup,
+  InitialTimer,
+  TimeProgressBar,
+} from "../components/shared";
 
 import { AudioStreamingComponent } from "../components/screens/group-discussion/AudioStreaminComponent";
 import { useSelector } from "react-redux";
+import Draggable from "react-draggable";
 
 const signalingServer = "http://localhost:5000";
 
@@ -315,6 +321,8 @@ export const GroupDiscussion = () => {
   return (
     <div className="flex gap-4 min-h-screen w-full bg-gray-700 text-gray-200 p-4 relative overflow-hidden">
       <InitialTimer socket={socket} />
+      <QueuePopup />
+      
 
       <div className="max-w-3xl w-full flex-1.5 p-8 bg-gray-800 shadow-lg rounded-lg">
         <p className="font-bold">{data?.topic}</p>
