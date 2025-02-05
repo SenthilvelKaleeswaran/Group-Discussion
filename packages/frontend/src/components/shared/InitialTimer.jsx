@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "../ui";
 
-export const IntialTimer = ({ socket }) => {
+export const InitialTimer = ({ socket }) => {
   const [timer, setTimer] = useState(-1);
   const [isAnimating, setIsAnimating] = useState(false);
 

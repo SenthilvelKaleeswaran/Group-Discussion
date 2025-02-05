@@ -1,5 +1,16 @@
 const mongoose = require("mongoose");
 
+const QueueSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId },
+  name: { type: String },
+  aiId: { type: mongoose.Schema.Types.ObjectId },
+  order: { type: Number },
+  status: {
+    type: String,
+    enum: ["NOT_STARTED", "IN_PROGRESS", "COMPLETED", "IN_ACTIVE", "HOLDED"],
+  },
+});
+
 const SessionSchema = new mongoose.Schema({
   // Topic Settings
   groupDiscussionId: {
@@ -182,9 +193,11 @@ const SessionSchema = new mongoose.Schema({
   sessionEndTime: {
     type: Date,
   },
+  queue: {
+    type: [QueueSchema],
+  },
 });
 
 const Session = mongoose.model("Session", SessionSchema);
 
 module.exports = Session;
-

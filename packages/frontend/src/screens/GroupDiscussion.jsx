@@ -22,7 +22,7 @@ import {
   SessionButton,
 } from "../components/screens";
 
-import { TimeProgressBar, InitialTimer } from "../components/shared";
+import { InitialTimer, TimeProgressBar } from "../components/shared";
 
 import { AudioStreamingComponent } from "../components/screens/group-discussion/AudioStreaminComponent";
 import { useSelector } from "react-redux";

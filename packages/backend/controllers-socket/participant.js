@@ -6,6 +6,7 @@ const {
   getRoleData,
   getUserData,
 } = require("../shared/getUserRole");
+const { getUserNameOrEmail } = require("./common");
 
 const updateParticipant = async ({
   groupDiscussionId,
@@ -85,8 +86,7 @@ const addParticipant = async ({
 
       const role = admins.includes(userId) ? "admin" : "participant";
 
-      const userDetail =
-        (await UserDetails.findById(userId)) || (await User.findById(userId));
+      const userDetail = await getUserNameOrEmail(userId);
       participant[role].set(userId, {
         userId,
         socketId: socket.id,
@@ -190,9 +190,256 @@ const updateMuteStatus = async ({
   }
 };
 
+const addDiscussionQueue = async ({ io, socket, sessionId, ...rest }) => {
+  try {
+    io.to(`${sessionId}-admin`).emit("DISCUSSION_QUEUE_LOADING", {
+      loading: "Adding participant to the queue",
+    });
+
+    const session = await Participant.findOneAndUpdate(
+      { sessionId },
+      { $push: { queue: rest } },
+      { new: true, upsert: true }
+    );
+
+    if (true && rest?.type !== "AI") {
+      const previousUser = session.queue.pop().pop();
+      if (previousUser) {
+        let name = "";
+
+        if (type === "AI") name = await getAIName(previousUser?.aiId);
+        else name = await getUserNameOrEmail(previousUser?.userId);
+
+        io.to(rest?.userId).emit("TURN_TO_SPEAK", {
+          message: `You will speak after ${name}`,
+          type : 'Add'
+        });
+      }
+    }
+
+    io.to(`${sessionId}-admin`).emit("DISCUSSION_QUEUE_UPDATED", {
+      notify: {
+        message: `${rest?.name} added to the queue`,
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    socket.emit("DISCUSSION_QUEUE_ERROR", {
+      message:
+        "Error adding the next participant to the queue. Please try again.",
+    });
+  }
+};
+
+const updateDiscussionQueue = async ({
+  io,
+  socket,
+  sessionId,
+  _id,
+  ...updates
+}) => {
+  try {
+    io.to(`${sessionId}-admin`).emit("DISCUSSION_QUEUE_LOADING", {
+      loading: "Updating discussion queue",
+    });
+
+    const session = await Participant.findOneAndUpdate(
+      { _id: sessionId, "queue._id": _id },
+      { $set: { "queue.$": updates } },
+      { new: true }
+    );
+
+    if (true && rest?.type !== "AI") {
+      const previousUser = session.queue.pop().pop();
+      if (previousUser) {
+        let name = "";
+
+        if (type === "AI") name = await getAIName(previousUser?.aiId);
+        else name = await getUserNameOrEmail(previousUser?.userId);
+
+        io.to(rest?.userId).emit("TURN_TO_SPEAK", {
+          message: `Your previous turn is changed. You will speak after ${name}`,
+          type: "Update",
+        });
+      }
+    }
+
+    io.to(sessionId).emit("DISCUSSION_QUEUE_UPDATED", {
+      notify: {
+        message: `Discussion queue updated successfully`,
+      },
+      queue: session.queue,
+    });
+  } catch (error) {
+    console.error("Error updating discussion queue:", error);
+    socket.emit("DISCUSSION_QUEUE_ERROR", {
+      message: "Failed to update discussion queue",
+    });
+  }
+};
+
+const deleteDiscussionQueue = async ({ io, socket, sessionId, _id }) => {
+  try {
+    io.to(`${sessionId}-admin`).emit("DISCUSSION_QUEUE_LOADING", {
+      loading: "Deleting Participant in discussion queue",
+    });
+
+    const session = await Participant.findOneAndUpdate(
+      { _id: sessionId },
+      { $pull: { queue: { _id } } },
+      { new: true }
+    );
+
+    if (true && rest?.type !== "AI") {
+      io.to(rest?.userId).emit("TURN_TO_SPEAK", {
+        message: `Your turn is changed. Wait for further updation`,
+        type: "Delete",
+      });
+    }
+
+    io.to(sessionId).emit("DISCUSSION_QUEUE_UPDATED", {
+      notify: {
+        message: "Participant removed from queue",
+      },
+      queue: session.queue,
+    });
+  } catch (error) {
+    console.error("Error deleting participant from queue:", error);
+    socket.emit("DISCUSSION_QUEUE_ERROR", {
+      message: "Failed to remove participant from queue",
+    });
+  }
+};
+
+const clearDiscussionQueue = async ({ io, socket, sessionId }) => {
+  try {
+    io.to(`${sessionId}-admin`).emit("DISCUSSION_QUEUE_LOADING", {
+      loading: "Clearing discussion queue",
+    });
+
+    const session = await Participant.findOneAndUpdate(
+      { _id: sessionId },
+      { $set: { queue: [] } },
+      { new: true }
+    );
+
+    if (true) {
+      io.to(session).emit("TURN_TO_SPEAK", {
+        message: `Changes in discussion queue. Wait for further updation.`,
+        type: "Clear",
+      });
+    }
+    io.to(sessionId).emit("DISCUSSION_QUEUE_UPDATED", {
+      notify: {
+        message: "Discussion queue cleared",
+      },
+      queue: [],
+    });
+  } catch (error) {
+    console.error("Error clearing discussion queue:", error);
+    socket.emit("DISCUSSION_QUEUE_ERROR", {
+      message: "Failed to clear discussion queue",
+    });
+  }
+};
+
+const chooseNextParticipant = async ({ io, socket, sessionId }) => {
+  try {
+    io.to(sessionId).emit("NEXT_PARTICIPANT_LOADING", {
+      loading: "Discussion Queue is Loading",
+    });
+
+    let participant = await Participant.findOne({ sessionId });
+
+    if (!participant) {
+      return io.to(sessionId).emit("NEXT_PARTICIPANT_ERROR", {
+        error: "Participant not found",
+      });
+    }
+
+    const { queue = [], participant: discussionParticipant } = participant;
+
+    if (!queue.length) {
+       io.to(sessionId).emit("DISCUSSION_QUEUE_NO_PARTICIPANT", {
+        warning : "No Participant in Discussion Queue",
+      });
+      return
+    }
+
+    let index = queue.findIndex((item) => item.status === "NOT_STARTED");
+
+    if (index === -1) {
+       io.to(sessionId).emit("DISCUSSION_QUEUE_COMPLETED", {
+        message: "All participants have spoken",
+      });
+      return
+    }
+
+    const takeNextParticipant = async (index) => {
+      if (index >= queue.length) {
+        return io.to(sessionId).emit("DISCUSSION_QUEUE_COMPLETED", {
+          warning: "No more active participants left",
+        });
+      }
+
+      const currentPerson = queue[index]?.userId;
+      const user = discussionParticipant?.get(currentPerson);
+
+      if (user?.isActive) {
+        await updateMuteStatus({
+          socket,
+          io,
+          userId: "DISCUSSION",
+          targetUserId: currentPerson,
+          sessionId,
+          isMuted: false,
+        });
+
+        queue[index].status = "IN_PROGRESS";
+
+        io.to(currentPerson).emit("TURN_TO_SPEAK", {
+          message: "Your turn to speak",
+        });
+
+        io.to(sessionId)
+          .except(currentPerson)
+          .emit("TURN_TO_SPEAK_NOTIFY_OTHERS", {
+            message: `${user?.name} turn to speak`,
+          });
+
+        participant.queue = queue;
+        await participant.save();
+      } else {
+        queue[index].status = "INACTIVE";
+
+        participant.queue = queue;
+        await participant.save();
+
+        io.to(sessionId).emit("TURN_TO_SPEAK_INACTIVE", {
+          error: `${user?.name} is inactive`,
+        });
+
+        return takeNextParticipant(index + 1);
+      }
+    };
+
+    return takeNextParticipant(index);
+  } catch (err) {
+    console.error(err);
+    socket.emit("MUTE_ERROR", {
+      message: "Error selecting the next participant. Please try again.",
+    });
+  }
+};
+
 module.exports = {
   addParticipant,
+  addDiscussionQueue,
+  clearDiscussionQueue,
+  chooseNextParticipant,
+  deleteDiscussionQueue,
   leftParticipant,
+  updateDiscussionQueue,
   updateMuteStatus,
   updateParticipant,
   deleteParticipant,

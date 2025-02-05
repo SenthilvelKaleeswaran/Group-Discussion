@@ -174,11 +174,11 @@ export const useDiscussionSocket = ({
         data: events.START_SESSION_LOADED,
       });
       localStorage.removeItem("START_SESSION");
-  
+
       refetch()
         .then(() => {
-          console.log("i came")
-          sendMessage("START_TIMER", { duration : 10 });
+          console.log("i came");
+          sendMessage("START_TIMER", { duration: 10 });
         })
         .catch((error) => {
           console.error("Error in refetch:", error);
@@ -190,9 +190,6 @@ export const useDiscussionSocket = ({
         });
     }
   }, [events.START_SESSION_LOADED]);
-
- 
-  
 
   useEffect(() => {
     if (events.PAUSE_SESSION_LOADING) {
@@ -260,19 +257,118 @@ export const useDiscussionSocket = ({
     }
   }, [events.END_SESSION_LOADED]);
 
+ 
+
+  // discussion queue
+  useEffect(() => {
+    if (events.DISCUSSION_QUEUE_LOADING) {
+      displayToast({
+        id: "DISCUSSION_QUEUE_LOADING",
+        data: events.DISCUSSION_QUEUE_LOADING,
+      });
+    }
+  }, [events.DISCUSSION_QUEUE_LOADING]);
+
+  useEffect(() => {
+    if (events.DISCUSSION_QUEUE_UPDATED) {
+      const { queue = [], notify } = events.DISCUSSION_QUEUE_UPDATED;
+      displayToast({
+        id: "DISCUSSION_QUEUE_UPDATED",
+        remove: ["DISCUSSION_QUEUE_LOADING"],
+        data: notify,
+      });
+
+      if (queue) {
+        //update Queue
+      }
+    }
+  }, [events.DISCUSSION_QUEUE_UPDATED]);
+
+  useEffect(() => {
+    if (events.DISCUSSION_QUEUE_ERROR) {
+      displayToast({
+        id: "DISCUSSION_QUEUE_ERROR",
+        data: events.DISCUSSION_QUEUE_ERROR,
+        remove: ["DISCUSSION_QUEUE_LOADING"],
+      });
+    }
+  }, [events.DISCUSSION_QUEUE_ERROR]);
+
+  useEffect(() => {
+    if (events.DISCUSSION_QUEUE_NO_PARTICIPANT) {
+      displayToast({
+        id: "DISCUSSION_QUEUE_NO_PARTICIPANT",
+        data: events.DISCUSSION_QUEUE_NO_PARTICIPANT,
+      });
+    }
+  }, [events.DISCUSSION_QUEUE_NO_PARTICIPANT]);
+
+  useEffect(() => {
+    if (events.DISCUSSION_QUEUE_COMPLETED) {
+      displayToast({
+        id: "DISCUSSION_QUEUE_COMPLETED",
+        data: events.DISCUSSION_QUEUE_COMPLETED,
+      });
+    }
+  }, [events.DISCUSSION_QUEUE_COMPLETED]);
+
+  // turn to
+
   useEffect(() => {
     if (events.TURN_TO_SPEAK) {
+
+      const { type , message} = events.TURN_TO_SPEAK
+
       displayToast({
         id: "TURN_TO_SPEAK",
-        data: events.TURN_TO_SPEAK,
+        data: { notification : !type ? 'Your turn to speak !' : 'Quick important updation'},
       });
+
+      if(message){
+        // upadte
+      }
     }
   }, [events.TURN_TO_SPEAK]);
 
-  useEffect(() => {
-    if (events.TIMER_UPDATE) {
-      console.log({aaaaaa :events.TIMER_UPDATE })
-    }
-  }, [events.TIMER_UPDATE]);
 
+  useEffect(() => {
+    if (events.TURN_TO_SPEAK_NOTIFY_OTHERS) {
+      displayToast({
+        id: "TURN_TO_SPEAK_NOTIFY_OTHERS",
+        data: events.TURN_TO_SPEAK_NOTIFY_OTHERS,
+      });
+    }
+  }, [events.TURN_TO_SPEAK_NOTIFY_OTHERS]);
+
+ 
+  useEffect(() => {
+    if (events.TURN_TO_SPEAK_INACTIVE) {
+      displayToast({
+        id: "TURN_TO_SPEAK_INACTIVE",
+        data: events.TURN_TO_SPEAK_INACTIVE,
+      });
+    }
+  }, [events.TURN_TO_SPEAK_INACTIVE]);
+
+  
+
+  //  next participant
+
+  useEffect(() => {
+    if (events.NEXT_PARTICIPANT_LOADING) {
+      displayToast({
+        id: "NEXT_PARTICIPANT_LOADING",
+        data: events.NEXT_PARTICIPANT_LOADING,
+      });
+    }
+  }, [events.NEXT_PARTICIPANT_LOADING]);
+
+  useEffect(() => {
+    if (events.NEXT_PARTICIPANT_ERROR) {
+      displayToast({
+        id: "NEXT_PARTICIPANT_ERROR",
+        data: events.NEXT_PARTICIPANT_ERROR,
+      });
+    }
+  }, [events.NEXT_PARTICIPANT_ERROR]);
 };
