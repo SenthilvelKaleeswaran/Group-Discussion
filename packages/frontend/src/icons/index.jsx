@@ -19,6 +19,8 @@ import { FaUserShield } from "react-icons/fa6";
 import { IoSettings } from "react-icons/io5";
 import { FiMicOff } from "react-icons/fi";
 import { ImBlocked } from "react-icons/im";
+import { HiDotsVertical } from "react-icons/hi";
+import { LuListPlus } from "react-icons/lu";
 
 const Icon = ({ name, ...props }) => {
   const IconsList = {
@@ -35,11 +37,13 @@ const Icon = ({ name, ...props }) => {
     Loader: FiLoader,
     Pause: FaPause,
     Play: FaPlay,
+    Queue : LuListPlus,
     Require: LuTarget,
     Robot: VscRobot,
     Rotate: FaRotate,
     Settings :IoSettings ,
     Users : FaUsers,
+    VerticlDots : HiDotsVertical,
     Wave: PiWaveformBold,
   };
 
