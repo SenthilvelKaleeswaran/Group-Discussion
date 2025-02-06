@@ -7,6 +7,7 @@ const {
   getUserData,
 } = require("../shared/getUserRole");
 const { getUserNameOrEmail } = require("./common");
+const Session = require("../models/session");
 
 const updateParticipant = async ({
   groupDiscussionId,
@@ -90,7 +91,7 @@ const addParticipant = async ({
       participant[role].set(userId, {
         userId,
         socketId: socket.id,
-        name: userDetail?.name || userDetail?.email,
+        name: userDetail?.name || userDetail?.email || userDetail,
         isActive: true,
         muteStatus: false,
         timing: [{ joinedAt: new Date(), leftAt: null }],
@@ -143,9 +144,11 @@ const updateMuteStatus = async ({
   targetUserId,
   sessionId,
   isMuted,
+  passedParticipant,
 }) => {
   try {
-    let participant = await Participant.findOne({ sessionId });
+    let participant =
+      passedParticipant || (await Participant.findOne({ sessionId }));
 
     const { role, user } = getUserData(participant, targetUserId);
 
@@ -162,7 +165,11 @@ const updateMuteStatus = async ({
         userId,
       });
 
-      if (userId !== targetUserId) {
+      if (userId === "DISCUSSION") {
+        io.to(targetUserId).emit("TURN_TO_SPEAK", {
+          message: "Your turn to speak",
+        });
+      } else if (userId !== targetUserId) {
         socket.emit("MUTE_SUCCESS", {
           message: `Successfully ${isMuted ? "muted" : "unmuted"} ${user.name}`,
         });
@@ -176,12 +183,10 @@ const updateMuteStatus = async ({
             }`,
           });
         }
-      } else if (userId === "DISCUSISSION") {
-        io.to(targetUserId).emit("TURN_TO_SPEAK", {
-          message: "Your turn to speak",
-        });
       }
     }
+
+    return;
   } catch (err) {
     console.error(err);
     socket.emit("MUTE_ERROR", {
@@ -196,31 +201,47 @@ const addDiscussionQueue = async ({ io, socket, sessionId, ...rest }) => {
       loading: "Adding participant to the queue",
     });
 
-    const session = await Participant.findOneAndUpdate(
-      { sessionId },
-      { $push: { queue: rest } },
+    // Get the current session
+    const session = await Session.findOne({ _id: sessionId });
+
+    // Set the order for the new participant based on the queue length
+    const order = session.queue.length + 1;
+
+    // Add the order field to the participant data
+    const newParticipant = { ...rest, order, status: "NOT_STARTED" };
+
+    // Update the session with the new participant added to the queue
+    const updatedSession = await Session.findOneAndUpdate(
+      { _id: sessionId },
+      { $push: { queue: newParticipant } },
       { new: true, upsert: true }
     );
 
-    if (true && rest?.type !== "AI") {
-      const previousUser = session.queue.pop().pop();
+    if (updatedSession && rest?.type !== "AI") {
+      const previousUser =
+        updatedSession.queue[updatedSession.queue.length - 2];
       if (previousUser) {
         let name = "";
-
-        if (type === "AI") name = await getAIName(previousUser?.aiId);
-        else name = await getUserNameOrEmail(previousUser?.userId);
-
-        io.to(rest?.userId).emit("TURN_TO_SPEAK", {
+        if (previousUser.type === "AI") {
+          name = await getAIName(previousUser.aiId);
+        } else {
+          name =
+            (await getUserNameOrEmail(previousUser.userId)?.name) ||
+            getUserNameOrEmail(previousUser.userId)?.email;
+        }
+        io.to(rest.userId).emit("TURN_TO_SPEAK", {
           message: `You will speak after ${name}`,
-          type : 'Add'
+          type: "Add",
         });
       }
     }
 
+    // Emit the updated queue to the admin
     io.to(`${sessionId}-admin`).emit("DISCUSSION_QUEUE_UPDATED", {
       notify: {
-        message: `${rest?.name} added to the queue`,
+        message: `${rest.name} added to the queue`,
       },
+      queue: updatedSession.queue,
     });
   } catch (err) {
     console.error(err);
@@ -243,7 +264,7 @@ const updateDiscussionQueue = async ({
       loading: "Updating discussion queue",
     });
 
-    const session = await Participant.findOneAndUpdate(
+    const session = await Session.findOneAndUpdate(
       { _id: sessionId, "queue._id": _id },
       { $set: { "queue.$": updates } },
       { new: true }
@@ -255,7 +276,10 @@ const updateDiscussionQueue = async ({
         let name = "";
 
         if (type === "AI") name = await getAIName(previousUser?.aiId);
-        else name = await getUserNameOrEmail(previousUser?.userId);
+        else
+          name =
+            (await getUserNameOrEmail(previousUser?.userId)?.name) ||
+            getUserNameOrEmail(previousUser?.userId)?.email;
 
         io.to(rest?.userId).emit("TURN_TO_SPEAK", {
           message: `Your previous turn is changed. You will speak after ${name}`,
@@ -278,30 +302,117 @@ const updateDiscussionQueue = async ({
   }
 };
 
-const deleteDiscussionQueue = async ({ io, socket, sessionId, _id }) => {
+const changeOrder = async ({
+  io,
+  socket,
+  sessionId,
+  sourceIndex,
+  destinationIndex,
+}) => {
+  try {
+    io.to(`${sessionId}-admin`).emit("DISCUSSION_QUEUE_LOADING", {
+      loading: "Updating discussion queue order",
+    });
+
+    // Fetch the session and the current queue
+    const session = await Session.findOne({ _id: sessionId });
+
+    const queue = session.queue;
+
+    if (
+      sourceIndex < 0 ||
+      destinationIndex < 0 ||
+      sourceIndex >= queue.length ||
+      destinationIndex >= queue.length
+    ) {
+      throw new Error("Invalid source or destination index");
+    }
+
+    queue[sourceIndex].order = destinationIndex + 1;
+
+    if (sourceIndex < destinationIndex) {
+      for (let i = sourceIndex + 1; i <= destinationIndex; i++) {
+        if (queue[i].order > sourceIndex) {
+          queue[i].order = i;
+        }
+      }
+    } else {
+      for (let i = destinationIndex; i < sourceIndex; i++) {
+        if (queue[i].order <= sourceIndex) {
+          queue[i].order += 1;
+        }
+      }
+    }
+
+    const sorted = queue?.sort((a, b) => a.order - b.order);
+
+    session.queue = sorted;
+
+    await session.save();
+
+    // Emit updated queue
+    io.to(sessionId).emit("DISCUSSION_QUEUE_UPDATED", {
+      notify: {
+        message: `Discussion queue order updated successfully`,
+      },
+      queue: session.queue,
+    });
+  } catch (error) {
+    console.error("Error updating discussion queue order:", error);
+    socket.emit("DISCUSSION_QUEUE_ERROR", {
+      message: "Failed to update discussion queue order",
+    });
+  }
+};
+
+const deleteDiscussionQueue = async ({
+  io,
+  socket,
+  sessionId,
+  _id,
+  ...rest
+}) => {
   try {
     io.to(`${sessionId}-admin`).emit("DISCUSSION_QUEUE_LOADING", {
       loading: "Deleting Participant in discussion queue",
     });
 
-    const session = await Participant.findOneAndUpdate(
+    // Get the current session
+    const session = await Session.findOne({ _id: sessionId });
+
+    // Remove the participant from the queue
+    const updatedSession = await Session.findOneAndUpdate(
       { _id: sessionId },
       { $pull: { queue: { _id } } },
       { new: true }
     );
 
-    if (true && rest?.type !== "AI") {
+    // Update the order of remaining participants in the queue
+    updatedSession.queue.forEach((participant, index) => {
+      participant.order = index + 1; // Reassign order based on the new index
+    });
+
+    updatedSession.globalOrder -= 1
+
+    // Save the updated session with the new order values
+    await updatedSession.save();
+
+    if (rest?.userId) {
       io.to(rest?.userId).emit("TURN_TO_SPEAK", {
         message: `Your turn is changed. Wait for further updation`,
         type: "Delete",
       });
     }
 
+    // Emit the updated queue to the session
     io.to(sessionId).emit("DISCUSSION_QUEUE_UPDATED", {
       notify: {
         message: "Participant removed from queue",
       },
-      queue: session.queue,
+      queue: updatedSession.queue,
+      action: "DELETE",
+      globalOrder : updatedSession.globalOrder,
+      id: _id,
     });
   } catch (error) {
     console.error("Error deleting participant from queue:", error);
@@ -311,37 +422,61 @@ const deleteDiscussionQueue = async ({ io, socket, sessionId, _id }) => {
   }
 };
 
-const clearDiscussionQueue = async ({ io, socket, sessionId }) => {
+const clearDiscussionQueue = async ({ io, socket, sessionId,queueLength }) => {
   try {
     io.to(`${sessionId}-admin`).emit("DISCUSSION_QUEUE_LOADING", {
       loading: "Clearing discussion queue",
     });
 
-    const session = await Participant.findOneAndUpdate(
+    // Find and update session, removing items with status "NOT_STARTED"
+    const session = await Session.findOneAndUpdate(
       { _id: sessionId },
-      { $set: { queue: [] } },
-      { new: true }
+      { $pull: { queue: { status: "NOT_STARTED" } } }, 
+      { new: true } // Return updated session
     );
 
-    if (true) {
-      io.to(session).emit("TURN_TO_SPEAK", {
-        message: `Changes in discussion queue. Wait for further updation.`,
-        type: "Clear",
-      });
+    // Check if session exists (avoid accessing properties of null)
+    if (!session) {
+      throw new Error("Session not found");
     }
+
+    const sessionQueueLength = session.queue.length
+
+    if(queueLength === sessionQueueLength){
+      io.to(sessionId).emit("DISCUSSION_QUEUE_UPDATED", {
+        notify: { message: "No items to clear" },
+      });
+
+      return
+    }
+
+    // Update globalOrder based on queue length
+    session.globalOrder = queueLength-sessionQueueLength  ;
+
+    await session.save();
+
+    // Emit queue update event
     io.to(sessionId).emit("DISCUSSION_QUEUE_UPDATED", {
-      notify: {
-        message: "Discussion queue cleared",
-      },
-      queue: [],
+      notify: { message: "Discussion queue cleared" },
+      queue: session.queue, // Send updated queue
+      globalOrder : session.globalOrder
     });
+
+    // Notify users about changes
+    io.to(sessionId).emit("TURN_TO_SPEAK", {
+      message: `Changes in discussion queue. Wait for further updates.`,
+      type: "Clear",
+    });
+
   } catch (error) {
     console.error("Error clearing discussion queue:", error);
+
     socket.emit("DISCUSSION_QUEUE_ERROR", {
       message: "Failed to clear discussion queue",
     });
   }
 };
+
 
 const chooseNextParticipant = async ({ io, socket, sessionId }) => {
   try {
@@ -349,30 +484,32 @@ const chooseNextParticipant = async ({ io, socket, sessionId }) => {
       loading: "Discussion Queue is Loading",
     });
 
+    let session = await Session.findOne({ _id: sessionId });
     let participant = await Participant.findOne({ sessionId });
 
-    if (!participant) {
+    if (!session) {
       return io.to(sessionId).emit("NEXT_PARTICIPANT_ERROR", {
         error: "Participant not found",
       });
     }
 
-    const { queue = [], participant: discussionParticipant } = participant;
+    const { queue = [], globalOrder } = session;
+    const { participant: discussionParticipant = {} } = participant;
 
     if (!queue.length) {
-       io.to(sessionId).emit("DISCUSSION_QUEUE_NO_PARTICIPANT", {
-        warning : "No Participant in Discussion Queue",
+      io.to(sessionId).emit("DISCUSSION_QUEUE_NO_PARTICIPANT", {
+        warning: "No Participant in Discussion Queue",
       });
-      return
+      return;
     }
 
-    let index = queue.findIndex((item) => item.status === "NOT_STARTED");
+    let index = globalOrder;
 
-    if (index === -1) {
-       io.to(sessionId).emit("DISCUSSION_QUEUE_COMPLETED", {
+    if (queue.length === index) {
+      io.to(sessionId).emit("DISCUSSION_QUEUE_COMPLETED", {
         message: "All participants have spoken",
       });
-      return
+      return;
     }
 
     const takeNextParticipant = async (index) => {
@@ -382,7 +519,7 @@ const chooseNextParticipant = async ({ io, socket, sessionId }) => {
         });
       }
 
-      const currentPerson = queue[index]?.userId;
+      const currentPerson = queue[index]?.userId.toString();
       const user = discussionParticipant?.get(currentPerson);
 
       if (user?.isActive) {
@@ -393,6 +530,7 @@ const chooseNextParticipant = async ({ io, socket, sessionId }) => {
           targetUserId: currentPerson,
           sessionId,
           isMuted: false,
+          passedParticipant: participant,
         });
 
         queue[index].status = "IN_PROGRESS";
@@ -407,19 +545,26 @@ const chooseNextParticipant = async ({ io, socket, sessionId }) => {
             message: `${user?.name} turn to speak`,
           });
 
-        participant.queue = queue;
-        await participant.save();
-      } else {
-        queue[index].status = "INACTIVE";
+        session.queue = queue;
+        session.globalOrder = index + 1;
 
-        participant.queue = queue;
-        await participant.save();
+        await session.save();
+
+        return;
+      } else {
+        queue[index].status = "IN_ACTIVE";
+
+        session.queue = queue;
+        session.globalOrder = index + 1;
+        index+=1
+
+        await session.save();
 
         io.to(sessionId).emit("TURN_TO_SPEAK_INACTIVE", {
           error: `${user?.name} is inactive`,
         });
 
-        return takeNextParticipant(index + 1);
+        return takeNextParticipant(index);
       }
     };
 
@@ -436,6 +581,7 @@ module.exports = {
   addParticipant,
   addDiscussionQueue,
   clearDiscussionQueue,
+  changeOrder,
   chooseNextParticipant,
   deleteDiscussionQueue,
   leftParticipant,

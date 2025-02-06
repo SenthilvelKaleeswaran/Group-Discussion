@@ -7,6 +7,7 @@ const {
   updateDiscussionQueue,
   deleteDiscussionQueue,
   clearDiscussionQueue,
+  changeOrder,
 } = require("./controllers-socket/participant");
 const { updateSession } = require("./controllers-socket/session");
 const { sessionLoadingState } = require("./utils/session-loading-state");
@@ -27,14 +28,14 @@ let index = 0;
 
 let countdownTimers = {}; // Store timers per session
 
-const startCountdown = ({ io, sessionId, duration = 10 }) => {
+const startCountdown = ({ io, sessionId, socket, duration = 10 }) => {
   console.log({ countdownTimers });
   if (countdownTimers[sessionId]) return; // Prevent duplicate timers
 
   const endTime = Date.now() + (duration + 2) * 1000; // Calculate the end time
   console.log({ endTime, duration });
 
-  countdownTimers[sessionId] = setInterval(() => {
+  countdownTimers[sessionId] = setInterval(async () => {
     const remainingTime = Math.max(
       -1,
       Math.floor((endTime - Date.now()) / 1000)
@@ -46,6 +47,12 @@ const startCountdown = ({ io, sessionId, duration = 10 }) => {
     if (remainingTime === -1) {
       clearInterval(countdownTimers[sessionId]);
       delete countdownTimers[sessionId];
+
+      try {
+        await chooseNextParticipant({ io, socket, sessionId }); // Ensure proper await usage
+      } catch (error) {
+        console.error("Error choosing next participant:", error);
+      }
 
       io.to(sessionId).emit("TIMER_ENDED");
     }
@@ -109,8 +116,8 @@ const socketHandler = (io, socket) => {
       await updateMuteStatus({ socket, io, ...data });
     });
 
-    socket.on("START_TIMER", ({ duration }) => {
-      startCountdown({ io, sessionId, duration });
+    socket.on("START_TIMER", async ({ duration }) => {
+      startCountdown({ io, socket, sessionId, duration });
     });
 
     socket.on("UPDATE_SESSION_STATUS", async ({ type }) => {
@@ -136,18 +143,22 @@ const socketHandler = (io, socket) => {
       io.to(sessionId).emit(`${type}_LOADED`, event[`${type}_LOADED`]);
     });
 
-    socket.on("DISCUSSION_QUEUE", async ({ type, ...rest }) => {
-      const props = { io, socket, sessionId, ...rest };
-    
-      if (type === "ADD") await addDiscussionQueue(props);
-      else if (type === "UPDATE") await updateDiscussionQueue(props);
-      else if (type === "DELETE") await deleteDiscussionQueue(props);
-      else if (type === "CLEAR") await clearDiscussionQueue(props);
-      else socket.emit("DISCUSSION_QUEUE_ERROR", { message: "Invalid discussion queue action type." });
+    socket.on("DISCUSSION_QUEUE", async ({ action, ...rest }) => {
+      const props = { io, socket, ...rest };
+
+      if (action === "ADD") await addDiscussionQueue(props);
+      else if (action === "ORDER") await changeOrder(props);
+      else if (action === "UPDATE") await updateDiscussionQueue(props);
+      else if (action === "DELETE") await deleteDiscussionQueue(props);
+      else if (action === "CLEAR") await clearDiscussionQueue(props);
+      else
+        socket.emit("DISCUSSION_QUEUE_ERROR", {
+          message: "Invalid discussion queue action type.",
+        });
     });
-    
+
     socket.on("NEXT_PARTICIPANT", async (data) => {
-      chooseNextParticipant({io,socket,...data})
+      await chooseNextParticipant({ io, socket, ...data });
     });
 
     socket.on(

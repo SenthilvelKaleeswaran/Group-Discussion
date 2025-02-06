@@ -18,6 +18,10 @@ const SessionSchema = new mongoose.Schema({
     ref: "GroupDiscussion",
     required: true,
   },
+  globalOrder : {
+    type : Number,
+    default : 0
+  },
   // moderators: {
   //   type: Map,
   //   of: new mongoose.Schema({

@@ -21,29 +21,44 @@ import { FiMicOff } from "react-icons/fi";
 import { ImBlocked } from "react-icons/im";
 import { HiDotsVertical } from "react-icons/hi";
 import { LuListPlus } from "react-icons/lu";
-
+import { FaUser } from "react-icons/fa";
+import { LuTrash2 } from "react-icons/lu";
+import { MdDragIndicator } from "react-icons/md";
+import { MdTimeline } from "react-icons/md";
+import { HiStatusOffline } from "react-icons/hi";
+import { MdOutlineMotionPhotosPaused } from "react-icons/md";
+import { CgPlayListRemove } from "react-icons/cg";
+import { TbTimeDurationOff } from "react-icons/tb";
+import { GrDrag } from "react-icons/gr";
 const Icon = ({ name, ...props }) => {
   const IconsList = {
-    Admin : FaUserShield,
+    Admin: FaUserShield,
     Backward: IoPlayBack,
-    Block : ImBlocked,
+    Block: ImBlocked,
     ChevronDown: FaChevronDown,
     ChevronUp: FaChevronUp,
     Correct: IoCheckmarkCircle,
+    Delete: LuTrash2,
+    Drag: GrDrag,
     Forward: IoPlayForward,
     MicrophoneOn: FiMic,
-    MicrophoneOff : FiMicOff,
+    MicrophoneOff: FiMicOff,
+    Hold: MdOutlineMotionPhotosPaused,
     HorizontalDots: HiDotsHorizontal,
+    InProgress: MdTimeline,
+    InActive: HiStatusOffline,
     Loader: FiLoader,
+    NotStartedQueue: TbTimeDurationOff,
     Pause: FaPause,
     Play: FaPlay,
-    Queue : LuListPlus,
+    Queue: LuListPlus,
     Require: LuTarget,
     Robot: VscRobot,
     Rotate: FaRotate,
-    Settings :IoSettings ,
-    Users : FaUsers,
-    VerticlDots : HiDotsVertical,
+    Settings: IoSettings,
+    User: FaUser,
+    Users: FaUsers,
+    VerticlDots: HiDotsVertical,
     Wave: PiWaveformBold,
   };
 

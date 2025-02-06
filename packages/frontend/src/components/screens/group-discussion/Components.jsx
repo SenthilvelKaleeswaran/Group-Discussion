@@ -1,11 +1,25 @@
 import { useAudioControls } from "../../../hooks";
+import Icon from "../../../icons";
 import { IconWithLoader } from "../../shared";
+import { DropdownMenu, DropdownSelect } from "../../ui";
 
 export const PeopleList = ({ list, title, socket, sessionId }) => {
   const { mutedUsers, toggleMute, mutingList } = useAudioControls({
     socket,
     sessionId,
   });
+
+  const hndleAddToQueue = (data) => {
+    socket.emit("DISCUSSION_QUEUE", { action: "ADD",sessionId, ...data });
+  };
+
+  const options = [
+    {
+      label: "Add to Queue",
+      onClick: hndleAddToQueue,
+      icon: "Queue",
+    },
+  ];
 
   return (
     <div className="space-y-2">
@@ -17,7 +31,7 @@ export const PeopleList = ({ list, title, socket, sessionId }) => {
             <p className="text-left">
               {index + 1}. {item?.name}
             </p>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
               <div
                 className=""
                 onClick={(e) => {
@@ -38,6 +52,12 @@ export const PeopleList = ({ list, title, socket, sessionId }) => {
                 />
               </div>
               <IconWithLoader name={"Block"} className={"text-red-500"} />
+              <DropdownMenu
+                trigger={<Icon name="VerticlDots" />}
+                options={options}
+                position="right"
+                id={{ userId: item?.userId, name: item?.name }}
+              />
             </div>
           </div>
         ))}

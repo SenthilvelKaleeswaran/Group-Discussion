@@ -13,6 +13,8 @@ import {
   setUserRole,
 } from "./controls";
 
+import { setDiscussionQueue } from "./session";
+
 export {
   store,
   updateGroupDiscussion,
@@ -25,4 +27,5 @@ export {
   setMuteInitialLoad,
   setMutingList,
   updateMutedParticipants,
+  setDiscussionQueue,
 };
