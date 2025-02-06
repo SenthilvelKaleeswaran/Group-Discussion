@@ -5,6 +5,7 @@ import {
   updateMutedParticipants,
   updateParticipants,
   setUserRole,
+  setDiscussionQueue,
 } from "../store";
 import toast from "react-hot-toast";
 import { displayToast } from "../components/shared";
@@ -151,8 +152,11 @@ export const useDiscussionSocket = ({
 
   useEffect(() => {
     if (events.MUTE_ERROR) {
-      const { message } = events.MUTE_ERROR;
-      toast.error(message);
+      displayToast({
+        id: "PAUSE_SESSION_LOADED",
+        remove: ["NEXT_PARTICIPANT_LOADING"],
+        data: events.MUTE_ERROR,
+      });
     }
   }, [events.MUTE_ERROR]);
 
@@ -178,7 +182,7 @@ export const useDiscussionSocket = ({
       refetch()
         .then(() => {
           console.log("i came");
-          sendMessage("START_TIMER", { duration: 10 });
+          sendMessage("START_TIMER", { duration: 5 });
         })
         .catch((error) => {
           console.error("Error in refetch:", error);
@@ -257,8 +261,6 @@ export const useDiscussionSocket = ({
     }
   }, [events.END_SESSION_LOADED]);
 
- 
-
   // discussion queue
   useEffect(() => {
     if (events.DISCUSSION_QUEUE_LOADING) {
@@ -271,7 +273,13 @@ export const useDiscussionSocket = ({
 
   useEffect(() => {
     if (events.DISCUSSION_QUEUE_UPDATED) {
-      const { queue = [], notify } = events.DISCUSSION_QUEUE_UPDATED;
+      const {
+        queue = [],
+        notify = {},
+        id = "",
+        action = "",
+        globalOrder 
+      } = events.DISCUSSION_QUEUE_UPDATED;
       displayToast({
         id: "DISCUSSION_QUEUE_UPDATED",
         remove: ["DISCUSSION_QUEUE_LOADING"],
@@ -279,8 +287,19 @@ export const useDiscussionSocket = ({
       });
 
       if (queue) {
-        //update Queue
+        dispatch(setDiscussionQueue({queue,globalOrder}));
       }
+
+      if (action === "DELETE") {
+        const data = JSON.parse(localStorage.getItem("QUEUE_DELETE"));
+
+        const filter = data?.filter((_) => _ !== id);
+        if (filter?.length)
+          localStorage.setItem("QUEUE_DELETE", JSON.stringify(filter));
+        else localStorage.removeItem("QUEUE_DELETE");
+      }
+
+      
     }
   }, [events.DISCUSSION_QUEUE_UPDATED]);
 
@@ -299,6 +318,7 @@ export const useDiscussionSocket = ({
       displayToast({
         id: "DISCUSSION_QUEUE_NO_PARTICIPANT",
         data: events.DISCUSSION_QUEUE_NO_PARTICIPANT,
+        remove: ["NEXT_PARTICIPANT_LOADING"],
       });
     }
   }, [events.DISCUSSION_QUEUE_NO_PARTICIPANT]);
@@ -308,6 +328,7 @@ export const useDiscussionSocket = ({
       displayToast({
         id: "DISCUSSION_QUEUE_COMPLETED",
         data: events.DISCUSSION_QUEUE_COMPLETED,
+        remove: ["NEXT_PARTICIPANT_LOADING"],
       });
     }
   }, [events.DISCUSSION_QUEUE_COMPLETED]);
@@ -316,41 +337,43 @@ export const useDiscussionSocket = ({
 
   useEffect(() => {
     if (events.TURN_TO_SPEAK) {
-
-      const { type , message} = events.TURN_TO_SPEAK
+      const { type, message } = events.TURN_TO_SPEAK;
 
       displayToast({
         id: "TURN_TO_SPEAK",
-        data: { notification : !type ? 'Your turn to speak !' : 'Quick important updation'},
+        data: {
+          notification: !type
+            ? "Your turn to speak !"
+            : "Quick important updation",
+        },
+        remove: ["NEXT_PARTICIPANT_LOADING"],
       });
 
-      if(message){
+      if (message) {
         // upadte
       }
     }
   }, [events.TURN_TO_SPEAK]);
-
 
   useEffect(() => {
     if (events.TURN_TO_SPEAK_NOTIFY_OTHERS) {
       displayToast({
         id: "TURN_TO_SPEAK_NOTIFY_OTHERS",
         data: events.TURN_TO_SPEAK_NOTIFY_OTHERS,
+        remove: ["NEXT_PARTICIPANT_LOADING"],
       });
     }
   }, [events.TURN_TO_SPEAK_NOTIFY_OTHERS]);
 
- 
   useEffect(() => {
     if (events.TURN_TO_SPEAK_INACTIVE) {
       displayToast({
         id: "TURN_TO_SPEAK_INACTIVE",
         data: events.TURN_TO_SPEAK_INACTIVE,
+        remove: ["NEXT_PARTICIPANT_LOADING"],
       });
     }
   }, [events.TURN_TO_SPEAK_INACTIVE]);
-
-  
 
   //  next participant
 
@@ -368,6 +391,7 @@ export const useDiscussionSocket = ({
       displayToast({
         id: "NEXT_PARTICIPANT_ERROR",
         data: events.NEXT_PARTICIPANT_ERROR,
+        remove: ["NEXT_PARTICIPANT_LOADING"],
       });
     }
   }, [events.NEXT_PARTICIPANT_ERROR]);

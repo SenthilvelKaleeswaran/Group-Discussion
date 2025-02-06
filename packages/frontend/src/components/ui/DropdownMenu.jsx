@@ -93,7 +93,7 @@ const DropdownMenuGroup = ({ children }) => (
   <div className="py-1">{children}</div>
 );
 
-const DropdownMenu = ({ trigger, options, position = "left" }) => {
+const DropdownMenu = ({ trigger, options, position = "left",id }) => {
   return (
     <Dropdown>
       <DropdownMenuTrigger trigger={trigger} />
@@ -101,7 +101,7 @@ const DropdownMenu = ({ trigger, options, position = "left" }) => {
         {options.map((option, index) => (
           <DropdownMenuItem
             key={index}
-            onClick={() => option.onClick()}
+            onClick={() => option.onClick(id)}
             className="flex gap-2 items-center"
           >
             <RenderSpace condition={option?.icon}>

@@ -53,6 +53,23 @@ const getActiveSession = async (req, res) => {
   }
 };
 
+const getSessionQueue = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const session = await Session.findById(id);
+
+    if (!session) return res.status(404).json({ message: "Session not found" });
+
+    const { queue = [], globalOrder = 0} = session;
+
+    return res.status(200).json({ queue, globalOrder });
+  } catch (error) {
+    console.error("Error fetching session queue:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
 const createSession = async (req, res) => {
   const {
     aiModelsCount,
@@ -130,6 +147,7 @@ const updateSession = async (req, res) => {
 
 module.exports = {
   getActiveSession,
+  getSessionQueue,
   createSession,
   updateSession,
 };

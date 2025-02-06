@@ -7,6 +7,7 @@ import {
   generateConversation,
   generateFeedback,
   getActiveSession,
+  getSessionQueue,
 } from "../utils/api-call";
 import {
   useDiscussionSocket,
@@ -30,8 +31,9 @@ import {
 } from "../components/shared";
 
 import { AudioStreamingComponent } from "../components/screens/group-discussion/AudioStreaminComponent";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import Draggable from "react-draggable";
+import { setDiscussionQueue } from "../store";
 
 const signalingServer = "http://localhost:5000";
 
@@ -47,6 +49,8 @@ export const GroupDiscussion = () => {
   const [groupDiscussionId, sessionId] = id.split("-");
   const navigate = useNavigate();
   const userId = localStorage.getItem("userId");
+
+  const dispatch = useDispatch();
 
   const [conversation, setConversation] = useState([]);
   const [currentSpeech, setCurrentSpeech] = useState("");
@@ -75,6 +79,16 @@ export const GroupDiscussion = () => {
           }
         }
         setConversation(data?.conversationId?.messages);
+      },
+    }
+  );
+
+  const { error: queueError, isLoading: isQueueLoading } = useQuery(
+    [`queue-${sessionId}`, sessionId],
+    () => getSessionQueue(sessionId),
+    {
+      onSuccess: (data) => {
+        dispatch(setDiscussionQueue(data));
       },
     }
   );
@@ -321,8 +335,12 @@ export const GroupDiscussion = () => {
   return (
     <div className="flex gap-4 min-h-screen w-full bg-gray-700 text-gray-200 p-4 relative overflow-hidden">
       <InitialTimer socket={socket} />
-      <QueuePopup />
-      
+      <QueuePopup
+        sessionId={sessionId}
+        socket={socket}
+        error={queueError}
+        isLoading={isQueueLoading}
+      />
 
       <div className="max-w-3xl w-full flex-1.5 p-8 bg-gray-800 shadow-lg rounded-lg">
         <p className="font-bold">{data?.topic}</p>

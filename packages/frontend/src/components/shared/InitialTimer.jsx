@@ -6,6 +6,7 @@ export const InitialTimer = ({ socket }) => {
   const [isAnimating, setIsAnimating] = useState(false);
 
   useEffect(() => {
+    if(!socket) return
     socket.on("TIMER_UPDATE", ({ remainingTime }) => {
       setIsAnimating(true);
       setTimer(remainingTime);
@@ -16,6 +17,8 @@ export const InitialTimer = ({ socket }) => {
     });
 
     return () => {
+      if(!socket) return
+
       socket.off("TIMER_UPDATE");
       socket.off("TIMER_ENDED");
     };
@@ -23,7 +26,7 @@ export const InitialTimer = ({ socket }) => {
 
   useEffect(() => {
     if (isAnimating) {
-      const timeout = setTimeout(() => setIsAnimating(false), 500); 
+      const timeout = setTimeout(() => setIsAnimating(false), 500);
       return () => clearTimeout(timeout);
     }
   }, [isAnimating]);

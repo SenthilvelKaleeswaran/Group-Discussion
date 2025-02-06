@@ -3,6 +3,7 @@ import participantsReducer from "./participants";
 import conversationsReducer from "./conversation";
 import groupDiscussionsReducer from "./group-discussion";
 import controlsReducer from './controls'
+import sessionReducer from './session'
 
 export const store = configureStore({
   reducer: {
@@ -10,5 +11,6 @@ export const store = configureStore({
     conversation: conversationsReducer,
     groupDiscussion: groupDiscussionsReducer,
     controls : controlsReducer,
+    session : sessionReducer
   },
 });
