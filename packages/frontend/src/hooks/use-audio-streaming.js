@@ -12,7 +12,7 @@ export const useStreaming = ({ socket, sessionId, groupDiscussionId }) => {
 
     const initMedia = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
         setLocalStream(stream);
         socket.emit("join-room", { sessionId, userId, groupDiscussionId });
 

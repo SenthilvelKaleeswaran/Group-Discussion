@@ -451,7 +451,7 @@ const clearDiscussionQueue = async ({ io, socket, sessionId,queueLength }) => {
     }
 
     // Update globalOrder based on queue length
-    session.globalOrder = queueLength-sessionQueueLength  ;
+    session.globalOrder = (queueLength || 0)-(sessionQueueLength || 0)  ;
 
     await session.save();
 
@@ -519,7 +519,7 @@ const chooseNextParticipant = async ({ io, socket, sessionId }) => {
         });
       }
 
-      const currentPerson = queue[index]?.userId.toString();
+      const currentPerson = queue[index]
       const user = discussionParticipant?.get(currentPerson);
 
       if (user?.isActive) {
@@ -527,7 +527,7 @@ const chooseNextParticipant = async ({ io, socket, sessionId }) => {
           socket,
           io,
           userId: "DISCUSSION",
-          targetUserId: currentPerson,
+          targetUserId: currentPerson?.userId?.toString(),
           sessionId,
           isMuted: false,
           passedParticipant: participant,
@@ -535,12 +535,12 @@ const chooseNextParticipant = async ({ io, socket, sessionId }) => {
 
         queue[index].status = "IN_PROGRESS";
 
-        io.to(currentPerson).emit("TURN_TO_SPEAK", {
+        io.to(currentPerson?.socketId).emit("TURN_TO_SPEAK", {
           message: "Your turn to speak",
         });
 
         io.to(sessionId)
-          .except(currentPerson)
+          .except(currentPerson?.socketId)
           .emit("TURN_TO_SPEAK_NOTIFY_OTHERS", {
             message: `${user?.name} turn to speak`,
           });
