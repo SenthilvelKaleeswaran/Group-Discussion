@@ -38,16 +38,16 @@ const sessionSlice = createSlice({
 
       const sorted = queue?.slice().sort((a, b) => a.order - b.order);
 
-      const done = sorted?.slice(0, globalOrder + 1) || [];
-      const notStarted = sorted?.slice(globalOrder + 1) || [];
+      const done = sorted?.slice(0, globalOrder) || [];
+      const notStarted = sorted?.slice(globalOrder) || [];
 
       const inProgress =
-        done.length > 0 && done[done.length - 1]?.status === "IN_PROGRESS"
+        done.length > 0 && done[done.length - 1]?.status === "IN_PROGRESS" 
           ? done.pop()
-          : {};
+          : notStarted?.length > 0 && notStarted[0]?.status === "IN_PROGRESS" ? notStarted.shift() : {}
 
       state.queue = {
-        done,
+        done : done.reverse(),
         notStarted,
         inProgress,
       };

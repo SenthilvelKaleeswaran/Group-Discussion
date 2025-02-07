@@ -30,6 +30,10 @@ import { MdOutlineMotionPhotosPaused } from "react-icons/md";
 import { CgPlayListRemove } from "react-icons/cg";
 import { TbTimeDurationOff } from "react-icons/tb";
 import { GrDrag } from "react-icons/gr";
+import { IoReloadOutline } from "react-icons/io5";
+import { MdDeleteSweep } from "react-icons/md";
+import { GoStack } from "react-icons/go";
+
 const Icon = ({ name, ...props }) => {
   const IconsList = {
     Admin: FaUserShield,
@@ -48,10 +52,12 @@ const Icon = ({ name, ...props }) => {
     InProgress: MdTimeline,
     InActive: HiStatusOffline,
     Loader: FiLoader,
+    LoadArrow : MdDeleteSweep,
     NotStartedQueue: TbTimeDurationOff,
     Pause: FaPause,
     Play: FaPlay,
     Queue: LuListPlus,
+    QueueStack : GoStack,
     Require: LuTarget,
     Robot: VscRobot,
     Rotate: FaRotate,

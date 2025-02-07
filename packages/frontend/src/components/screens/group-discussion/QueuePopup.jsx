@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
+  ButtonIcon,
   DoubleTapPopup,
   IconContainer,
+  Loader,
   RenderSpace,
   UserCard,
 } from "../../shared";
@@ -9,9 +11,21 @@ import { useSelector, useDispatch } from "react-redux";
 import Icon from "../../../icons";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { QUEUE_STATUS } from "../../../constants";
-import { Button } from "../../ui";
+import { Button, TabComposed } from "../../ui";
 
-const QueueCard = ({ item, handleDelete }) => {
+const QueueSection = ({ children, ref, title, color }) => {
+  const textColor = `text-${color}-500`;
+  return (
+    <div className="space-y-2">
+      <p className={`text-left ${textColor}`} ref={ref}>
+        {title}
+      </p>
+      {children}
+    </div>
+  );
+};
+
+const QueueCard = ({ item, handleDelete, nextInQueue }) => {
   return (
     <div className="p-2 flex gap-2 items-center justify-between bg-gray-800 drop-shadow-2xl rounded-md">
       <div className="w-[58%]">
@@ -24,23 +38,93 @@ const QueueCard = ({ item, handleDelete }) => {
             className="text-red-500"
             containerClass="hover:bg-red-400 border-red-700"
             onClick={() => handleDelete(item)}
-            isLoading={JSON.parse(localStorage.getItem("QUEUE-DELETE"))?.includes(item?._id)}
+            isLoading={JSON.parse(
+              localStorage.getItem("QUEUE-DELETE")
+            )?.includes(item?._id)}
           />
         </RenderSpace>
-        <Icon
-          name={QUEUE_STATUS[item?.status]?.icon}
-          className={QUEUE_STATUS[item?.status]?.color}
-        />
-        <RenderSpace condition={item?.status === "NOT_STARTED"}>
-          <IconContainer name="Drag" className="cursor-grab" containerClass="border-0" />
+
+        <RenderSpace condition={!nextInQueue}>
+          <Icon
+            name={QUEUE_STATUS[item?.status]?.icon}
+            className={QUEUE_STATUS[item?.status]?.color}
+          />
+        </RenderSpace>
+
+        <RenderSpace condition={item?.status === "NOT_STARTED" && !nextInQueue}>
+          <IconContainer
+            name="Drag"
+            className="cursor-grab"
+            containerClass="border-0"
+          />
         </RenderSpace>
       </div>
     </div>
   );
 };
 
+const NotStartedList = ({ queue, handleOnDragEnd, handleDelete }) => {
+  return (
+    <DragDropContext onDragEnd={handleOnDragEnd}>
+      <RenderSpace condition={queue?.notStarted?.length}>
+        <div className="space-y-2 rounded-md h-48 overflow-y-auto">
+          <Droppable droppableId="inner-queue">
+            {(provided) => (
+              <div
+                {...provided.droppableProps}
+                ref={provided.innerRef}
+                className="space-y-4"
+              >
+                {queue?.notStarted?.length > 0 ? (
+                  queue?.notStarted?.map((item, index) => (
+                    <Draggable
+                      key={item._id}
+                      draggableId={item._id.toString()}
+                      index={index}
+                      isDragDisabled={
+                        item?.status !== "NOT_STARTED" &&
+                        item?.status !== "IN_PROGRESS"
+                      }
+                    >
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          className="relative"
+                          style={{
+                            cursor:
+                              item.status !== "NOT_STARTED" &&
+                              item.status !== "IN_PROGRESS"
+                                ? "not-allowed"
+                                : "grab",
+                            zIndex: snapshot.isDragging ? 1000 : "auto",
+                          }}
+                        >
+                          <QueueCard item={item} handleDelete={handleDelete} />
+                        </div>
+                      )}
+                    </Draggable>
+                  ))
+                ) : (
+                  <div className="h-full flex items-center justify-center rounded-md">
+                    No Participants in the queue
+                  </div>
+                )}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </div>
+      </RenderSpace>
+    </DragDropContext>
+  );
+};
+
 export function QueuePopup({ sessionId, error, isLoading, socket }) {
   const { queue = [] } = useSelector((state) => state.session);
+
+  console.log({ queue });
   const dispatch = useDispatch();
 
   // Refs for scrolling to "In Progress" or "Not Started"
@@ -50,11 +134,18 @@ export function QueuePopup({ sessionId, error, isLoading, socket }) {
   useEffect(() => {
     // Scroll to "In Progress" first, if available, else scroll to "Not Started"
     if (inProgressRef.current) {
-      inProgressRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
-    }  if (notStartedRef.current) {
-      notStartedRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      inProgressRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
     }
-  }, [inProgressRef.current,notStartedRef.current,queue]); // Runs when queue updates
+    if (notStartedRef.current) {
+      notStartedRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  }, [inProgressRef.current, notStartedRef.current, queue]); // Runs when queue updates
 
   const handleOnDragEnd = (result) => {
     const { source, destination, draggableId } = result;
@@ -93,95 +184,101 @@ export function QueuePopup({ sessionId, error, isLoading, socket }) {
     });
   };
 
+  const renderCurrent = () => {
+    if (queue?.inProgress?._id) {
+      return (
+        <QueueSection title={"In Progress"} color="green">
+          <QueueCard item={queue?.inProgress} />
+        </QueueSection>
+      );
+    } else if (queue?.notStarted[0]) {
+      return (
+        <QueueSection title={"Next In the Queue"} color="yellow">
+          <QueueCard item={queue?.notStarted[0]} nextInQueue />
+        </QueueSection>
+      );
+    } else {
+      return <p className="text-gray-500">No Participnts in the queue</p>;
+    }
+  };
+
+  const TAB_LIST = [
+    {
+      id: "notStarted",
+      label: "Not Started",
+      icon: "QueueStack",
+      iconStyle: "text-purple-500",
+      component: (
+        <NotStartedList
+          queue={queue}
+          handleOnDragEnd={handleOnDragEnd}
+          handleDelete={handleDelete}
+        />
+      ),
+    },
+    {
+      id: "started",
+      label: "Discussion Done",
+      icon: "Correct",
+      iconStyle: "text-green-500",
+      component: (
+        <div className="space-y-2 my-2 rounded-md">
+          {queue?.done?.length > 0 ? (
+            queue?.done?.map((item) => <QueueCard key={item._id} item={item} />)
+          ) : (
+            <div className="h-full flex items-center justify-center rounded-md">
+              No Participants in the list
+            </div>
+          )}
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="relative drop-shadow-2xl z-50">
-      <DoubleTapPopup onKey="q">
-        <DragDropContext onDragEnd={handleOnDragEnd}>
-          <Droppable droppableId="outer-queue" direction="horizontal">
-            {(provided) => (
-              <div {...provided.droppableProps} ref={provided.innerRef} className="absolute">
-                <Draggable key="outer-draggable" draggableId="outer-draggable" index={0}>
-                  {(provided) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                      className="absolute h-96 w-96 space-y-2 flex flex-col justify-center items-center inset-4 bg-green-700 z-50 rounded-md"
-                      style={{ cursor: "grab" }}
-                    >
-                      <div className="flex justify-between w-full items-center px-4">
-                        <p>Discussion Queue</p>
-                        <Button variant="destructive" onClick={handleClearAll}>
-                          Clear All
-                        </Button>
-                      </div>
+      <DoubleTapPopup onKey="q" draggable>
+        <div className="absolute w-96 h-[486px] flex gap-4 flex-col inset-4 bg-green-700 z-50 rounded-md p-4">
+          <div className="flex justify-between items-center w-full">
+            <p>Discussion Queue</p>
+            <ButtonIcon
+              variant="ghost"
+              onClick={handleClearAll}
+              disabled={!queue?.notStarted?.length || isLoading}
+              name="LoadArrow"
+              iconClassName={"text-red-900 font-bold text-[24px]"}
+            />
+          </div>
 
-                      {/* Scrollable queue container */}
-                      <div className="bg-gray-900 space-y-2 h-[82%] w-[90%] overflow-y-scroll rounded-b-md p-4 rounded-md">
-
-                        {/* Done Section */}
-                        <RenderSpace condition={queue?.done?.length}>
-                          <div className="space-y-2 my-2 rounded-md">
-                            <p className="text-left p-2 text-yellow-500">Done</p>
-                            {queue?.done?.map((item) => (
-                              <QueueCard key={item._id} item={item} />
-                            ))}
-                          </div>
-                        </RenderSpace>
-
-                        <RenderSpace condition={queue?.inProgress}>
-                          <div  className="space-y-2 my-2 rounded-md">
-                            <p className="text-left p-2 text-green-500"  ref={inProgressRef}>In Progress</p>
-                            <QueueCard item={queue?.inProgress} />
-                          </div>
-                        </RenderSpace>
-
-                        <RenderSpace condition={queue?.notStarted?.length}>
-                          <div  className="space-y-2 my-2 rounded-md">
-                            <p className="text-left p-2 text-purple-500" ref={notStartedRef}>Not Started</p>
-                            <Droppable droppableId="inner-queue">
-                              {(provided) => (
-                                <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
-                                  {queue?.notStarted?.map((item, index) => (
-                                    <Draggable
-                                      key={item._id}
-                                      draggableId={item._id.toString()}
-                                      index={index}
-                                      isDragDisabled={item?.status !== "NOT_STARTED" && item?.status !== "IN_PROGRESS"}
-                                    >
-                                      {(provided, snapshot) => (
-                                        <div
-                                          ref={provided.innerRef}
-                                          {...provided.draggableProps}
-                                          {...provided.dragHandleProps}
-                                          className="relative"
-                                          style={{
-                                            cursor:
-                                              item.status !== "NOT_STARTED" && item.status !== "IN_PROGRESS"
-                                                ? "not-allowed"
-                                                : "grab",
-                                            zIndex: snapshot.isDragging ? 1000 : "auto",
-                                          }}
-                                        >
-                                          <QueueCard item={item} handleDelete={handleDelete} />
-                                        </div>
-                                      )}
-                                    </Draggable>
-                                  ))}
-                                  {provided.placeholder}
-                                </div>
-                              )}
-                            </Droppable>
-                          </div>
-                        </RenderSpace>
-                      </div>
-                    </div>
-                  )}
-                </Draggable>
+          <div className="bg-gray-900 flex-grow h-full w-full rounded-md">
+            {isLoading ? (
+              <div className="h-full flex items-center justify-center rounded-md">
+                <Loader text="Queue is Loding" />
               </div>
+            ) : !queue?.done?.length &&
+              !queue?.notStarted?.length &&
+              !queue?.inProgress?._id ? (
+              <div className="h-full flex items-center justify-center rounded-md">
+                No Participants added
+              </div>
+            ) : (
+              <TabComposed defaultTab="notStarted" list={TAB_LIST} />
             )}
-          </Droppable>
-        </DragDropContext>
+          </div>
+
+          <RenderSpace
+            condition={
+              isLoading ||
+              queue?.done?.length ||
+              queue?.notStarted?.length ||
+              queue?.inProgress?._id
+            }
+          >
+            <div className="bg-gray-900 w-full p-4 rounded-md">
+              {renderCurrent()}
+            </div>
+          </RenderSpace>
+        </div>
       </DoubleTapPopup>
     </div>
   );

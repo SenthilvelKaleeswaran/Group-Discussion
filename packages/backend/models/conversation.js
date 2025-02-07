@@ -6,13 +6,18 @@ const ConversationSchema = new mongoose.Schema({
     ref: "GroupDiscussion",
     required: true,
   },
+  sessionId : {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Session",
+    required: true,
+  },
   participantId: {
     type: mongoose.Schema.Types.ObjectId,
     required: true,
   },
   participantType: {
     type: String,
-    enum: ["ai", "participant"],
+    enum: ["AI", "PARTICIPANT"],
     required: true,
   },
   discussion: {
@@ -21,8 +26,8 @@ const ConversationSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["generated", "spoken"],
-    default: "generated",
+    enum: ["GENERATED", "SPOKEN"],
+    default: "GENERATED",
   },
   feedback: {
     type: mongoose.Schema.Types.Mixed,
@@ -46,4 +51,5 @@ ConversationSchema.methods.getParticipantDetails = async function () {
   }
 };
 
-module.exports = mongoose.model("Conversation", ConversationSchema);
+const Converstion = mongoose.model("Conversation", ConversationSchema);
+module.exports = Converstion
