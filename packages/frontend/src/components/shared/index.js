@@ -10,10 +10,12 @@ import { InitialTimer } from "./InitialTimer.jsx";
 import { DoubleTapPopup } from "./DoubleTapPopup.jsx";
 import { UserCard } from "./UserCard.jsx";
 import { IconContainer, IconWithLoader } from "./VariantsIcon.jsx";
+import {ButtonIcon} from './VariantsButton.jsx'
 
 export {
   AiModelCard,
   BlinkingIcon,
+  ButtonIcon,
   displayToast,
   DoubleTapPopup,
   IconWithLoader,
