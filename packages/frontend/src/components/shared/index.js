@@ -11,9 +11,11 @@ import { DoubleTapPopup } from "./DoubleTapPopup.jsx";
 import { UserCard } from "./UserCard.jsx";
 import { IconContainer, IconWithLoader } from "./VariantsIcon.jsx";
 import {ButtonIcon} from './VariantsButton.jsx'
+import { AnimatingTimer } from "./AnimatingTimer.jsx";
 
 export {
   AiModelCard,
+  AnimatingTimer,
   BlinkingIcon,
   ButtonIcon,
   displayToast,

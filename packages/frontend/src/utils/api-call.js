@@ -151,3 +151,7 @@ export const getSessionQueue = async (id) => {
   return await apiCall({ endpoint: `/session/queue/${id}` });
 };
 
+export const getUserInSession = async (id) => {
+  return await apiCall({ endpoint: `/session/user/${id}` });
+};
+

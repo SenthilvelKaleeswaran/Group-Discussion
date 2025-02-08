@@ -1,4 +1,7 @@
 const {
+  updateCurrentConversation,
+} = require("./controllers-socket/conversation");
+const {
   addParticipant,
   leftParticipant,
   updateMuteStatus,
@@ -8,23 +11,17 @@ const {
   deleteDiscussionQueue,
   clearDiscussionQueue,
   changeOrder,
+  muteAllParticipants,
 } = require("./controllers-socket/participant");
 const { updateSession } = require("./controllers-socket/session");
+const Participant = require("./models/participant");
+const Session = require("./models/session");
 const { sessionLoadingState } = require("./utils/session-loading-state");
 
 const getRoomSockets = (io, roomId) => {
   const room = io.sockets.adapter.rooms.get(roomId);
   return room ? [...room] : [];
 };
-
-const queue = [
-  "67541f953969247972408a47",
-  "67890bdcd6796f74dd9424af",
-  "677ea6d25be00f8dfa4c1933",
-  "677ea7985be00f8dfa4c1935",
-];
-
-let index = 0;
 
 let countdownTimers = {}; // Store timers per session
 
@@ -49,7 +46,8 @@ const startCountdown = ({ io, sessionId, socket, duration = 10 }) => {
       delete countdownTimers[sessionId];
 
       try {
-        await chooseNextParticipant({ io, socket, sessionId }); // Ensure proper await usage
+        await muteAllParticipants({ io, socket, sessionId });
+        await chooseNextParticipant({ io, socket, sessionId });
       } catch (error) {
         console.error("Error choosing next participant:", error);
       }
@@ -121,6 +119,8 @@ const socketHandler = (io, socket) => {
     });
 
     socket.on("UPDATE_SESSION_STATUS", async ({ type }) => {
+      console.log({type})
+
       const event = sessionLoadingState[type];
 
       const targetRoom = `${sessionId}${event.to ? `-${event.to}` : ""}`;
@@ -157,8 +157,39 @@ const socketHandler = (io, socket) => {
         });
     });
 
-    socket.on("NEXT_PARTICIPANT", async (data) => {
-      await chooseNextParticipant({ io, socket, ...data });
+    socket.on("NEXT_PARTICIPANT", async ({ previousId, ...data }) => {
+      let session = await Session.findOne({ _id: sessionId });
+      let participant = await Participant.findOne({ sessionId });
+      console.log({previousId})
+      if (previousId) {
+        console.log({previousId})
+        socket.to(sessionId).emit("TRANSCRIPT", "");
+
+        await updateCurrentConversation({
+          io,
+          socket,
+          session,
+          sessionId,
+          participant,
+          previousId,
+          status: "SPOKEN",
+          ...data, // isConclusion, discussion
+        });
+      }
+      console.log({ participanttttt2: participant });
+
+      await chooseNextParticipant({
+        io,
+        socket,
+        pssedSession: session,
+        sessionId,
+        passedParticipant: participant,
+        ...data,
+      });
+    });
+
+    socket.on("TRANSCRIPT", async (data) => {
+      socket.to(sessionId).emit("TRANSCRIPT", data);
     });
 
     socket.on(

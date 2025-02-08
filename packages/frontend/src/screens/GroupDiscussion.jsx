@@ -18,6 +18,7 @@ import {
 } from "../hooks";
 import {
   Conversation,
+  ConversationCountdown,
   DiscussionSettings,
   MemberCard,
   QueuePopup,
@@ -37,12 +38,6 @@ import { setDiscussionQueue } from "../store";
 
 const signalingServer = "http://localhost:5000";
 
-const queue = [
-  "67541f953969247972408a47",
-  "67890bdcd6796f74dd9424af",
-  "677ea6d25be00f8dfa4c1933",
-  "677ea7985be00f8dfa4c1935",
-];
 
 export const GroupDiscussion = () => {
   const { id } = useParams();
@@ -58,7 +53,13 @@ export const GroupDiscussion = () => {
   const [status, setStatus] = useState("");
   const [choosingRandomMember, setChoosingRandomMember] = useState(false);
 
-  const { mutedParticipants = [] } = useSelector((state) => state.controls);
+  const { mutedParticipants = [], userStatus = "" } = useSelector(
+    (state) => state.controls
+  );
+
+  const { currentConverstion: transcript = "" } = useSelector(
+    (state) => state.conversation
+  );
 
   const {
     data,
@@ -104,6 +105,7 @@ export const GroupDiscussion = () => {
   });
 
   const strictPermission = () => {
+    if (userStatus === "IN_PROGRESS") return true;
     if (mutedParticipants.includes(userId)) return true;
 
     const lastPoint = conversation?.length === data?.discussionLength - 1;
@@ -133,12 +135,17 @@ export const GroupDiscussion = () => {
       disconnect: data?.status === "COMPLETED" || status === "Completed",
     });
 
-  const { transcript, isListening, resetTranscript } = useSpeechRecognization({
+  const { isListening, resetTranscript } = useSpeechRecognization({
     isSpeaking,
     grantPermission,
     selectMember,
     resetCurrentMember,
+    sessionId,
+    sendMessage,
+    events,
   });
+
+  console.log({ transcript });
 
   const isListeningRef = useRef(isListening);
 
@@ -344,6 +351,7 @@ export const GroupDiscussion = () => {
 
       <div className="max-w-3xl w-full flex-1.5 p-8 bg-gray-800 shadow-lg rounded-lg">
         <p className="font-bold">{data?.topic}</p>
+        <ConversationCountdown />
         <p>{transcript}</p>
 
         <SessionButton status={data?.status} socket={socket} />

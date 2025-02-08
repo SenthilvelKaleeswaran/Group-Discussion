@@ -25,6 +25,7 @@ const sessionSlice = createSlice({
       inProgress: {},
       notStarted: [],
     },
+    userSession : {},
     globalOrder: 0,
     loading: false,
     error: null,
@@ -54,6 +55,19 @@ const sessionSlice = createSlice({
 
       if (globalOrder !== undefined) state.globalOrder = globalOrder;
     },
+    setUserSession: (state, action) => {
+      const { userStatus } = action.payload;
+    
+      if (userStatus) {
+        state.userSession = {
+          ...state.userSession, 
+          userStatus, 
+        };
+      } else {
+        state.userSession = action.payload; 
+      }
+    }
+    
   },
   extraReducers: (builder) => {
     builder
@@ -73,7 +87,7 @@ const sessionSlice = createSlice({
   },
 });
 
-export const { updateGroupDiscussion, setDiscussionQueue } =
+export const { updateGroupDiscussion, setDiscussionQueue,setUserSession } =
   sessionSlice.actions;
 
 export default sessionSlice.reducer;

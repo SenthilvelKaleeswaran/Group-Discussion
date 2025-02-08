@@ -72,9 +72,7 @@ const addParticipant = async ({
     let participant = await Participant.findOne({ sessionId });
     const role = getUserRole(participant, userId);
 
-    if (!participant[role]) {
-      participant[role] = new Map();
-    }
+    if (!participant[role]) participant[role] = new Map();
 
     if (role) {
       const user = participant[role].get(userId);
@@ -83,7 +81,7 @@ const addParticipant = async ({
       user.timing.push({ joinedAt: new Date(), leftAt: null });
       participant[role].set(userId, user);
     } else {
-      const admins = ["67850bd81755c252af4a35fb", "67541f953969247972408a47"];
+      const admins = [ "67541f953969247972408a47"];
 
       const role = admins.includes(userId) ? "admin" : "participant";
 
@@ -100,12 +98,18 @@ const addParticipant = async ({
 
     await participant.save();
 
+    console.log({ participant, role });
+
     const room = sessionId;
 
     socket.join(room);
     socket.join(`${room}-${role}`);
 
     const participantList = getRoleData(participant, userId, role);
+
+    const userSession = participant[role].get(userId);
+
+    io.to(socket?.id).emit("USER_SESSION", userSession);
 
     io.to(sessionId).emit("PARTICIPANT_LIST", participantList);
     return participantList;
@@ -392,7 +396,7 @@ const deleteDiscussionQueue = async ({
       participant.order = index + 1; // Reassign order based on the new index
     });
 
-    updatedSession.globalOrder -= 1
+    updatedSession.globalOrder -= 1;
 
     // Save the updated session with the new order values
     await updatedSession.save();
@@ -411,7 +415,7 @@ const deleteDiscussionQueue = async ({
       },
       queue: updatedSession.queue,
       action: "DELETE",
-      globalOrder : updatedSession.globalOrder,
+      globalOrder: updatedSession.globalOrder,
       id: _id,
     });
   } catch (error) {
@@ -422,7 +426,7 @@ const deleteDiscussionQueue = async ({
   }
 };
 
-const clearDiscussionQueue = async ({ io, socket, sessionId,queueLength }) => {
+const clearDiscussionQueue = async ({ io, socket, sessionId, queueLength }) => {
   try {
     io.to(`${sessionId}-admin`).emit("DISCUSSION_QUEUE_LOADING", {
       loading: "Clearing discussion queue",
@@ -431,7 +435,7 @@ const clearDiscussionQueue = async ({ io, socket, sessionId,queueLength }) => {
     // Find and update session, removing items with status "NOT_STARTED"
     const session = await Session.findOneAndUpdate(
       { _id: sessionId },
-      { $pull: { queue: { status: "NOT_STARTED" } } }, 
+      { $pull: { queue: { status: "NOT_STARTED" } } },
       { new: true } // Return updated session
     );
 
@@ -440,18 +444,18 @@ const clearDiscussionQueue = async ({ io, socket, sessionId,queueLength }) => {
       throw new Error("Session not found");
     }
 
-    const sessionQueueLength = session.queue.length
+    const sessionQueueLength = session.queue.length;
 
-    if(queueLength === sessionQueueLength){
+    if (queueLength === sessionQueueLength) {
       io.to(sessionId).emit("DISCUSSION_QUEUE_UPDATED", {
         notify: { message: "No items to clear" },
       });
 
-      return
+      return;
     }
 
     // Update globalOrder based on queue length
-    session.globalOrder = (queueLength || 0)-(sessionQueueLength || 0)  ;
+    session.globalOrder = (queueLength || 0) - (sessionQueueLength || 0);
 
     await session.save();
 
@@ -459,7 +463,7 @@ const clearDiscussionQueue = async ({ io, socket, sessionId,queueLength }) => {
     io.to(sessionId).emit("DISCUSSION_QUEUE_UPDATED", {
       notify: { message: "Discussion queue cleared" },
       queue: session.queue, // Send updated queue
-      globalOrder : session.globalOrder
+      globalOrder: session.globalOrder,
     });
 
     // Notify users about changes
@@ -467,7 +471,6 @@ const clearDiscussionQueue = async ({ io, socket, sessionId,queueLength }) => {
       message: `Changes in discussion queue. Wait for further updates.`,
       type: "Clear",
     });
-
   } catch (error) {
     console.error("Error clearing discussion queue:", error);
 
@@ -477,17 +480,25 @@ const clearDiscussionQueue = async ({ io, socket, sessionId,queueLength }) => {
   }
 };
 
-
-const chooseNextParticipant = async ({ io, socket, sessionId }) => {
+const chooseNextParticipant = async ({
+  io,
+  socket,
+  sessionId,
+  passedSession,
+  passedParticipant,
+}) => {
   try {
     io.to(sessionId).emit("NEXT_PARTICIPANT_LOADING", {
       loading: "Discussion Queue is Loading",
     });
 
-    let session = await Session.findOne({ _id: sessionId });
-    let participant = await Participant.findOne({ sessionId });
+    let session = passedSession || (await Session.findOne({ _id: sessionId }));
+    let participant =
+      passedParticipant || (await Participant.findOne({ sessionId }));
 
-    if (!session) {
+    console.log({ participanttttt: participant });
+
+    if (!participant) {
       return io.to(sessionId).emit("NEXT_PARTICIPANT_ERROR", {
         error: "Participant not found",
       });
@@ -503,14 +514,19 @@ const chooseNextParticipant = async ({ io, socket, sessionId }) => {
       return;
     }
 
-    let index = globalOrder;
-
-    if (queue.length === index) {
+    if (queue.length === globalOrder) {
       io.to(sessionId).emit("DISCUSSION_QUEUE_COMPLETED", {
         message: "All participants have spoken",
       });
       return;
     }
+
+    let index = globalOrder;
+
+    if (index !== 0) {
+    }
+
+    console.log({ queue });
 
     const takeNextParticipant = async (index) => {
       if (index >= queue.length) {
@@ -519,8 +535,10 @@ const chooseNextParticipant = async ({ io, socket, sessionId }) => {
         });
       }
 
-      const currentPerson = queue[index]
-      const user = discussionParticipant?.get(currentPerson);
+      const currentPerson = queue[index];
+      const user = discussionParticipant?.get(
+        currentPerson?.userId?.toString()
+      );
 
       if (user?.isActive) {
         await updateMuteStatus({
@@ -535,12 +553,14 @@ const chooseNextParticipant = async ({ io, socket, sessionId }) => {
 
         queue[index].status = "IN_PROGRESS";
 
-        io.to(currentPerson?.socketId).emit("TURN_TO_SPEAK", {
+        io.to(user?.socketId).emit("TURN_TO_SPEAK", {
           message: "Your turn to speak",
+          type: "YOUR_TURN",
+          userStatus: "IN_PROGRESS",
         });
 
         io.to(sessionId)
-          .except(currentPerson?.socketId)
+          .except(user?.socketId)
           .emit("TURN_TO_SPEAK_NOTIFY_OTHERS", {
             message: `${user?.name} turn to speak`,
           });
@@ -556,7 +576,7 @@ const chooseNextParticipant = async ({ io, socket, sessionId }) => {
 
         session.queue = queue;
         session.globalOrder = index + 1;
-        index+=1
+        index += 1;
 
         await session.save();
 
@@ -577,6 +597,47 @@ const chooseNextParticipant = async ({ io, socket, sessionId }) => {
   }
 };
 
+const muteAllParticipants = async ({
+  io,
+  socket,
+  sessionId,
+  passedParticipant,
+}) => {
+  try {
+    // Retrieve the participant document if not passed
+    let participant =
+      passedParticipant || (await Participant.findOne({ sessionId }));
+
+    if (!participant) {
+      throw new Error("Session not found");
+    }
+
+    // Function to mute a specific type of participant
+    const mute = (type) => {
+      participant[type].forEach((details) => {
+        details.muteStatus = true;
+      });
+    };
+
+    // Array of participant types to mute
+    const participantTypes = ["admin", "moderator", "listener", "participant"];
+
+    // Mute all participant types
+    participantTypes.forEach((type) => mute(type));
+
+    // Save the updated participant document
+    await participant.save();
+
+    // Emit an event to notify clients
+    io.to(sessionId).emit("DISCUSSION", "ll");
+  } catch (err) {
+    console.error(err);
+    socket.emit("MUTE_ERROR", {
+      message: "Error muting all the participants. Please try again.",
+    });
+  }
+};
+
 module.exports = {
   addParticipant,
   addDiscussionQueue,
@@ -585,6 +646,7 @@ module.exports = {
   chooseNextParticipant,
   deleteDiscussionQueue,
   leftParticipant,
+  muteAllParticipants,
   updateDiscussionQueue,
   updateMuteStatus,
   updateParticipant,

@@ -99,7 +99,7 @@ export const Conversation = ({
             className={`p-2 text-center space-y-2 shadow-lg rounded-lg transition transform hover:-translate-y-1`}
           >
             <div className="flex gap-4 items-center justify-between w-full">
-              <NameCard userDetails={processingPoint?.currentMember} />
+              {/* <NameCard userDetails={processingPoint?.currentMember} /> */}
               <div className="flex gap-2 items-center">
               <Loader text='Processing' />
               </div>

@@ -4,6 +4,7 @@ import { Button } from "../../ui";
 
 export function SessionButton({ status, socket }) {
   const handleSessionUpdate = (type) => {
+    console.log({type})
     socket.emit("UPDATE_SESSION_STATUS", { type });
   };
 

@@ -1,7 +1,7 @@
 const GroupDiscussion = require("../models/group-discussion");
 const Participant = require("../models/participant");
 const Session = require("../models/session");
-const { getRoleData } = require("../shared/getUserRole");
+const { getRoleData, getUserRole } = require("../shared/getUserRole");
 
 const getActiveSession = async (req, res) => {
   const { id } = req.params;
@@ -61,9 +61,25 @@ const getSessionQueue = async (req, res) => {
 
     if (!session) return res.status(404).json({ message: "Session not found" });
 
-    const { queue = [], globalOrder = 0} = session;
+    const { queue = [], globalOrder = 0 } = session;
 
     return res.status(200).json({ queue, globalOrder });
+  } catch (error) {
+    console.error("Error fetching session queue:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+const getUserInSession = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { userId } = req.user.userId;
+
+    let participant = await Participant.findOne({sessionId :  id });
+    const data = getUserRole(participant, userId);
+
+
+    return res.status(200).json(data);
   } catch (error) {
     console.error("Error fetching session queue:", error);
     return res.status(500).json({ message: "Internal Server Error" });
@@ -148,6 +164,7 @@ const updateSession = async (req, res) => {
 module.exports = {
   getActiveSession,
   getSessionQueue,
+  getUserInSession,
   createSession,
   updateSession,
 };
