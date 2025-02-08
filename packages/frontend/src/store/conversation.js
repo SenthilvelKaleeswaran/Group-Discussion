@@ -15,10 +15,12 @@ export const fetchConversation = createAsyncThunk(
   }
 );
 
-const conversationsSlice = createSlice({
-  name: "conversations",
+const conversationSlice = createSlice({
+  name: "conversation",
   initialState: {
     discussions: [], // Use consistent plural naming
+    currentConverstion : '',
+    conversationTimer : '',
     loading: false,
     error: null,
   },
@@ -26,6 +28,12 @@ const conversationsSlice = createSlice({
     updateMessage: (state, action) => {
       state.discussions = action.payload;
     },
+    setCurrentConverstion: (state, action) => {
+      state.currentConverstion = action.payload;
+    },
+    setConverstionTimer : (state, action) => {
+      state.conversationTimer = action.payload;
+    }
   },
   extraReducers: (builder) => {
     builder
@@ -44,5 +52,5 @@ const conversationsSlice = createSlice({
   },
 });
 
-export const { updateMessage } = conversationsSlice.actions;
-export default conversationsSlice.reducer;
+export const { updateMessage,setCurrentConverstion,setConverstionTimer } = conversationSlice.actions;
+export default conversationSlice.reducer;

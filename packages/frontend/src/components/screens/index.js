@@ -8,9 +8,11 @@ import { Section } from "./create-discussion/Section";
 import { DiscussionSettings } from "./group-discussion/DiscussionSettings";
 import {SessionButton} from "./group-discussion/SessionButton";
 import {QueuePopup} from './group-discussion/QueuePopup'
+import { ConversationCountdown } from "./group-discussion/ConversationCountdown";
 
 export {
   Conversation,
+  ConversationCountdown,
   ConversationSection,
   ConversationSpace,
   DiscussionIndicator,

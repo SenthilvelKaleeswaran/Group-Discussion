@@ -2,17 +2,24 @@ import { useState, useEffect, useRef } from "react";
 import "regenerator-runtime/runtime";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
 import { TIME_INTERVAL } from "../constants"; // Define TIME_INTERVAL in seconds
-
+import { useSelector, useDispatch } from "react-redux";
+import { setConverstionTimer, setCurrentConverstion } from "../store";
 
 export const useSpeechRecognization = ({
   isSpeaking = false,
   selectMember,
   resetCurrentMember,
   grantPermission = true,
+  sendMessage,
 }) => {
   const [isListening, setIsListening] = useState(false);
-  const { transcript, resetTranscript, listening } = useSpeechRecognition();
   const timeoutRef = useRef(null);
+  const countdownRef = useRef(null);
+  
+  const { transcript, resetTranscript, listening } = useSpeechRecognition();
+  const dispatch = useDispatch();
+  const { userSession } = useSelector((state) => state.session);
+  const userStatus = userSession?.userStatus;
 
   useEffect(() => {
     if (!SpeechRecognition.browserSupportsSpeechRecognition()) {
@@ -27,14 +34,22 @@ export const useSpeechRecognization = ({
     }
   }, [isListening, transcript]);
 
-  // Reset the timeout when user is speaking
   useEffect(() => {
-    if (isListening) {
-      resetAutoStopTimer();
+    if (transcript.length > 0) {
+      sendMessage("TRANSCRIPT", transcript);
+      dispatch(setCurrentConverstion(transcript));
+      resetAutoStopTimer(); 
     }
   }, [transcript]);
 
-  // Start listening
+  useEffect(() => {
+    if (userStatus === "IN_PROGRESS" && !isListening && !isSpeaking) {
+      startListening();
+    } else if (userStatus !== "IN_PROGRESS" && isListening) {
+      stopListening();
+    }
+  }, [userStatus, isListening, isSpeaking]);
+
   const startListening = () => {
     if (!isListening && !isSpeaking) {
       setIsListening(true);
@@ -45,25 +60,41 @@ export const useSpeechRecognization = ({
     }
   };
 
-  // Stop listening
   const stopListening = () => {
     setIsListening(false);
     SpeechRecognition.stopListening();
     clearTimeout(timeoutRef.current);
+    clearInterval(countdownRef.current);
+    dispatch(setConverstionTimer(null))
   };
 
-  // Reset auto-stop timer when speech is detected
   const resetAutoStopTimer = () => {
     clearTimeout(timeoutRef.current);
+    clearInterval(countdownRef.current);
+    dispatch(setConverstionTimer(null))
+
+
     timeoutRef.current = setTimeout(() => {
-      if (isListening) {
-        console.log("No speech detected, stopping...");
-        stopListening();
-      }
-    }, TIME_INTERVAL * 1000);
+      startCountdown();
+    }, 4000); 
   };
 
-  // Detect double-tap on the space bar
+  const userId = localStorage.getItem("userId")
+
+  const startCountdown = () => {
+    let count = 3;
+    
+    countdownRef.current = setInterval(() => {
+      if (count >= 0) {
+        dispatch(setConverstionTimer(count))
+        count--;
+      } else {
+        clearInterval(countdownRef.current);
+        sendMessage("NEXT_PARTICIPANT",{previousId : userId,discussion : transcript}); 
+      }
+    }, 1000);
+  };
+
   useEffect(() => {
     let lastPressTime = 0;
 

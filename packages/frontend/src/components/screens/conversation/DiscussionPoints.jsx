@@ -251,10 +251,10 @@ const DiscussionPoints = ({ data, isLiveDiscussion = false, events }) => {
                   }`}
                 >
                   <div className="flex gap-4 items-center justify-between w-full">
-                    <NameCard
+                    {/* <NameCard
                       userDetails={item}
                       isCurrentSpeech={isCurrentSpeech}
-                    />
+                    /> */}
                     <div className="flex gap-2 items-center">
                       <p className="text-xs rounded-full bg-green-500 px-1.5 py-0.5">
                         {item?.point} / {userPointCount} Points

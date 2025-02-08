@@ -6,6 +6,9 @@ import {
   updateParticipants,
   setUserRole,
   setDiscussionQueue,
+  setUserStatus,
+  setUserSession,
+  setCurrentConverstion,
 } from "../store";
 import toast from "react-hot-toast";
 import { displayToast } from "../components/shared";
@@ -110,6 +113,13 @@ export const useDiscussionSocket = ({
       dispatch(setUserRole(role));
     }
   }, [events.PARTICIPANT_LIST]);
+
+  useEffect(() => {
+    if (events.USER_SESSION) {
+      const data = events.USER_SESSION;
+      dispatch(setUserSession(data));
+    }
+  }, [events.USER_SESSION]);
 
   useEffect(() => {
     if (events.PARTICIPANT_LIST) {
@@ -278,7 +288,7 @@ export const useDiscussionSocket = ({
         notify = {},
         id = "",
         action = "",
-        globalOrder 
+        globalOrder,
       } = events.DISCUSSION_QUEUE_UPDATED;
       displayToast({
         id: "DISCUSSION_QUEUE_UPDATED",
@@ -287,7 +297,7 @@ export const useDiscussionSocket = ({
       });
 
       if (queue) {
-        dispatch(setDiscussionQueue({queue,globalOrder}));
+        dispatch(setDiscussionQueue({ queue, globalOrder }));
       }
 
       if (action === "DELETE") {
@@ -298,8 +308,6 @@ export const useDiscussionSocket = ({
           localStorage.setItem("QUEUE_DELETE", JSON.stringify(filter));
         else localStorage.removeItem("QUEUE_DELETE");
       }
-
-      
     }
   }, [events.DISCUSSION_QUEUE_UPDATED]);
 
@@ -337,17 +345,27 @@ export const useDiscussionSocket = ({
 
   useEffect(() => {
     if (events.TURN_TO_SPEAK) {
-      const { type, message } = events.TURN_TO_SPEAK;
+      const { type, message, userStatus } = events.TURN_TO_SPEAK;
 
       displayToast({
         id: "TURN_TO_SPEAK",
         data: {
-          notification: !type
-            ? "Your turn to speak !"
-            : "Quick important updation",
+          notification:
+            type === "YOUR_TURN"
+              ? "Your turn to speak !"
+              : "Quick important updation",
         },
         remove: ["NEXT_PARTICIPANT_LOADING"],
       });
+
+      console.log({ userStatus });
+
+      if (type === "YOUR_TURN" && userStatus) {
+        console.log({ userStatus });
+
+        dispatch(setUserStatus(userStatus));
+        dispatch(setUserSession({userStatus}));
+      }
 
       if (message) {
         // upadte
@@ -395,4 +413,13 @@ export const useDiscussionSocket = ({
       });
     }
   }, [events.NEXT_PARTICIPANT_ERROR]);
+
+
+  // conversation
+  
+  useEffect(() => {
+    if (events.TRANSCRIPT) {
+      dispatch(setCurrentConverstion(events.TRANSCRIPT))
+    }
+  }, [events.TRANSCRIPT]);
 };
