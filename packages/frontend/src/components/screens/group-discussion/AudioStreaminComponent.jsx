@@ -8,17 +8,21 @@ export const AudioStreamingComponent = ({
   sessionId,
   groupDiscussionId,
 }) => {
-  const { localStream, remoteStreams } = useStreaming({
-    socket,
-    sessionId,
-    groupDiscussionId,
-  });
+  const { localStream, remoteStreams, switchToNextSpeakerMic } =
+    useStreaming({
+      socket,
+      sessionId,
+      groupDiscussionId,
+    });
+
+  console.log({socket,localStream})
 
   const { mutedUsers, toggleMute, isMuteLoading, muteInitialLoad, mutingList } =
     useAudioControls({
       localStream,
       socket,
       sessionId,
+      switchToNextSpeakerMic,
     });
 
   const localVideoRef = useRef();

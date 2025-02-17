@@ -157,8 +157,8 @@ const GroupDiscussionSchema = new mongoose.Schema({
   sessionPassword: { type: String },
   status: {
     type: String,
-    enum: ["notStarted", "inProgress", "completed", "holded", "paused"],
-    default: "notStarted",
+    enum: ["NOT_STARTED", "inProgress", "completed", "holded", "paused"],
+    default: "NOT_STARTED",
   },
   sessionStartTime: {
     type: Date,

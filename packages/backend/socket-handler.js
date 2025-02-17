@@ -163,7 +163,8 @@ const socketHandler = (io, socket) => {
       console.log({previousId})
       if (previousId) {
         console.log({previousId})
-        socket.to(sessionId).emit("TRANSCRIPT", "");
+
+        io.to(sessionId).emit("TRANSCRIPT", {transcript : ""});
 
         await updateCurrentConversation({
           io,
@@ -181,15 +182,15 @@ const socketHandler = (io, socket) => {
       await chooseNextParticipant({
         io,
         socket,
-        pssedSession: session,
+        passedSession: session,
         sessionId,
         passedParticipant: participant,
         ...data,
       });
     });
 
-    socket.on("TRANSCRIPT", async (data) => {
-      socket.to(sessionId).emit("TRANSCRIPT", data);
+    socket.on("TRANSCRIPT", async (transcript) => {
+      socket.to(sessionId).emit("TRANSCRIPT", transcript);
     });
 
     socket.on(

@@ -21,13 +21,13 @@ export const LoaderButton = ({
       const parsedStatus = JSON.parse(savedStatus);
 
       setIsLoading(true);
-      localStorage.setItem(
-        id,
-        JSON.stringify({
-          ...parsedStatus,
-          loaded: (parsedStatus.loaded || 0) + 1,
-        })
-      );
+      // localStorage.setItem(
+      //   id,
+      //   JSON.stringify({
+      //     ...parsedStatus,
+      //     loaded: (parsedStatus.loaded || 0) + 1,
+      //   })
+      // );
       if (retry) return onClick();
     } else {
       setIsLoading(false);
@@ -36,10 +36,10 @@ export const LoaderButton = ({
   }, [id, condition]);
 
   const handleClick = () => {
-    localStorage.setItem(
-      id,
-      JSON.stringify({ ...LOCAL_STORAGE_LOADING_STATE[id], loaded: 0 })
-    );
+    // localStorage.setItem(
+    //   id,
+    //   JSON.stringify({ ...LOCAL_STORAGE_LOADING_STATE[id], loaded: 0 })
+    // );
     setIsLoading(true);
     onClick();
   };

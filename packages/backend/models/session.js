@@ -189,7 +189,7 @@ const SessionSchema = new mongoose.Schema({
   status: {
     type: String,
     enum: ["NOT_STARTED", "IN_PROGRESS", "COMPLETED", "HOLDED"],
-    default: "notStarted",
+    default: "NOT_STARTED",
   },
   sessionStartTime: {
     type: Date,

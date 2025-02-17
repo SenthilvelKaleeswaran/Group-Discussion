@@ -16,7 +16,6 @@ const ConversationSchema = new mongoose.Schema({
   },
   discussion: {
     type: String,
-    required: true,
   },
   status: {
     type: String,

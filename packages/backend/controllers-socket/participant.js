@@ -162,12 +162,15 @@ const updateMuteStatus = async ({
       participant[role].set(targetUserId, user);
 
       await participant.save();
-
-      io.to(sessionId).emit("mute-status-changed", {
+      
+      let muteStatusChanged = {
         targetUserId,
         isMuted,
-        userId,
-      });
+      }
+
+      if(userId !== "DISCUSSION") muteStatusChanged['userId'] = userId
+
+      io.to(sessionId).emit("mute-status-changed", muteStatusChanged);
 
       if (userId === "DISCUSSION") {
         io.to(targetUserId).emit("TURN_TO_SPEAK", {
@@ -499,9 +502,10 @@ const chooseNextParticipant = async ({
     console.log({ participanttttt: participant });
 
     if (!participant) {
-      return io.to(sessionId).emit("NEXT_PARTICIPANT_ERROR", {
+       io.to(sessionId).emit("NEXT_PARTICIPANT_ERROR", {
         error: "Participant not found",
       });
+      return
     }
 
     const { queue = [], globalOrder } = session;
@@ -523,16 +527,14 @@ const chooseNextParticipant = async ({
 
     let index = globalOrder;
 
-    if (index !== 0) {
-    }
-
     console.log({ queue });
 
     const takeNextParticipant = async (index) => {
       if (index >= queue.length) {
-        return io.to(sessionId).emit("DISCUSSION_QUEUE_COMPLETED", {
+         io.to(sessionId).emit("DISCUSSION_QUEUE_COMPLETED", {
           warning: "No more active participants left",
         });
+        return
       }
 
       const currentPerson = queue[index];
