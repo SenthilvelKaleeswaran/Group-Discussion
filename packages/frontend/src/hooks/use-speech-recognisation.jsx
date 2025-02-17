@@ -36,7 +36,7 @@ export const useSpeechRecognization = ({
 
   useEffect(() => {
     if (transcript.length > 0) {
-      sendMessage("TRANSCRIPT", transcript);
+      sendMessage("TRANSCRIPT", {transcript});
       dispatch(setCurrentConverstion(transcript));
       resetAutoStopTimer(); 
     }

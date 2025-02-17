@@ -364,7 +364,7 @@ export const useDiscussionSocket = ({
         console.log({ userStatus });
 
         dispatch(setUserStatus(userStatus));
-        dispatch(setUserSession({userStatus}));
+        dispatch(setUserSession({ userStatus }));
       }
 
       if (message) {
@@ -414,12 +414,12 @@ export const useDiscussionSocket = ({
     }
   }, [events.NEXT_PARTICIPANT_ERROR]);
 
-
   // conversation
-  
+
   useEffect(() => {
     if (events.TRANSCRIPT) {
-      dispatch(setCurrentConverstion(events.TRANSCRIPT))
+      const { transcript } = events.TRANSCRIPT;
+      dispatch(setCurrentConverstion(transcript));
     }
   }, [events.TRANSCRIPT]);
 };
