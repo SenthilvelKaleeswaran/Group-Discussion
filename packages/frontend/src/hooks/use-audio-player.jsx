@@ -51,6 +51,7 @@ export const useAudioPlayer = (events) => {
     }
   }, [events.GENERATED_TEXT_AUDIO, dispatch, host]);
 
+  
   // Optional: Return methods to control audio playback externally
   return {
     play: (audioUrl, elapsedTime = 0) => playAudio(audioUrl, elapsedTime),
