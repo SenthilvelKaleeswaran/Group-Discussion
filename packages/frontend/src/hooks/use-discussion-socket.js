@@ -422,4 +422,13 @@ export const useDiscussionSocket = ({
       dispatch(setCurrentConverstion(transcript));
     }
   }, [events.TRANSCRIPT]);
+
+  useEffect(() => {
+    if (events.AUDIO_ERROR) {
+      displayToast({
+        id: "AUDIO_ERROR",
+        data: events.AUDIO_ERROR,
+      });
+    }
+  }, [events.AUDIO_ERROR]);
 };

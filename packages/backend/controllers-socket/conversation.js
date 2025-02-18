@@ -20,12 +20,11 @@ const updateCurrentConversation = async ({
       });
     }
 
-    const  a  = await Conversation.create({
+    const  newConversation  = await Conversation.create({
       sessionId,
       [participantType === "AI" ? "aiId" : "userId"]: previousId,
       ...rest,
     });
-    console.log({a})
 
     if (participant.participant.has(previousId)) {
       participant.participant.get(previousId).muteStatus = true;
@@ -37,6 +36,7 @@ const updateCurrentConversation = async ({
       });
     }
 
+    return newConversation
   } catch (err) {
     console.error("Error updating conversation:", err);
     socket.emit("MUTE_ERROR", {

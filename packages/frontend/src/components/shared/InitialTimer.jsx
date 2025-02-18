@@ -31,7 +31,7 @@ export const InitialTimer = ({ socket }) => {
 
   if (timer !== -1)
     return (
-      <div className="h-full bg-black bg-opacity-70 rounded-lg absolute z-50 inset-4 flex items-center justify-center">
+      <div className="h-screen bg-black bg-opacity-70 rounded-lg absolute z-50 inset-4 flex items-center justify-center">
         <div className="flex flex-col items-center bg-green-600 p-6 rounded-lg shadow-lg">
           <div className="relative overflow-hidden h-12 w-20 flex items-center justify-center">
             <AnimatingTimer

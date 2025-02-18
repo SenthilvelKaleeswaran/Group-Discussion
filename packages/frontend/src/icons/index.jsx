@@ -33,12 +33,14 @@ import { GrDrag } from "react-icons/gr";
 import { IoReloadOutline } from "react-icons/io5";
 import { MdDeleteSweep } from "react-icons/md";
 import { GoStack } from "react-icons/go";
+import { MdClose } from "react-icons/md";
 
 const Icon = ({ name, ...props }) => {
   const IconsList = {
     Admin: FaUserShield,
     Backward: IoPlayBack,
     Block: ImBlocked,
+    Close : MdClose,
     ChevronDown: FaChevronDown,
     ChevronUp: FaChevronUp,
     Correct: IoCheckmarkCircle,

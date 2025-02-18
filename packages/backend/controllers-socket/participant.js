@@ -8,6 +8,7 @@ const {
 } = require("../shared/getUserRole");
 const { getUserNameOrEmail } = require("./common");
 const Session = require("../models/session");
+const { generateConversation } = require("./generate");
 
 const updateParticipant = async ({
   groupDiscussionId,
@@ -81,7 +82,7 @@ const addParticipant = async ({
       user.timing.push({ joinedAt: new Date(), leftAt: null });
       participant[role].set(userId, user);
     } else {
-      const admins = [ "67541f953969247972408a47"];
+      const admins = ["67541f953969247972408a47"];
 
       const role = admins.includes(userId) ? "admin" : "participant";
 
@@ -162,7 +163,7 @@ const updateMuteStatus = async ({
       participant[role].set(targetUserId, user);
 
       await participant.save();
-      
+
       let muteStatusChanged = {
         targetUserId,
         isMuted,
@@ -489,6 +490,7 @@ const chooseNextParticipant = async ({
   sessionId,
   passedSession,
   passedParticipant,
+  audioPlaybackData
 }) => {
   try {
     io.to(sessionId).emit("NEXT_PARTICIPANT_LOADING", {
@@ -502,7 +504,7 @@ const chooseNextParticipant = async ({
     console.log({ participanttttt: participant });
 
     if (!participant) {
-       io.to(sessionId).emit("NEXT_PARTICIPANT_ERROR", {
+      io.to(sessionId).emit("NEXT_PARTICIPANT_ERROR", {
         error: "Participant not found",
       });
       return
@@ -531,62 +533,74 @@ const chooseNextParticipant = async ({
 
     const takeNextParticipant = async (index) => {
       if (index >= queue.length) {
-         io.to(sessionId).emit("DISCUSSION_QUEUE_COMPLETED", {
+        io.to(sessionId).emit("DISCUSSION_QUEUE_COMPLETED", {
           warning: "No more active participants left",
         });
-        return
+        return;
       }
 
       const currentPerson = queue[index];
-      const user = discussionParticipant?.get(
-        currentPerson?.userId?.toString()
-      );
 
-      if (user?.isActive) {
-        await updateMuteStatus({
-          socket,
-          io,
-          userId: "DISCUSSION",
-          targetUserId: currentPerson?.userId?.toString(),
-          sessionId,
-          isMuted: false,
-          passedParticipant: participant,
-        });
+      if (currentPerson?.userId?.toString()) {
+        const user = discussionParticipant?.get(
+          currentPerson?.userId?.toString()
+        );
 
-        queue[index].status = "IN_PROGRESS";
-
-        io.to(user?.socketId).emit("TURN_TO_SPEAK", {
-          message: "Your turn to speak",
-          type: "YOUR_TURN",
-          userStatus: "IN_PROGRESS",
-        });
-
-        io.to(sessionId)
-          .except(user?.socketId)
-          .emit("TURN_TO_SPEAK_NOTIFY_OTHERS", {
-            message: `${user?.name} turn to speak`,
+        if (user?.isActive) {
+          await updateMuteStatus({
+            socket,
+            io,
+            userId: "DISCUSSION",
+            targetUserId: currentPerson?.userId?.toString(),
+            sessionId,
+            isMuted: false,
+            passedParticipant: participant,
           });
 
-        session.queue = queue;
-        session.globalOrder = index + 1;
+          queue[index].status = "IN_PROGRESS";
 
-        await session.save();
+          io.to(user?.socketId).emit("TURN_TO_SPEAK", {
+            message: "Your turn to speak",
+            type: "YOUR_TURN",
+            userStatus: "IN_PROGRESS",
+          });
 
-        return;
+          io.to(sessionId)
+            .except(user?.socketId)
+            .emit("TURN_TO_SPEAK_NOTIFY_OTHERS", {
+              message: `${user?.name} turn to speak`,
+            });
+
+          session.queue = queue;
+          session.globalOrder = index + 1;
+
+          await session.save();
+
+          return;
+        } else {
+          queue[index].status = "IN_ACTIVE";
+
+          session.queue = queue;
+          session.globalOrder = index + 1;
+          index += 1;
+
+          await session.save();
+
+          io.to(sessionId).emit("TURN_TO_SPEAK_INACTIVE", {
+            error: `${user?.name} is inactive`,
+          });
+
+          return takeNextParticipant(index);
+        }
       } else {
-        queue[index].status = "IN_ACTIVE";
-
-        session.queue = queue;
-        session.globalOrder = index + 1;
-        index += 1;
-
-        await session.save();
-
-        io.to(sessionId).emit("TURN_TO_SPEAK_INACTIVE", {
-          error: `${user?.name} is inactive`,
+        await generateConversation({
+          socket,
+          io,
+          passedSession: session,
+          aiId: currentPerson?.aiId?.toString(),
+          sessionId,
+          audioPlaybackData
         });
-
-        return takeNextParticipant(index);
       }
     };
 

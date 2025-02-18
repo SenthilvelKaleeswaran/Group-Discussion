@@ -9,14 +9,14 @@ export const PeopleList = ({ list, title, socket, sessionId }) => {
     sessionId,
   });
 
-  const hndleAddToQueue = (data) => {
+  const handleAddToQueue = (data) => {
     socket.emit("DISCUSSION_QUEUE", { action: "ADD",sessionId, ...data });
   };
 
   const options = [
     {
       label: "Add to Queue",
-      onClick: hndleAddToQueue,
+      onClick: handleAddToQueue,
       icon: "Queue",
     },
   ];

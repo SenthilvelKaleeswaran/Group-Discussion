@@ -5,7 +5,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import useSpeechSynthesis from "../hooks/useSpeechSynthesis";
+import { useSpeechSynthesis } from "../hooks";
 
 const RecapDiscussionContext = createContext();
 

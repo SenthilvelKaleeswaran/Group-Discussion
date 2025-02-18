@@ -13,7 +13,7 @@ const getActiveSession = async (req, res) => {
 
     const session = await Session.findById(sessionId).populate({
       path: "aiParticipants",
-      select: "_id name avatar gender",
+      select: "_id name avatar gender description",
     });
 
     return res.status(200).json({ ...session.toObject(), ...roleData });

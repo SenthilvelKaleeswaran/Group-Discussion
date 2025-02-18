@@ -6,11 +6,13 @@ import { ConversationSection } from "./feedback/ConversationSection";
 import { ConversationSpace } from "./feedback/ConversationSpace";
 import { Section } from "./create-discussion/Section";
 import { DiscussionSettings } from "./group-discussion/DiscussionSettings";
-import {SessionButton} from "./group-discussion/SessionButton";
-import {QueuePopup} from './group-discussion/QueuePopup'
+import { SessionButton } from "./group-discussion/SessionButton";
+import { QueuePopup } from "./group-discussion/QueuePopup";
 import { ConversationCountdown } from "./group-discussion/ConversationCountdown";
+import { AiParticipantPopup } from "./group-discussion/AiParticipantPopup";
 
 export {
+  AiParticipantPopup,
   Conversation,
   ConversationCountdown,
   ConversationSection,
@@ -21,5 +23,5 @@ export {
   PerformanceSection,
   QueuePopup,
   Section,
-  SessionButton
+  SessionButton,
 };

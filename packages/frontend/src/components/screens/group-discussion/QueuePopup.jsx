@@ -125,7 +125,6 @@ export function QueuePopup({ sessionId, error, isLoading, socket }) {
   const { queue = [] } = useSelector((state) => state.session);
 
   console.log({ queue });
-  const dispatch = useDispatch();
 
   // Refs for scrolling to "In Progress" or "Not Started"
   const inProgressRef = useRef(null);
@@ -237,10 +236,15 @@ export function QueuePopup({ sessionId, error, isLoading, socket }) {
 
   return (
     <div className="relative drop-shadow-2xl z-50">
-      <DoubleTapPopup onKey="q" draggable>
-        <div className="absolute w-96 h-[486px] flex gap-4 flex-col inset-4 bg-green-700 z-50 rounded-md p-4">
-          <div className="flex justify-between items-center w-full">
-            <p>Discussion Queue</p>
+      <DoubleTapPopup
+        onKey="q"
+        draggable
+        iconName="QueueStack"
+        title="Discussion Queue"
+        containerClass="bg-violet-600"
+      >
+        <div>
+          <div className="flex justify-end items-center w-full">
             <ButtonIcon
               variant="ghost"
               onClick={handleClearAll}
@@ -250,7 +254,7 @@ export function QueuePopup({ sessionId, error, isLoading, socket }) {
             />
           </div>
 
-          <div className="bg-gray-900 flex-grow h-full w-full rounded-md">
+          <div className="bg-gray-900 flex-grow  w-full rounded-md space-y-2">
             {isLoading ? (
               <div className="h-full flex items-center justify-center rounded-md">
                 <Loader text="Queue is Loding" />

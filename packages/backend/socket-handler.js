@@ -17,6 +17,8 @@ const { updateSession } = require("./controllers-socket/session");
 const Participant = require("./models/participant");
 const Session = require("./models/session");
 const { sessionLoadingState } = require("./utils/session-loading-state");
+const fs = require("fs");
+const path = require("path");
 
 const getRoomSockets = (io, roomId) => {
   const room = io.sockets.adapter.rooms.get(roomId);
@@ -24,6 +26,7 @@ const getRoomSockets = (io, roomId) => {
 };
 
 let countdownTimers = {}; // Store timers per session
+let audioPlaybackData = {};
 
 const startCountdown = ({ io, sessionId, socket, duration = 10 }) => {
   console.log({ countdownTimers });
@@ -47,7 +50,7 @@ const startCountdown = ({ io, sessionId, socket, duration = 10 }) => {
 
       try {
         await muteAllParticipants({ io, socket, sessionId });
-        await chooseNextParticipant({ io, socket, sessionId });
+        await chooseNextParticipant({ io, socket, sessionId,audioPlaybackData });
       } catch (error) {
         console.error("Error choosing next participant:", error);
       }
@@ -70,6 +73,17 @@ const socketHandler = (io, socket) => {
       sessionId,
       groupDiscussionId,
     });
+
+    if (audioPlaybackData[sessionId]) {
+      const { audioUrl, startTime,discussion } = audioPlaybackData[sessionId];
+      const elapsedTime = Math.floor((Date.now() - startTime) / 1000); 
+      socket.emit("GENERATED_TEXT_AUDIO", {
+        audioUrl,
+        startTime,
+        elapsedTime,
+        discussion
+      });
+    }
 
     const { participant, role } = participantList;
 
@@ -186,6 +200,7 @@ const socketHandler = (io, socket) => {
         sessionId,
         passedParticipant: participant,
         ...data,
+        audioPlaybackData
       });
     });
 

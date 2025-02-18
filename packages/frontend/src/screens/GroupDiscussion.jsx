@@ -10,6 +10,7 @@ import {
   getSessionQueue,
 } from "../utils/api-call";
 import {
+  useAudioPlayer,
   useDiscussionSocket,
   useMembers,
   useSpeechRecognization,
@@ -17,6 +18,7 @@ import {
   useWebSocket,
 } from "../hooks";
 import {
+  AiParticipantPopup,
   Conversation,
   ConversationCountdown,
   DiscussionSettings,
@@ -38,7 +40,6 @@ import { setDiscussionQueue } from "../store";
 
 const signalingServer = "http://localhost:5000";
 
-
 export const GroupDiscussion = () => {
   const { id } = useParams();
   const [groupDiscussionId, sessionId] = id.split("-");
@@ -49,6 +50,7 @@ export const GroupDiscussion = () => {
 
   const [conversation, setConversation] = useState([]);
   const [currentSpeech, setCurrentSpeech] = useState("");
+  const [startTime, setStartTime] = useState(null);
   const [processingPoint, setProcessingPoint] = useState(null);
   const [status, setStatus] = useState("");
   const [choosingRandomMember, setChoosingRandomMember] = useState(false);
@@ -73,11 +75,10 @@ export const GroupDiscussion = () => {
       onSuccess: (data) => {
         if (Array.isArray(data)) {
         } else if (typeof data === "object") {
-          if (!sessionId) {
+          if (!sessionId)
             navigate(`/gd/${data.groupDiscussionId}-${data._id}`, {
               replace: true,
             });
-          }
         }
         setConversation(data?.conversationId?.messages);
       },
@@ -102,6 +103,7 @@ export const GroupDiscussion = () => {
   const { isSpeaking, currentWord } = useSpeechSynthesis({
     text: currentSpeech,
     voice: currentMember?.voice,
+    startTime: startTime,
   });
 
   const strictPermission = () => {
@@ -186,6 +188,8 @@ export const GroupDiscussion = () => {
     }
   }, [isListening, isSpeaking, isCompleted]);
 
+  const player = useAudioPlayer(events);
+
   useDiscussionSocket({
     events,
     sendMessage,
@@ -195,6 +199,7 @@ export const GroupDiscussion = () => {
     setChoosingRandomMember,
     selectMember,
     setCurrentSpeech,
+    setStartTime,
     setConversation,
     setProcessingPoint,
     setStatus,
@@ -348,6 +353,8 @@ export const GroupDiscussion = () => {
         error={queueError}
         isLoading={isQueueLoading}
       />
+
+      <AiParticipantPopup data={data} socket={socket} sessionId={sessionId} />
 
       <div className="max-w-3xl w-full flex-1.5 p-8 bg-gray-800 shadow-lg rounded-lg">
         <p className="font-bold">{data?.topic}</p>

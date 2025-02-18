@@ -14,7 +14,7 @@ export function UserCard({ name, type, email, aiId }) {
       </div>
       <div className="w-[90%]">
         <p className="text-normal text-left text-semibold truncate">{name || email}</p>
-        <p className="text-base text-gray-500">
+        <p className="text-sm text-left text-gray-500">
           {type === "AI" || aiId ? "AI" : name && email && email}
         </p>
       </div>
