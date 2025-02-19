@@ -15,7 +15,6 @@ const Conversation = require("../models/conversation");
 const Participant = require("../models/participant");
 const GroupDiscussion = require("../models/group-discussion");
 const { updateCurrentConversation } = require("./conversation");
-const googleTTS = require("google-tts-api");
 const fs = require("fs");
 const path = require("path");
 const gTTS = require("gtts");
@@ -84,9 +83,6 @@ const generateAudio = ({
 
       // Trigger AUDIO_FINISHED after audio duration
       setTimeout(async () => {
-        io.to(sessionId).emit("AUDIO_FINISHED", {
-          message: "Audio playback finished.",
-        });
 
         console.log({ sessionId, conversationId, audioPlaybackData });
 
@@ -94,9 +90,7 @@ const generateAudio = ({
         if (conversationId) {
           await Conversation.findOneAndUpdate(
             { _id: conversationId },
-            {
-              status: "SPOKEN",
-            },
+            { status: "SPOKEN" },
             { new: true, upsert: true }
           );
         } else {
@@ -105,12 +99,28 @@ const generateAudio = ({
 
         delete audioPlaybackData[sessionId];
 
+        io.to(sessionId).emit("TRANSCRIPT", { transcript: "" });
+
         // Optional: Cleanup audio file after playback
         setTimeout(() => {
           fs.unlink(audioFilePath, (err) => {
             if (err) console.error("Error deleting audio file:", err);
           });
         }, 5000);
+
+        const session = await Session.findOne({ _id: sessionId });
+
+        const { globalOrder } = session;
+
+        session.queue[globalOrder].status = "COMPLETED";
+        session.globalOrder = globalOrder + 1;
+
+        await session.save();
+
+        io.to(sessionId).emit("AUDIO_FINISHED", {
+          message: "Audio playback finished.",
+        });
+
       }, audioPlaybackData[sessionId].duration);
     });
   });

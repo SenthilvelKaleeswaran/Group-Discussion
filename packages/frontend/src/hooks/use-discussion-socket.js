@@ -431,4 +431,16 @@ export const useDiscussionSocket = ({
       });
     }
   }, [events.AUDIO_ERROR]);
+
+  useEffect(() => {
+    if (events.AUDIO_FINISHED) {
+      displayToast({
+        id: "AUDIO_FINISHED",
+        data: events.AUDIO_FINISHED,
+      });
+      sendMessage("NEXT_PARTICIPANT",{})
+    }
+  }, [events.AUDIO_FINISHED]);
+
+  
 };
