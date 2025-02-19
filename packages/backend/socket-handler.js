@@ -49,8 +49,15 @@ const startCountdown = ({ io, sessionId, socket, duration = 10 }) => {
       delete countdownTimers[sessionId];
 
       try {
+
         await muteAllParticipants({ io, socket, sessionId });
-        await chooseNextParticipant({ io, socket, sessionId,audioPlaybackData });
+        await chooseNextParticipant({
+          io,
+          socket,
+          sessionId,
+          audioPlaybackData,
+        });
+
       } catch (error) {
         console.error("Error choosing next participant:", error);
       }
@@ -75,13 +82,13 @@ const socketHandler = (io, socket) => {
     });
 
     if (audioPlaybackData[sessionId]) {
-      const { audioUrl, startTime,discussion } = audioPlaybackData[sessionId];
-      const elapsedTime = Math.floor((Date.now() - startTime) / 1000); 
+      const { audioUrl, startTime, discussion } = audioPlaybackData[sessionId];
+      const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
       socket.emit("GENERATED_TEXT_AUDIO", {
         audioUrl,
         startTime,
         elapsedTime,
-        discussion
+        discussion,
       });
     }
 
@@ -171,7 +178,7 @@ const socketHandler = (io, socket) => {
         });
     });
 
-    socket.on("NEXT_PARTICIPANT", async ({ previousId, ...data }) => {
+    socket.on("NEXT_PARTICIPANT", async ({ previousId = '', ...data }) => {
       let session = await Session.findOne({ _id: sessionId });
       let participant = await Participant.findOne({ sessionId });
       console.log({previousId})
@@ -191,6 +198,7 @@ const socketHandler = (io, socket) => {
           ...data, // isConclusion, discussion
         });
       }
+
       console.log({ participanttttt2: participant });
 
       await chooseNextParticipant({
@@ -200,7 +208,7 @@ const socketHandler = (io, socket) => {
         sessionId,
         passedParticipant: participant,
         ...data,
-        audioPlaybackData
+        audioPlaybackData,
       });
     });
 
