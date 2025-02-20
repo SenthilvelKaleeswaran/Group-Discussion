@@ -23,6 +23,7 @@ const conversationSlice = createSlice({
     conversationTimer: '',
     loading: false,
     error: null,
+    userPoints : {}
   },
   reducers: {
     updateMessage: (state, action) => {
@@ -52,6 +53,9 @@ const conversationSlice = createSlice({
         state.discussion[index] = action.payload.updatedConversation;
       }
     },
+    setUserPoints : (state, action) => {
+      state.userPoints = action.payload;
+    }
   },
   extraReducers: (builder) => {
     builder
@@ -77,6 +81,7 @@ export const {
   setDiscussion,
   setAddDiscussion,
   setUpdateDiscussion,
+  setUserPoints,
 } = conversationSlice.actions;
 
 export default conversationSlice.reducer;

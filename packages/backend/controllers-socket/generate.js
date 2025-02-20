@@ -20,24 +20,60 @@ const path = require("path");
 const gTTS = require("gtts");
 const mp3Duration = require("mp3-duration");
 const { updateSessionQueueStatus } = require("./common");
+const { default: mongoose } = require("mongoose");
 
 const getConversationData = (data) => {
-  return data?.map((item) => {
-    return {
-      discussionPoint: item?.discussion,
-      userType: item?.userId ? "USER" : "AI",
-      id : item?.userId || item?.aiId
-    };
-  });
+  return data?.map((item) => item?.messages).flat();
 };
 
 const generateFeedback = async ({ io, socket, sessionId }) => {
   try {
     io.to(sessionId).emit("FEEDBACK_LOADING", "Generating Feedback");
 
+    console.log({ sessionId });
     const session = await Session.findOne({ _id: sessionId });
-    const conversation = await Conversation.find({ sessionId });
-    const participants = await Participant.find({ sessionId });
+    const conversation = await Conversation.aggregate([
+      {
+        $match: {
+          sessionId: new mongoose.Types.ObjectId(sessionId),
+        },
+      },
+      {
+        $sort: {
+          _id: 1,
+        },
+      },
+      {
+        $addFields: {
+          groupId: { $ifNull: ["$userId", "$aiId"] },
+        },
+      },
+      {
+        $group: {
+          _id: "$groupId",
+          messages: {
+            $push: {
+              _id: "$_id",
+              discussion: "$discussion",
+              status: "$status",
+              isConclusion: "$isConclusion",
+              userId: "$userId",
+              aiId: "$aiId",
+              feedback: "$feedback",
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          groupId: "$_id",
+          messages: 1,
+        },
+      },
+    ]);
+
+    const participants = await Participant.findOne({ sessionId });
 
     if (!session) {
       io.to(sessionId).emit("FEEDBACK_NOTIFICATION", {
@@ -65,89 +101,238 @@ const generateFeedback = async ({ io, socket, sessionId }) => {
 
     const {
       topic,
-      aiParticipants,
+      aiParticipants
       //   conclusionPoints, // bb
       //   conclusionBy, // bb
       // noOfUsers, // bb
     } = session;
 
     const discussionLength = conversation?.length;
+
     const noOfUsers = Array.from(participants?.participant?.values())?.length;
 
     const modifiedConversation = getConversationData(conversation);
 
-    const pointAnalysis = [];
     const userAnalysis = [];
 
-    // Sequential generation of point analysis
-    for (const [index, item] of conversation.entries()) {
-      if (item?.userId) {
-        const feedback = await generateAIResponse({
-          prompt:
-            generateConversationTemplate(topic, item?.discussion) +
-            `\nFull Discussion : ${JSON.stringify(modifiedConversation)}` +
-            PointAnalysisPrompt +
-            `\nAI Response:`,
-          isParse: true,
+    console.log({ ddddd: conversation });
+
+    const pointAnalysis = [];
+
+    // Utility to create a delay
+    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const isFalsyObject = (obj) => !obj || Object.keys(obj).length === 0;
+
+    const generateFeedbackPromises = async () => {
+      const promises = [];
+
+      // Iterate through modifiedConversation
+      let count = 0;
+      modifiedConversation.forEach((messageItem, index) => {
+        console.log({
+          messageItem,
+          eeee: isFalsyObject(messageItem?.feedback),
         });
+        if (isFalsyObject(messageItem?.feedback)) {
+          // Create a delayed promise for each message
+          const promise = delay(count * 30000).then(async () => {
+            try {
+              const feedback = await generateAIResponse({
+                prompt:
+                  generateConversationTemplate(topic, messageItem?.discussion) +
+                  `\nFull Discussion: ${JSON.stringify(modifiedConversation)}` +
+                  PointAnalysisPrompt +
+                  `\nAI Response:`,
+                isParse: true,
+              });
 
-        pointAnalysis.push({
-          feedback,
-          index,
-        });
-      }
-    }
+              console.log({ feedback });
 
-    // Sequential generation of user analysis
-    for (const item of participants) {
-      const { _id, name } = item?.userId;
-      const feedback = await generateAIResponse({
-        prompt:
-          discussionInstructionPrompt({
-            topic,
-            aiParticipants,
-            discussionLength,
-            // conclusionPoints,
-            // conclusionBy,
-            noOfUsers,
-            user: item?.userId,
-          }) +
-          `\nFull Discussion : ${JSON.stringify(modifiedConversation)}\n` +
-          OverAllAnalysisPrompt +
-          `\nAI Response:`,
-        isParse: true,
+              // Construct feedback data
+              const feedbackData = {
+                _id: messageItem?._id,
+                messageIndex: index,
+                feedback,
+              };
+
+              // Use setTimeout with 0 to save feedback asynchronously without blocking the loop
+              setTimeout(async () => {
+                // Update conversation with feedback
+
+                console.log({ updateion: messageItem?._id, feedback });
+                if (feedback) {
+                  const updatedConversation =
+                    await Conversation.findOneAndUpdate(
+                      { _id: messageItem?._id },
+                      { feedback },
+                      { new: true }
+                    ).catch((err) => {
+                      console.error(
+                        `Error saving feedback for message ${messageItem?._id}:`,
+                        err
+                      );
+                    });
+
+                  console.log({ updatedConversation });
+
+                  // Emit feedback update to the client
+                  io.to(sessionId).emit("FEEDBACK_CONVERSATION_UPDATE", {
+                    isConclusion: updatedConversation?.isConclusion,
+                    userId:
+                      updatedConversation?.userId || updatedConversation?.aiId,
+                  });
+                } else {
+                  console.log({ updatedConversation: null });
+                }
+              }, 0);
+
+              return feedbackData;
+            } catch (error) {
+              console.error(
+                `Error in API call for message at index ${index}:`,
+                error
+              );
+              return null; // Avoid breaking the Promise.all
+            }
+          });
+
+          promises.push(promise);
+          count += 1;
+        }
       });
-      userAnalysis.push({
-        _id,
-        feedback,
+
+      // Wait for all promises to resolve
+      const results = await Promise.all(promises);
+
+      // Filter out any null results from failed API calls
+      const validResults = results.filter((result) => result !== null);
+      console.log({ validResults, pointAnalysis });
+
+      // Push valid results to pointAnalysis
+      pointAnalysis.push(...validResults);
+
+      return pointAnalysis;
+    };
+
+    // Call the function
+    generateFeedbackPromises()
+      .then((result) => console.log("Point Analysis:", result))
+      .catch((error) => console.error("Error generating feedback:", error));
+
+    console.log({ pointAnalysis });
+
+    const generateUserAnalysisPromises = async () => {
+      const promises = [];
+      let count = 0;
+
+      // Helper to check if an object is falsy (null, undefined, or empty object)
+      const isFalsyObject = (obj) => !obj || Object.keys(obj).length === 0;
+
+      console.log({ aassss: participants?.participant instanceof Map });
+
+      // Iterate through the 'participant' map
+      participants.participant.forEach((item, key) => {
+        // Check if feedback is falsy
+        const isConversed = conversation?.find((_)=>_?.groupId?.toString() === item?.userId?.toString())
+        console.log({isConversed,conversation,userId:item,kkkkkk : !isFalsyObject(isConversed)})
+        if (isFalsyObject(item?.feedback) && !isFalsyObject(isConversed)) {
+          const promise = delay(count * 30000).then(async () => {
+            try {
+              const feedback = await generateAIResponse({
+                prompt:
+                  discussionInstructionPrompt({
+                    topic,
+                    aiParticipants: aiParticipants?.length,
+                    discussionLength,
+                    noOfUsers,
+                    user: item?.userId,
+                  }) +
+                  `\nFull Discussion : ${JSON.stringify(
+                    modifiedConversation
+                  )}\n` +
+                  OverAllAnalysisPrompt +
+                  `\nAI Response:`,
+                isParse: true,
+              });
+
+              console.log({ feedback });
+
+              // Use setTimeout with 0 to save feedback asynchronously without blocking the loop
+              setTimeout(async () => {
+                console.log(
+                  `Saving user analysis for participant with key: ${key}`
+                );
+                try {
+                  // Update the specific participant's feedback in the map
+                  const updatedParticipant = await Participant.findOneAndUpdate(
+                    {
+                      _id: participants._id,
+                      [`participant.${key}`]: { $exists: true }, // Ensure the participant key exists
+                    },
+                    {
+                      $set: {
+                        [`participant.${key}.feedback`]: feedback,
+                      },
+                    },
+                    { new: true }
+                  );
+
+                  console.log({ updatedParticipant });
+
+                  // Emit analysis update to the client
+                  io.to(sessionId).emit("FEEDBACK_USER_UPDATE", {
+                    userId: item?.userId || item?.aiId,
+                    feedback,
+                  });
+                } catch (err) {
+                  console.error(
+                    `Error saving user analysis for participant with key: ${key}`,
+                    err
+                  );
+                }
+              }, 0);
+
+              return {
+                userId: item?.userId,
+                feedback,
+              };
+            } catch (error) {
+              console.error(
+                `Error in API call for participant with key: ${key}`,
+                error
+              );
+              return null; // Avoid breaking the Promise.all
+            }
+          });
+
+          promises.push(promise);
+          count += 1; // Increment delay counter
+        }
       });
-    }
 
-    const updateDiscussionFeedback = pointAnalysis.map((analysis) => ({
-      updateOne: {
-        filter: { sessionId: id },
-        update: {
-          $set: {
-            [`conversation.${analysis.index}.feedback`]: analysis?.feedback,
-          },
-        },
-      },
-    }));
+      // Wait for all promises to resolve
+      const results = await Promise.all(promises);
 
-    const a = await Promise.all([
-      await Conversation.bulkWrite(updateDiscussionFeedback),
-      await session.findByIdAndUpdate(
-        id,
-        { feedback: userAnalysis },
-        { new: true }
-      ),
-    ]);
+      // Filter out any null results from failed API calls
+      const validResults = results.filter((result) => result !== null);
+      console.log({ validResults });
 
-    // Return feedback response
-    return res.status(200).json({ msg: "Success" });
+      // Push valid results to userAnalysis
+      userAnalysis.push(...validResults);
+
+      return userAnalysis;
+    };
+
+    // Call the function
+    generateUserAnalysisPromises()
+      .then((result) => console.log("User Analysis:", result))
+      .catch((error) =>
+        console.error("Error generating user analysis:", error)
+      );
   } catch (error) {
     console.error("Error generating feedback:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    return;
+    // return res.status(500).json({ error: "Internal server error" });
   }
 };
 
