@@ -2,21 +2,28 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Table } from "../../ui";
 import { useSelector } from "react-redux";
 import { Loader } from "../../shared";
+import { useDispatch } from "react-redux";
+import { setUserPoints } from "../../../store";
 
 export function FeedbackTable({ events, aiParticipants }) {
   const { participants, loading } = useSelector((state) => state.participants);
+  const { userPoints = {} } = useSelector((state) => state.conversation);
+  const dispatch = useDispatch();
 
   // State to hold table data
   const [data, setData] = useState([]);
 
+  const isFalsyObject = (obj) => !obj || Object.keys(obj).length === 0;
+
   // Function to prepare table data
   const getTableData = useCallback(() => {
-    if (loading) return [];
+    if (loading || !userPoints) return [];
     const users = [
       ...(participants?.participant || []),
       ...(aiParticipants || []),
     ];
-    console.log({ users, loading });
+
+    console.log({ users, ccc: participants?.participant });
 
     return users.map((item) => ({
       _id: {
@@ -31,16 +38,35 @@ export function FeedbackTable({ events, aiParticipants }) {
         value: item?.name,
       },
       totalPoints: {
+        value: `${userPoints[item?.userId || item?._id]?.feedback || 0} /  ${
+          userPoints[item?.userId || item?._id]?.points || 0
+        } `,
+      },
+
+      conclusionPoints: {
+        value: `${
+          userPoints[item?.userId || item?._id]?.conclusionFeedback || 0
+        } /  ${userPoints[item?.userId || item?._id]?.conclusionPoints || 0} `,
+      },
+
+      discussionScore: {
         value: 0,
       },
-      score: {
+      overAllFeedbckGenerte: {
+        value: !isFalsyObject(
+          participants?.participant?.find((_) => _?.userId === item?.userId)?.feedback
+        )
+          ? "✅"
+          : "❌",
+      },
+      feedbackScore: {
+        value: 0,
+      },
+      totalScore: {
         value: 45,
       },
-      conclusionPoints: {
-        value: 0,
-      },
     }));
-  }, [participants?.participant, aiParticipants, loading]);
+  }, [participants?.participant, aiParticipants, loading, userPoints]);
 
   // Update table data whenever participants or aiParticipants change
   useEffect(() => {
@@ -48,22 +74,27 @@ export function FeedbackTable({ events, aiParticipants }) {
     setData(newData);
   }, [getTableData]);
 
-  // Random score updates
   useEffect(() => {
-    const interval = setInterval(() => {
-      setData((prevData) => {
-        return prevData.map((item) => ({
-          ...item,
-          score: {
-            ...item.score,
-            value: Math.floor(Math.random() * 100), // Random score updates
-          },
-        }));
-      });
-    }, 2000);
+    const updateFeedbackCounts = events?.FEEDBACK_CONVERSATION_UPDATE;
 
-    return () => clearInterval(interval);
-  }, []);
+    if (updateFeedbackCounts) {
+      const { userId, isConclusion } = updateFeedbackCounts;
+
+      if (userId && userPoints?.[userId]) {
+        const updatedUserPoints = {
+          ...userPoints,
+          [userId]: {
+            ...userPoints[userId],
+            conclusionFeedback:
+              userPoints[userId].conclusionFeedback + (isConclusion ? 1 : 0),
+            feedback: userPoints[userId].feedback + (!isConclusion ? 1 : 0),
+          },
+        };
+
+        dispatch(setUserPoints(updatedUserPoints));
+      }
+    }
+  }, [events?.FEEDBACK_CONVERSATION_UPDATE]);
 
   if (loading) return <Loader />;
 

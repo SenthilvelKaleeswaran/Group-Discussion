@@ -56,10 +56,11 @@ export function SessionButton({ status, socket, sessionId }) {
         return (
           <div className="flex gap-2">
             <Button label="Completed" variant="success" disabled />
-            <LoaderButton
+            <Button
               id="FEEDBACK"
               condition={status === "FEEDBACK"}
               onClick={() => handleGenerateFeedback()}
+              label={"Generate Feedback"}
               buttonProps={{ label: "Generate Feedback" }}
             />
           </div>

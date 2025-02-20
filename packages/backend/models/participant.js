@@ -24,6 +24,10 @@ const DetailsSchema = new mongoose.Schema({
   name: { type: String },
   muteStatus: { type: Boolean, default: false },
   timing: [ParticipantTimingSchema],
+  feedback: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {},
+  },
 });
 
 const BlockSchema = new mongoose.Schema({

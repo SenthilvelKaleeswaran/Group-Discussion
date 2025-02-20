@@ -26,6 +26,10 @@ const ConversationSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.Mixed,
     default: {},
   },
+  pointAnalysis : {
+    type: mongoose.Schema.Types.Mixed,
+    default: {},
+  },
   isConclusion: {
     type: Boolean,
     default: false,

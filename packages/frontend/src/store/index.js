@@ -6,6 +6,7 @@ import {
   setDiscussion,
   setAddDiscussion,
   setUpdateDiscussion,
+  setUserPoints
 } from "./conversation";
 import {
   fetchGroupDiscussion,
@@ -43,4 +44,5 @@ export {
   setDiscussion,
   setAddDiscussion,
   setUpdateDiscussion,
+  setUserPoints
 };
