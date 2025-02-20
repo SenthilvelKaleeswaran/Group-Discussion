@@ -9,8 +9,8 @@ export const getNameCardStyle = (isCurrentSpeech, isUser, isAnotherUser) => {
       name: "text-blue-500",
     },
     anotherUser: {
-      nameCard: "bg-green-700",
-      name: "text-green-500",
+      nameCard: "bg-orange-700",
+      name: "text-orange-500",
     },
     default: {
       nameCard: "bg-gray-700",

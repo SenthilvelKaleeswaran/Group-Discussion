@@ -1,3 +1,4 @@
+const { updateSessionQueueStatus } = require("./controllers-socket/common");
 const {
   updateCurrentConversation,
 } = require("./controllers-socket/conversation");
@@ -14,6 +15,7 @@ const {
   muteAllParticipants,
 } = require("./controllers-socket/participant");
 const { updateSession } = require("./controllers-socket/session");
+const Conversation = require("./models/conversation");
 const Participant = require("./models/participant");
 const Session = require("./models/session");
 const { sessionLoadingState } = require("./utils/session-loading-state");
@@ -27,20 +29,18 @@ const getRoomSockets = (io, roomId) => {
 
 let countdownTimers = {}; // Store timers per session
 let audioPlaybackData = {};
+let currentSpeaker = {};
 
 const startCountdown = ({ io, sessionId, socket, duration = 10 }) => {
-  console.log({ countdownTimers });
   if (countdownTimers[sessionId]) return; // Prevent duplicate timers
 
   const endTime = Date.now() + (duration + 2) * 1000; // Calculate the end time
-  console.log({ endTime, duration });
 
   countdownTimers[sessionId] = setInterval(async () => {
     const remainingTime = Math.max(
       -1,
       Math.floor((endTime - Date.now()) / 1000)
     );
-    console.log({ remainingTime });
 
     io.to(sessionId).emit("TIMER_UPDATE", { remainingTime });
 
@@ -49,15 +49,14 @@ const startCountdown = ({ io, sessionId, socket, duration = 10 }) => {
       delete countdownTimers[sessionId];
 
       try {
-
         await muteAllParticipants({ io, socket, sessionId });
         await chooseNextParticipant({
           io,
           socket,
           sessionId,
           audioPlaybackData,
+          currentSpeaker,
         });
-
       } catch (error) {
         console.error("Error choosing next participant:", error);
       }
@@ -80,6 +79,14 @@ const socketHandler = (io, socket) => {
       sessionId,
       groupDiscussionId,
     });
+
+    if (currentSpeaker[sessionId]?.userId === userId) {
+      socket.emit("YOUR_TURN_TO_SPEAK", {
+        message: "Your turn to speak",
+        type: "YOUR_TURN",
+        userStatus: "IN_PROGRESS",
+      });
+    }
 
     if (audioPlaybackData[sessionId]) {
       const { audioUrl, startTime, discussion } = audioPlaybackData[sessionId];
@@ -131,6 +138,21 @@ const socketHandler = (io, socket) => {
       });
     });
 
+    const conversation = await Conversation.find({ sessionId })
+      .populate({
+        path: "userId",
+        select: "name email", // Specify the fields you want from the User model
+      })
+      .populate({
+        path: "aiId",
+        select: "name email", // Specify the fields you want from the AIModel model
+      })
+      .sort({
+        createdAt: 1,
+      });
+
+    socket.emit("CONVERSATION", { conversation });
+
     socket.on("toggle-mute", async (data) => {
       await updateMuteStatus({ socket, io, ...data });
     });
@@ -140,8 +162,6 @@ const socketHandler = (io, socket) => {
     });
 
     socket.on("UPDATE_SESSION_STATUS", async ({ type }) => {
-      console.log({type})
-
       const event = sessionLoadingState[type];
 
       const targetRoom = `${sessionId}${event.to ? `-${event.to}` : ""}`;
@@ -178,39 +198,50 @@ const socketHandler = (io, socket) => {
         });
     });
 
-    socket.on("NEXT_PARTICIPANT", async ({ previousId = '', ...data }) => {
-      let session = await Session.findOne({ _id: sessionId });
-      let participant = await Participant.findOne({ sessionId });
-      console.log({previousId})
-      if (previousId) {
-        console.log({previousId})
+    socket.on(
+      "NEXT_PARTICIPANT",
+      async ({ previousId, currentQueue, ...data }) => {
+        let session = await Session.findOne({ _id: sessionId });
+        let participant = await Participant.findOne({ sessionId });
+        console.log({ previousId, currentQueue });
+        if (previousId) {
+          io.to(sessionId).emit("TRANSCRIPT", { transcript: "" });
+          console.log({ lllllll22: session?.globalOrder });
 
-        io.to(sessionId).emit("TRANSCRIPT", {transcript : ""});
+          if (currentQueue)
+            session = await updateSessionQueueStatus({
+              sessionId,
+              queueItemId: currentQueue?._id,
+            });
 
-        await updateCurrentConversation({
+          console.log({ lllllll: session?.globalOrder });
+
+          await updateCurrentConversation({
+            io,
+            socket,
+            sessionId,
+            participant,
+            previousId,
+            status: "SPOKEN",
+            ...data, // isConclusion, discussion
+          });
+
+          if (previousId === currentSpeaker?.sessionId?.userId) {
+            delete currentSpeaker?.sessionId;
+          }
+        }
+
+        await chooseNextParticipant({
           io,
           socket,
-          session,
+          passedSession: session,
           sessionId,
-          participant,
-          previousId,
-          status: "SPOKEN",
-          ...data, // isConclusion, discussion
+          passedParticipant: participant,
+          audioPlaybackData,
+          currentSpeaker,
         });
       }
-
-      console.log({ participanttttt2: participant });
-
-      await chooseNextParticipant({
-        io,
-        socket,
-        passedSession: session,
-        sessionId,
-        passedParticipant: participant,
-        ...data,
-        audioPlaybackData,
-      });
-    });
+    );
 
     socket.on("TRANSCRIPT", async (transcript) => {
       socket.to(sessionId).emit("TRANSCRIPT", transcript);

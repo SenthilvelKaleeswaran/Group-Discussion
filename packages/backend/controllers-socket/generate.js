@@ -19,6 +19,7 @@ const fs = require("fs");
 const path = require("path");
 const gTTS = require("gtts");
 const mp3Duration = require("mp3-duration");
+const { updateSessionQueueStatus } = require("./common");
 
 const generateAudio = ({
   sessionId,
@@ -26,18 +27,24 @@ const generateAudio = ({
   io,
   audioPlaybackData,
   conversationId,
+  currentPerson,
 }) => {
+  io.to(sessionId).emit("NOTIFICATION", {
+    message: "Saving audio",
+    type : "message"
+  });
   const PROJECT_ROOT = process.cwd();
   const AUDIO_FOLDER = path.join(PROJECT_ROOT, "packages", "backend", "audio");
-  const audioFileName = `audio_${sessionId}.mp3`;
+  const currDate = Date.now();
+  const audioFileName = `audio_${sessionId}_${currDate}.mp3`;
   const audioFilePath = path.join(AUDIO_FOLDER, audioFileName);
 
-  console.log({ PROJECT_ROOT, AUDIO_FOLDER, audioFilePath });
+  console.log({ PROJECT_ROOT, AUDIO_FOLDER, audioFilePath, discussion });
 
   if (!fs.existsSync(AUDIO_FOLDER)) {
     fs.mkdirSync(AUDIO_FOLDER, { recursive: true });
   }
-  const gtts = new gTTS(discussion, "en");
+  const gtts = new gTTS(discussion.slice(0, 100), "en");
 
   gtts.save(audioFilePath, (err) => {
     if (err) {
@@ -49,6 +56,11 @@ const generateAudio = ({
     }
 
     console.log(`Audio generated: ${audioFilePath}`);
+
+    io.to(sessionId).emit("NOTIFICATION", {
+      message: "Audio Saved",
+      type : "message"
+    });
 
     // Get audio duration using ffmpeg
     mp3Duration(audioFilePath, (err, duration) => {
@@ -68,7 +80,7 @@ const generateAudio = ({
       // Store audio playback data safely
       audioPlaybackData[sessionId] = {
         audioUrl: `audio/${audioFileName}`,
-        startTime: Date.now(),
+        startTime: currDate,
         duration: audioDuration * 1000,
         status: "IN_PROGRESS",
         discussion,
@@ -78,21 +90,42 @@ const generateAudio = ({
       io.to(sessionId).emit("GENERATED_TEXT_AUDIO", {
         audioUrl: `audio/${audioFileName}`,
         discussion: discussion,
-        startTime: audioPlaybackData[sessionId].startTime,
+        startTime: currDate,
+      });
+
+      io.to(sessionId).emit("NOTIFICATION", {
+        message: "Audio Sent",
+        type : "message"
       });
 
       // Trigger AUDIO_FINISHED after audio duration
       setTimeout(async () => {
-
         console.log({ sessionId, conversationId, audioPlaybackData });
 
         // Ensure newConversation exists before updating
         if (conversationId) {
-          await Conversation.findOneAndUpdate(
+          const updatedConversation = await Conversation.findOneAndUpdate(
             { _id: conversationId },
             { status: "SPOKEN" },
             { new: true, upsert: true }
-          );
+          ).populate({
+            path: "userId",
+            select: "_id name email",
+          }).populate({
+            path: "aiId",
+            select: "_id name",
+          })
+
+         const pppp =  await updateSessionQueueStatus({
+            sessionId,
+            queueItemId: currentPerson?._id,
+          });
+
+          console.log({pppp})
+
+          io.to(sessionId).emit("CONVERSATION_UPDATE", {
+            updatedConversation,
+          });
         } else {
           console.warn("newConversation is undefined. Skipping status update.");
         }
@@ -101,25 +134,16 @@ const generateAudio = ({
 
         io.to(sessionId).emit("TRANSCRIPT", { transcript: "" });
 
-        // Optional: Cleanup audio file after playback
+       
         setTimeout(() => {
           fs.unlink(audioFilePath, (err) => {
             if (err) console.error("Error deleting audio file:", err);
           });
-        }, 5000);
+  
+          
+        }, (audioDuration * 500) / 2);
 
-        const session = await Session.findOne({ _id: sessionId });
 
-        const { globalOrder } = session;
-
-        session.queue[globalOrder].status = "COMPLETED";
-        session.globalOrder = globalOrder + 1;
-
-        await session.save();
-
-        io.to(sessionId).emit("AUDIO_FINISHED", {
-          message: "Audio playback finished.",
-        });
 
       }, audioPlaybackData[sessionId].duration);
     });
@@ -262,8 +286,13 @@ const generateConversation = async ({
   passedParticipant,
   sessionId,
   aiId,
-  audioPlaybackData,
 }) => {
+
+  io.to(sessionId).emit("NOTIFICATION", {
+    message: "Generating AI Content",
+    type : "loading"
+  });
+
   let session = passedSession || (await Session.findOne({ _id: sessionId }));
   let participant =
     passedParticipant || (await Participant.findOne({ sessionId }));
@@ -560,7 +589,7 @@ const generateConversation = async ({
       });
     }
 
-    const newConverstion = await updateCurrentConversation({
+    const newConversation = await updateCurrentConversation({
       io,
       socket,
       sessionId,
@@ -572,21 +601,14 @@ const generateConversation = async ({
       discussion: responseText,
     });
 
-    // await handleAudioGeneration({
-    //   io,
-    //   socket,
-    //   sessionId,
-    //   discussion: responseText,
-    // });
+    io.to(sessionId).emit("NOTIFICATION", {
+      message: "AI Content generated",
+      type : "message"
+    });
 
     // Text-to-speech conversion using gTTS
-    generateAudio({
-      sessionId,
-      discussion: responseText,
-      io,
-      audioPlaybackData,
-      conversationId: newConverstion?._id,
-    });
+   
+    return {responseText , newConversation}
 
     // Push new messages into the conversation
     // const { updatedConversation, userMessageId } = await updateNewConversation(

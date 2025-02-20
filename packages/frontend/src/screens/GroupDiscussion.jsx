@@ -21,6 +21,7 @@ import {
   AiParticipantPopup,
   Conversation,
   ConversationCountdown,
+  DiscussionProgress,
   DiscussionSettings,
   MemberCard,
   QueuePopup,
@@ -356,8 +357,10 @@ export const GroupDiscussion = () => {
 
       <AiParticipantPopup data={data} socket={socket} sessionId={sessionId} />
 
-      <div className="max-w-3xl w-full flex-1.5 p-8 bg-gray-800 shadow-lg rounded-lg">
+      <div className="max-w-3xl w-full flex-1.5 p-8 space-y-2 bg-gray-800 shadow-lg rounded-lg">
         <p className="font-bold">{data?.topic}</p>
+        <DiscussionProgress events={events} />
+
         <ConversationCountdown />
         <p>{transcript}</p>
 
@@ -368,6 +371,7 @@ export const GroupDiscussion = () => {
           sessionId={sessionId}
           groupDiscussionId={groupDiscussionId}
         />
+
 
         {/* <DiscussionIndicator
           data={data}

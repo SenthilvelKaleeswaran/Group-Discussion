@@ -9,6 +9,12 @@ const {
 const { getUserNameOrEmail } = require("./common");
 const Session = require("../models/session");
 const { generateConversation } = require("./generate");
+const fs = require("fs");
+const path = require("path");
+const gTTS = require("gtts");
+const mp3Duration = require("mp3-duration");
+const { updateSessionQueueStatus } = require("./common");
+const Conversation = require("../models/conversation");
 
 const updateParticipant = async ({
   groupDiscussionId,
@@ -99,8 +105,6 @@ const addParticipant = async ({
 
     await participant.save();
 
-    console.log({ participant, role });
-
     const room = sessionId;
 
     socket.join(room);
@@ -167,9 +171,9 @@ const updateMuteStatus = async ({
       let muteStatusChanged = {
         targetUserId,
         isMuted,
-      }
+      };
 
-      if(userId !== "DISCUSSION") muteStatusChanged['userId'] = userId
+      if (userId !== "DISCUSSION") muteStatusChanged["userId"] = userId;
 
       io.to(sessionId).emit("mute-status-changed", muteStatusChanged);
 
@@ -459,7 +463,10 @@ const clearDiscussionQueue = async ({ io, socket, sessionId, queueLength }) => {
     }
 
     // Update globalOrder based on queue length
-    session.globalOrder = (queueLength || 0) - (sessionQueueLength || 0);
+    session.globalOrder = Math.max(
+      (queueLength || 0) - (sessionQueueLength || 0),
+      0
+    );
 
     await session.save();
 
@@ -484,38 +491,185 @@ const clearDiscussionQueue = async ({ io, socket, sessionId, queueLength }) => {
   }
 };
 
+const generateAudio = ({
+  sessionId,
+  discussion,
+  io,
+  audioPlaybackData,
+  conversationId,
+  currentPerson,
+  currentSpeaker,
+  socket,
+}) => {
+  io.to(sessionId).emit("NOTIFICATION", {
+    message: "Saving audio",
+    type: "message",
+  });
+  const PROJECT_ROOT = process.cwd();
+  const AUDIO_FOLDER = path.join(PROJECT_ROOT, "packages", "backend", "audio");
+  const currDate = Date.now();
+  const audioFileName = `audio_${sessionId}_${currDate}.mp3`;
+  const audioFilePath = path.join(AUDIO_FOLDER, audioFileName);
+
+  console.log({ PROJECT_ROOT, AUDIO_FOLDER, audioFilePath, discussion });
+
+  if (!fs.existsSync(AUDIO_FOLDER)) {
+    fs.mkdirSync(AUDIO_FOLDER, { recursive: true });
+  }
+  const gtts = new gTTS(discussion.slice(0, 100), "en");
+
+  gtts.save(audioFilePath, (err) => {
+    if (err) {
+      console.error("Error generating audio:", err);
+      io.to(sessionId).emit("AUDIO_ERROR", {
+        message: "Failed to generate audio.",
+      });
+      return;
+    }
+
+    console.log(`Audio generated: ${audioFilePath}`);
+
+    io.to(sessionId).emit("NOTIFICATION", {
+      message: "Audio Saved",
+      type: "message",
+    });
+
+    // Get audio duration using ffmpeg
+    mp3Duration(audioFilePath, (err, duration) => {
+      if (err) {
+        console.error("Error getting audio duration:", err);
+        io.to(sessionId).emit("AUDIO_ERROR", {
+          message: "Failed to get audio duration.",
+        });
+        return;
+      }
+
+      console.log({ duration });
+
+      const audioDuration = duration; // Duration in seconds
+      console.log(`Audio duration: ${audioDuration} seconds`);
+
+      // Store audio playback data safely
+      audioPlaybackData[sessionId] = {
+        audioUrl: `audio/${audioFileName}`,
+        startTime: currDate,
+        duration: audioDuration * 1000,
+        status: "IN_PROGRESS",
+        discussion,
+      };
+
+      // Emit audio URL and start time to all clients
+      io.to(sessionId).emit("GENERATED_TEXT_AUDIO", {
+        audioUrl: `audio/${audioFileName}`,
+        discussion: discussion,
+        startTime: currDate,
+      });
+
+      io.to(sessionId).emit("NOTIFICATION", {
+        message: "Audio Sent",
+        type: "message",
+      });
+
+      // Trigger AUDIO_FINISHED after audio duration
+      setTimeout(async () => {
+        console.log({ sessionId, conversationId, audioPlaybackData });
+
+        // Ensure newConversation exists before updating
+        if (conversationId) {
+          const updatedConversation = await Conversation.findOneAndUpdate(
+            { _id: conversationId },
+            { status: "SPOKEN" },
+            { new: true, upsert: true }
+          )
+            .populate({
+              path: "userId",
+              select: "_id name email",
+            })
+            .populate({
+              path: "aiId",
+              select: "_id name",
+            });
+
+          const pppp = await updateSessionQueueStatus({
+            sessionId,
+            queueItemId: currentPerson?._id,
+          });
+
+          console.log({ pppp });
+
+          io.to(sessionId).emit("CONVERSATION_UPDATE", {
+            updatedConversation,
+          });
+        } else {
+          console.warn("newConversation is undefined. Skipping status update.");
+        }
+
+        delete audioPlaybackData[sessionId];
+
+        io.to(sessionId).emit("TRANSCRIPT", { transcript: "" });
+
+        fs.unlink(audioFilePath, (err) => {
+          if (err) console.error("Error deleting audio file:", err);
+        });
+
+        await chooseNextParticipant({
+          io,
+          socket,
+          sessionId,
+          audioPlaybackData,
+          currentSpeaker,
+        });
+
+        // setTimeout(() => {
+
+        // }, (audioDuration * 500) / 2);
+
+        // io.to(sessionId).emit("AUDIO_FINISHED", {
+        //   message: "Audio playback finished.",
+        // });
+      }, audioPlaybackData[sessionId].duration);
+    });
+  });
+};
 const chooseNextParticipant = async ({
   io,
   socket,
   sessionId,
   passedSession,
   passedParticipant,
-  audioPlaybackData
+  audioPlaybackData,
+  currentSpeaker,
 }) => {
   try {
-    io.to(sessionId).emit("NEXT_PARTICIPANT_LOADING", {
-      loading: "Discussion Queue is Loading",
+    // io.to(sessionId).emit("NEXT_PARTICIPANT_LOADING", {
+    //   loading: "Discussion Queue is Loading",
+    // });
+
+    io.to(sessionId).emit("NOTIFICATION", {
+      message: "Choosing Next Person",
+      type: "loading",
     });
 
-    let session = passedSession || (await Session.findOne({ _id: sessionId }));
-    let participant =
-      passedParticipant || (await Participant.findOne({ sessionId }));
-
-    console.log({ participanttttt: participant });
+    let session = await Session.findOne({ _id: sessionId });
+    let participant = await Participant.findOne({ sessionId });
 
     if (!participant) {
       io.to(sessionId).emit("NEXT_PARTICIPANT_ERROR", {
         error: "Participant not found",
       });
-      return
+      return;
     }
 
     const { queue = [], globalOrder } = session;
     const { participant: discussionParticipant = {} } = participant;
 
     if (!queue.length) {
-      io.to(sessionId).emit("DISCUSSION_QUEUE_NO_PARTICIPANT", {
-        warning: "No Participant in Discussion Queue",
+      // io.to(sessionId).emit("DISCUSSION_QUEUE_NO_PARTICIPANT", {
+      //   warning: "No Participant in Discussion Queue",
+      // });
+      io.to(sessionId).emit("NOTIFICATION", {
+        message: "No Participant in Discussion Queue",
+        type: "warning",
       });
       return;
     }
@@ -524,17 +678,24 @@ const chooseNextParticipant = async ({
       io.to(sessionId).emit("DISCUSSION_QUEUE_COMPLETED", {
         message: "All participants have spoken",
       });
+      io.to(sessionId).emit("NOTIFICATION", {
+        message: "All participants have spoken",
+        type: "message",
+      });
       return;
     }
 
     let index = globalOrder;
-
-    console.log({ queue });
+    console.log({ indexxx: index });
 
     const takeNextParticipant = async (index) => {
       if (index >= queue.length) {
-        io.to(sessionId).emit("DISCUSSION_QUEUE_COMPLETED", {
-          warning: "No more active participants left",
+        // io.to(sessionId).emit("DISCUSSION_QUEUE_COMPLETED", {
+        //   warning: "No more active participants left",
+        // });
+        io.to(sessionId).emit("NOTIFICATION", {
+          message: "No more active participants left",
+          type: "messge",
         });
         return;
       }
@@ -565,16 +726,39 @@ const chooseNextParticipant = async ({
             userStatus: "IN_PROGRESS",
           });
 
+          io.to(user?.socketId).emit("NOTIFICATION", {
+            message: "Your turn to speak",
+            type: "messge",
+          });
+
+          currentSpeaker[sessionId] = {
+            message: "Your turn to speak",
+            type: "YOUR_TURN",
+            userStatus: "IN_PROGRESS",
+            userId: currentPerson?.userId?.toString(),
+          };
+
           io.to(sessionId)
             .except(user?.socketId)
             .emit("TURN_TO_SPEAK_NOTIFY_OTHERS", {
               message: `${user?.name} turn to speak`,
             });
 
+          io.to(sessionId)
+            .except(user?.socketId)
+            .emit("NOTIFICATION", {
+              message: `${user?.name} turn to speak`,
+              type: "messge",
+            });
+
           session.queue = queue;
-          session.globalOrder = index + 1;
 
           await session.save();
+
+          io.to(`${sessionId}`).emit("DISCUSSION_QUEUE_UPDATED", {
+            queue,
+            globalOrder: index,
+          });
 
           return;
         } else {
@@ -592,14 +776,26 @@ const chooseNextParticipant = async ({
 
           return takeNextParticipant(index);
         }
-      } else {
-        await generateConversation({
+      } else if (currentPerson?.aiId?.toString()) {
+        const {responseText ,newConversation} = await generateConversation({
           socket,
           io,
           passedSession: session,
           aiId: currentPerson?.aiId?.toString(),
           sessionId,
-          audioPlaybackData
+          audioPlaybackData,
+          currentPerson,
+        });
+
+        generateAudio({
+          sessionId,
+          discussion: responseText,
+          io,
+          audioPlaybackData,
+          conversationId: newConversation?._id,
+          currentPerson,
+          currentSpeaker,
+          socket,
         });
       }
     };
@@ -621,6 +817,11 @@ const muteAllParticipants = async ({
 }) => {
   try {
     // Retrieve the participant document if not passed
+    io.to(sessionId).emit("NOTIFICATION", {
+      message: "Muting all participants",
+      type: "message",
+    });
+
     let participant =
       passedParticipant || (await Participant.findOne({ sessionId }));
 
