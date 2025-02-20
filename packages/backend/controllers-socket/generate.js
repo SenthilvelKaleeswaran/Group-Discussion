@@ -21,173 +21,45 @@ const gTTS = require("gtts");
 const mp3Duration = require("mp3-duration");
 const { updateSessionQueueStatus } = require("./common");
 
-const generateAudio = ({
-  sessionId,
-  discussion,
-  io,
-  audioPlaybackData,
-  conversationId,
-  currentPerson,
-}) => {
-  io.to(sessionId).emit("NOTIFICATION", {
-    message: "Saving audio",
-    type : "message"
-  });
-  const PROJECT_ROOT = process.cwd();
-  const AUDIO_FOLDER = path.join(PROJECT_ROOT, "packages", "backend", "audio");
-  const currDate = Date.now();
-  const audioFileName = `audio_${sessionId}_${currDate}.mp3`;
-  const audioFilePath = path.join(AUDIO_FOLDER, audioFileName);
-
-  console.log({ PROJECT_ROOT, AUDIO_FOLDER, audioFilePath, discussion });
-
-  if (!fs.existsSync(AUDIO_FOLDER)) {
-    fs.mkdirSync(AUDIO_FOLDER, { recursive: true });
-  }
-  const gtts = new gTTS(discussion.slice(0, 100), "en");
-
-  gtts.save(audioFilePath, (err) => {
-    if (err) {
-      console.error("Error generating audio:", err);
-      io.to(sessionId).emit("AUDIO_ERROR", {
-        message: "Failed to generate audio.",
-      });
-      return;
-    }
-
-    console.log(`Audio generated: ${audioFilePath}`);
-
-    io.to(sessionId).emit("NOTIFICATION", {
-      message: "Audio Saved",
-      type : "message"
-    });
-
-    // Get audio duration using ffmpeg
-    mp3Duration(audioFilePath, (err, duration) => {
-      if (err) {
-        console.error("Error getting audio duration:", err);
-        io.to(sessionId).emit("AUDIO_ERROR", {
-          message: "Failed to get audio duration.",
-        });
-        return;
-      }
-
-      console.log({ duration });
-
-      const audioDuration = duration; // Duration in seconds
-      console.log(`Audio duration: ${audioDuration} seconds`);
-
-      // Store audio playback data safely
-      audioPlaybackData[sessionId] = {
-        audioUrl: `audio/${audioFileName}`,
-        startTime: currDate,
-        duration: audioDuration * 1000,
-        status: "IN_PROGRESS",
-        discussion,
-      };
-
-      // Emit audio URL and start time to all clients
-      io.to(sessionId).emit("GENERATED_TEXT_AUDIO", {
-        audioUrl: `audio/${audioFileName}`,
-        discussion: discussion,
-        startTime: currDate,
-      });
-
-      io.to(sessionId).emit("NOTIFICATION", {
-        message: "Audio Sent",
-        type : "message"
-      });
-
-      // Trigger AUDIO_FINISHED after audio duration
-      setTimeout(async () => {
-        console.log({ sessionId, conversationId, audioPlaybackData });
-
-        // Ensure newConversation exists before updating
-        if (conversationId) {
-          const updatedConversation = await Conversation.findOneAndUpdate(
-            { _id: conversationId },
-            { status: "SPOKEN" },
-            { new: true, upsert: true }
-          ).populate({
-            path: "userId",
-            select: "_id name email",
-          }).populate({
-            path: "aiId",
-            select: "_id name",
-          })
-
-         const pppp =  await updateSessionQueueStatus({
-            sessionId,
-            queueItemId: currentPerson?._id,
-          });
-
-          console.log({pppp})
-
-          io.to(sessionId).emit("CONVERSATION_UPDATE", {
-            updatedConversation,
-          });
-        } else {
-          console.warn("newConversation is undefined. Skipping status update.");
-        }
-
-        delete audioPlaybackData[sessionId];
-
-        io.to(sessionId).emit("TRANSCRIPT", { transcript: "" });
-
-       
-        setTimeout(() => {
-          fs.unlink(audioFilePath, (err) => {
-            if (err) console.error("Error deleting audio file:", err);
-          });
-  
-          
-        }, (audioDuration * 500) / 2);
-
-
-
-      }, audioPlaybackData[sessionId].duration);
-    });
-  });
-};
-
 const getConversationData = (data) => {
   return data?.map((item) => {
     return {
       discussionPoint: item?.discussion,
       userType: item?.userId ? "USER" : "AI",
+      id : item?.userId || item?.aiId
     };
   });
 };
 
-const generateFeedback = async ({
-  io,
-  socket,
-  groupDisscusionId,
-  sessionId,
-}) => {
+const generateFeedback = async ({ io, socket, sessionId }) => {
   try {
-    const session = await Session.findOne({ sessionId });
+    io.to(sessionId).emit("FEEDBACK_LOADING", "Generating Feedback");
+
+    const session = await Session.findOne({ _id: sessionId });
     const conversation = await Conversation.find({ sessionId });
     const participants = await Participant.find({ sessionId });
-    const groupDiscussion = await GroupDiscussion.findOne({
-      _id: groupDisscusionId,
-    });
 
     if (!session) {
-      io.to(sessionId).emit("FEEDBACK_ERROR", "Session not found");
+      io.to(sessionId).emit("FEEDBACK_NOTIFICATION", {
+        message: "Session not found",
+        type: "error",
+      });
       return;
     }
 
     if (!conversation?.length) {
-      io.to(sessionId).emit(
-        "FEEDBACK_ERROR",
-        "Group discussion contains no conversation"
-      );
+      io.to(sessionId).emit("FEEDBACK_NOTIFICATION", {
+        message: "Group discussion contains no conversation",
+        type: "error",
+      });
       return;
     }
 
     if (session?.status !== "COMPLETED") {
-      io.to(sessionId).emit("FEEDBACK_WARNINGS", "Session not completed yet");
+      io.to(sessionId).emit("FEEDBACK_NOTIFICATION", {
+        message: "Session not completed yet",
+        type: "error",
+      });
       return;
     }
 
@@ -200,7 +72,7 @@ const generateFeedback = async ({
     } = session;
 
     const discussionLength = conversation?.length;
-    const noOfUsers = Array.from(participants?.participant?.values());
+    const noOfUsers = Array.from(participants?.participant?.values())?.length;
 
     const modifiedConversation = getConversationData(conversation);
 
@@ -212,7 +84,7 @@ const generateFeedback = async ({
       if (item?.userId) {
         const feedback = await generateAIResponse({
           prompt:
-            generateConversationTemplate(topic, item?.conversation) +
+            generateConversationTemplate(topic, item?.discussion) +
             `\nFull Discussion : ${JSON.stringify(modifiedConversation)}` +
             PointAnalysisPrompt +
             `\nAI Response:`,
@@ -238,7 +110,7 @@ const generateFeedback = async ({
             // conclusionPoints,
             // conclusionBy,
             noOfUsers,
-            user: name,
+            user: item?.userId,
           }) +
           `\nFull Discussion : ${JSON.stringify(modifiedConversation)}\n` +
           OverAllAnalysisPrompt +
@@ -287,10 +159,9 @@ const generateConversation = async ({
   sessionId,
   aiId,
 }) => {
-
   io.to(sessionId).emit("NOTIFICATION", {
     message: "Generating AI Content",
-    type : "loading"
+    type: "loading",
   });
 
   let session = passedSession || (await Session.findOne({ _id: sessionId }));
@@ -603,12 +474,12 @@ const generateConversation = async ({
 
     io.to(sessionId).emit("NOTIFICATION", {
       message: "AI Content generated",
-      type : "message"
+      type: "message",
     });
 
     // Text-to-speech conversion using gTTS
-   
-    return {responseText , newConversation}
+
+    return { responseText, newConversation };
 
     // Push new messages into the conversation
     // const { updatedConversation, userMessageId } = await updateNewConversation(

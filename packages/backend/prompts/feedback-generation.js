@@ -45,10 +45,7 @@ const getDiscussionInstruction = ({
   instruction += `
       Instruction: 
       1 - Above is the group discussion details.
-      2 - Last ${
-        conclusionPoints ? conclusionPoints : "N/A"
-      } points are conclusion points.
-      3 - Focus on the ${user} points from the above discussion.
+      2 - Focus on the ${user} points from the above discussion.
     `;
 
   return instruction;

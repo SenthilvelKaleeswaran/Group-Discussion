@@ -21,8 +21,16 @@ import {
   Trigger,
 } from "./SelectOption.jsx";
 import { Select } from "./Select.jsx";
-import { Tabs, TabList, Tab, TabPanels, TabPanel, TabComposed } from "./Tab.jsx";
+import {
+  Tabs,
+  TabList,
+  Tab,
+  TabPanels,
+  TabPanel,
+  TabComposed,
+} from "./Tab.jsx";
 import TextInput from "./TextInput.jsx";
+import { Table } from "./Table.jsx";
 
 export {
   Badge,
@@ -44,6 +52,7 @@ export {
   Select,
   SelectOption,
   TabComposed,
+  Table,
   Tabs,
   TabList,
   Tab,
