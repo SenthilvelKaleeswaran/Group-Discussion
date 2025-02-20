@@ -9,6 +9,9 @@ import {
   setUserStatus,
   setUserSession,
   setCurrentConverstion,
+  setDiscussion,
+  setAddDiscussion,
+  setUpdateDiscussion,
 } from "../store";
 import toast from "react-hot-toast";
 import { displayToast } from "../components/shared";
@@ -285,16 +288,18 @@ export const useDiscussionSocket = ({
     if (events.DISCUSSION_QUEUE_UPDATED) {
       const {
         queue = [],
-        notify = {},
+        notify,
         id = "",
         action = "",
         globalOrder,
       } = events.DISCUSSION_QUEUE_UPDATED;
-      displayToast({
-        id: "DISCUSSION_QUEUE_UPDATED",
-        remove: ["DISCUSSION_QUEUE_LOADING"],
-        data: notify,
-      });
+      if (notify) {
+        displayToast({
+          id: "DISCUSSION_QUEUE_UPDATED",
+          remove: ["DISCUSSION_QUEUE_LOADING"],
+          data: notify,
+        });
+      }
 
       if (queue) {
         dispatch(setDiscussionQueue({ queue, globalOrder }));
@@ -438,9 +443,30 @@ export const useDiscussionSocket = ({
         id: "AUDIO_FINISHED",
         data: events.AUDIO_FINISHED,
       });
-      sendMessage("NEXT_PARTICIPANT",{})
+      sendMessage("NEXT_PARTICIPANT", {});
     }
   }, [events.AUDIO_FINISHED]);
 
-  
+  // conversation
+
+  useEffect(() => {
+    if (events.CONVERSATION) {
+      const { conversation = [] } = events.CONVERSATION;
+      dispatch(setDiscussion(conversation));
+    }
+  }, [events.CONVERSATION]);
+
+  useEffect(() => {
+    if (events.CONVERSATION_ADD) {
+      const { newConversation } = events.CONVERSATION_ADD;
+      dispatch(setAddDiscussion({ newConversation }));
+    }
+  }, [events.CONVERSATION_ADD]);
+
+  useEffect(() => {
+    if (events.CONVERSATION_UPDATE) {
+      const { updatedConversation } = events.CONVERSATION_UPDATE;
+      dispatch(setUpdateDiscussion({ updatedConversation }));
+    }
+  }, [events.CONVERSATION_UPDATE]);
 };

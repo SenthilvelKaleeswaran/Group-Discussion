@@ -18,22 +18,40 @@ export const fetchConversation = createAsyncThunk(
 const conversationSlice = createSlice({
   name: "conversation",
   initialState: {
-    discussions: [], // Use consistent plural naming
-    currentConverstion : '',
-    conversationTimer : '',
+    discussion: [], // Use consistent plural naming
+    currentConverstion: '',
+    conversationTimer: '',
     loading: false,
     error: null,
   },
   reducers: {
     updateMessage: (state, action) => {
-      state.discussions = action.payload;
+      state.discussion = action.payload;
     },
     setCurrentConverstion: (state, action) => {
       state.currentConverstion = action.payload;
     },
-    setConverstionTimer : (state, action) => {
+    setConverstionTimer: (state, action) => {
       state.conversationTimer = action.payload;
-    }
+    },
+    setDiscussion: (state, action) => {
+      state.discussion = action.payload;
+    },
+    // Add the incoming object to the end of the array
+    setAddDiscussion: (state, action) => {
+      console.log({aaaaaaaapayload : action.payload})
+
+      state.discussion = [...state.discussion,action.payload.newConversation] 
+    },
+    // Find the item by _id and update it
+    setUpdateDiscussion: (state, action) => {
+      const index = state.discussion.findIndex(
+        (conversation) => conversation._id === action.payload.updatedConversation._id
+      );
+      if (index !== -1) {
+        state.discussion[index] = action.payload.updatedConversation;
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -43,7 +61,7 @@ const conversationSlice = createSlice({
       })
       .addCase(fetchConversation.fulfilled, (state, action) => {
         state.loading = false;
-        state.discussions = action.payload; // Consistent key
+        state.discussion = action.payload; // Consistent key
       })
       .addCase(fetchConversation.rejected, (state, action) => {
         state.loading = false;
@@ -52,5 +70,13 @@ const conversationSlice = createSlice({
   },
 });
 
-export const { updateMessage,setCurrentConverstion,setConverstionTimer } = conversationSlice.actions;
+export const {
+  updateMessage,
+  setCurrentConverstion,
+  setConverstionTimer,
+  setDiscussion,
+  setAddDiscussion,
+  setUpdateDiscussion,
+} = conversationSlice.actions;
+
 export default conversationSlice.reducer;

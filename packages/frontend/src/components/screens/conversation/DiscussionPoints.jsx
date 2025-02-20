@@ -8,6 +8,7 @@ import {
 import { useRecapDiscussion } from "../../../context";
 import { NameCard } from "./ConversationComponent";
 import { getConversationStyle } from "../../../utils";
+import { useSelector } from "react-redux";
 
 const StatusCard = ({ title, message, additionalText }) => (
   <div className="relative flex items-center justify-center pb-8 pt-4">
@@ -25,8 +26,14 @@ const DiscussionPoints = ({ data, isLiveDiscussion = false, events }) => {
   const discussionLength = data?.discussionLength;
   const conclusionBy = data?.conclusionBy;
   const conclusionPoints = data?.conclusionPoints;
+  const { discussion: latestDiscussion = [] } = useSelector(
+    (state) => state.conversation
+  );
   const conversation =
-    data?.discussion || data?.messages || data?.conversationId?.messages;
+    latestDiscussion ||
+    data?.discussion ||
+    data?.messages ||
+    data?.conversationId?.messages;
   const selectedPointRef = useRef(null);
   const containerRef = useRef(null);
   const [generatingMetrics, setGeneratingMetrics] = useState(false);
@@ -56,11 +63,11 @@ const DiscussionPoints = ({ data, isLiveDiscussion = false, events }) => {
   const countUserPoints = (array) => {
     const userPoints = {};
     const updatedArray = array?.map((item) => {
-      const userName = item?.name;
-      if (userName) {
-        userPoints[userName] = (userPoints[userName] || 0) + 1;
+      const userId = item?.aiId?._id || item?.userId?._id;
+      if (userId) {
+        userPoints[userId] = (userPoints[userId] || 0) + 1;
       }
-      return { ...item, point: userPoints[userName] };
+      return { ...item, point: userPoints[userId] };
     });
 
     if (isLiveDiscussion) {
@@ -200,6 +207,7 @@ const DiscussionPoints = ({ data, isLiveDiscussion = false, events }) => {
     );
   }
 
+  console.log({ aaaaaaa: discussion, recapContext });
   return (
     <div
       className="flex-1 overflow-y-auto bg-gray-900 p-2 rounded-md"
@@ -207,7 +215,7 @@ const DiscussionPoints = ({ data, isLiveDiscussion = false, events }) => {
     >
       <div className="flex flex-col relative gap-2 bg-gray-900 h-full">
         {discussion?.map((item, index) => {
-          const isUser = item?.userId === userId;
+          const isUser = !!item?.userId?._id && item?.userId?._id === userId;
           const isAnotherUser = !!item?.userId && !isUser;
           const isCurrentSpeech =
             recapContext?.currentSpeech?._id === item?._id;
@@ -220,8 +228,9 @@ const DiscussionPoints = ({ data, isLiveDiscussion = false, events }) => {
             isDiscussionCompleted,
           } = getValues(index);
 
-          const userName = item?.name;
-          const userPointCount = userPoints[userName] || 0;
+          const itemOwnerId = item?.aiId?._id || item?.userId?._id;
+
+          const userPointCount = userPoints[itemOwnerId] || 0;
           const metadata = item?.metadata || {};
 
           const conversationStyle = getConversationStyle(
@@ -251,10 +260,10 @@ const DiscussionPoints = ({ data, isLiveDiscussion = false, events }) => {
                   }`}
                 >
                   <div className="flex gap-4 items-center justify-between w-full">
-                    {/* <NameCard
+                    <NameCard
                       userDetails={item}
                       isCurrentSpeech={isCurrentSpeech}
-                    /> */}
+                    />
                     <div className="flex gap-2 items-center">
                       <p className="text-xs rounded-full bg-green-500 px-1.5 py-0.5">
                         {item?.point} / {userPointCount} Points
@@ -278,7 +287,7 @@ const DiscussionPoints = ({ data, isLiveDiscussion = false, events }) => {
                   </div>
 
                   <p className={`text-sm p-2 rounded-md ${conversationStyle}`}>
-                    {item?.conversation || "No conversation available"}
+                    {item?.discussion || "No conversation available"}
                   </p>
                   {generatingMetrics && currentMessageId === item?._id ? (
                     <Loader text="Generating Metrics" />

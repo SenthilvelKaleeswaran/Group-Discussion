@@ -10,6 +10,7 @@ import { SessionButton } from "./group-discussion/SessionButton";
 import { QueuePopup } from "./group-discussion/QueuePopup";
 import { ConversationCountdown } from "./group-discussion/ConversationCountdown";
 import { AiParticipantPopup } from "./group-discussion/AiParticipantPopup";
+import { DiscussionProgress } from "./group-discussion/DiscussionProgress";
 
 export {
   AiParticipantPopup,
@@ -18,6 +19,7 @@ export {
   ConversationSection,
   ConversationSpace,
   DiscussionIndicator,
+  DiscussionProgress,
   DiscussionSettings,
   MemberCard,
   PerformanceSection,
