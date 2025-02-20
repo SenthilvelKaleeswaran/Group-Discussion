@@ -2,10 +2,14 @@ import React from "react";
 import { LoaderButton } from "../../shared/LoaderButton";
 import { Button } from "../../ui";
 
-export function SessionButton({ status, socket }) {
+export function SessionButton({ status, socket, sessionId }) {
   const handleSessionUpdate = (type) => {
-    console.log({type})
+    console.log({ type });
     socket.emit("UPDATE_SESSION_STATUS", { type });
+  };
+
+  const handleGenerateFeedback = () => {
+    socket.emit("GENERATE_FEEDBACK", { sessionId });
   };
 
   const renderButton = () => {
@@ -49,7 +53,17 @@ export function SessionButton({ status, socket }) {
         );
 
       case "COMPLETED":
-        return <Button label="Completed" variant="success" disabled />;
+        return (
+          <div className="flex gap-2">
+            <Button label="Completed" variant="success" disabled />
+            <LoaderButton
+              id="FEEDBACK"
+              condition={status === "FEEDBACK"}
+              onClick={() => handleGenerateFeedback()}
+              buttonProps={{ label: "Generate Feedback" }}
+            />
+          </div>
+        );
 
       default:
         return null;

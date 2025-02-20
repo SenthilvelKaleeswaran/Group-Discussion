@@ -11,6 +11,7 @@ import { QueuePopup } from "./group-discussion/QueuePopup";
 import { ConversationCountdown } from "./group-discussion/ConversationCountdown";
 import { AiParticipantPopup } from "./group-discussion/AiParticipantPopup";
 import { DiscussionProgress } from "./group-discussion/DiscussionProgress";
+import { FeedbackTable } from "./group-discussion/FeedbackTable";
 
 export {
   AiParticipantPopup,
@@ -21,6 +22,7 @@ export {
   DiscussionIndicator,
   DiscussionProgress,
   DiscussionSettings,
+  FeedbackTable,
   MemberCard,
   PerformanceSection,
   QueuePopup,

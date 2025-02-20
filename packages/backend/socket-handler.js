@@ -2,6 +2,7 @@ const { updateSessionQueueStatus } = require("./controllers-socket/common");
 const {
   updateCurrentConversation,
 } = require("./controllers-socket/conversation");
+const { generateFeedback } = require("./controllers-socket/generate");
 const {
   addParticipant,
   leftParticipant,
@@ -242,6 +243,10 @@ const socketHandler = (io, socket) => {
         });
       }
     );
+
+    socket.on("GENERATE_FEEDBACK", async ({ sessionId }) => {
+     await  generateFeedback({sessionId,socket,io})
+    });
 
     socket.on("TRANSCRIPT", async (transcript) => {
       socket.to(sessionId).emit("TRANSCRIPT", transcript);

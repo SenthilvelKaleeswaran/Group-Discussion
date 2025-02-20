@@ -23,6 +23,7 @@ import {
   ConversationCountdown,
   DiscussionProgress,
   DiscussionSettings,
+  FeedbackTable,
   MemberCard,
   QueuePopup,
   SessionButton,
@@ -364,7 +365,11 @@ export const GroupDiscussion = () => {
         <ConversationCountdown />
         <p>{transcript}</p>
 
-        <SessionButton status={data?.status} socket={socket} />
+        <SessionButton
+          status={data?.status}
+          socket={socket}
+          sessionId={sessionId}
+        />
 
         <AudioStreamingComponent
           socket={socket}
@@ -372,6 +377,7 @@ export const GroupDiscussion = () => {
           groupDiscussionId={groupDiscussionId}
         />
 
+        <FeedbackTable aiParticipants={data?.aiParticipants} events={events} />
 
         {/* <DiscussionIndicator
           data={data}
