@@ -110,8 +110,8 @@ const overAllAnalysis = () => {
    ${getJsonValue("Emotional Regulation", "<Out of Hundred>")}
    ${getJsonValue("Interpersonal Sensitivity ", "<Out of Hundred>")}
  },
-
-     "Content Quality": {
+ 
+ "Content Quality": {
       ${getJsonValue("Relevance to Topic", "<Out of Hundered>")}
       ${getJsonValue("Depth of Arguments", "<Out of Hundered>")}
       ${getJsonValue("Originality", "<Out of Hundered>")}

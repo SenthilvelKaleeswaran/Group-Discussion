@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { formatTopicName } from "../../utils";
 
-export const Table = ({ data, sortKey }) => {
+export const Table = ({ data, sortKey, selectable = false, onSelectionChange }) => {
   const [sortedData, setSortedData] = useState([]);
+  const [selectedRows, setSelectedRows] = useState({});
 
+  // Sorting the table data
   useEffect(() => {
     const sorted = [...data].sort((a, b) => {
       const aValue = a[sortKey]?.value ?? a[sortKey];
@@ -19,48 +22,77 @@ export const Table = ({ data, sortKey }) => {
   }, [data, sortKey]);
 
   // Get visible columns by filtering out those with display: false
-  const visibleColumns =
-    data.length > 0
-      ? Object.keys(data[0]).filter((key) => data[0][key]?.display !== false)
-      : [];
+  const visibleColumns = data.length > 0
+    ? Object.keys(data[0]).filter((key) => data[0][key]?.display !== false)
+    : [];
 
- console.log({visibleColumns})
+  // Handle row selection
+  const handleRowSelect = (rowId) => {
+    const newSelectedRows = {
+      ...selectedRows,
+      [rowId]: !selectedRows[rowId],
+    };
+
+    setSelectedRows(newSelectedRows);
+
+    // Notify parent component about selection change
+    if (onSelectionChange) {
+      const selectedIds = Object.keys(newSelectedRows).filter((id) => newSelectedRows[id]);
+      onSelectionChange(selectedIds);
+    }
+  };
 
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full bg-transparent border border-gray-200 rounded-lg shadow-sm">
         <thead className="bg-gray-800">
           <tr>
+            {selectable && (
+              <th className="py-2 px-4 border-b border-gray-200 text-left text-sm font-semibold text-gray-600">
+              </th>
+            )}
             {visibleColumns.map((key) => (
               <th
                 key={key}
                 className="py-2 px-4 border-b border-gray-200 text-left text-sm font-semibold text-gray-600"
               >
-                {key}
+                {formatTopicName(key)}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {sortedData.map((row, index) => (
-            <motion.tr
-              key={row?._id?.value ?? row?._id }
-              layout
-              transition={{ type: "spring", stiffness: 70 }}
-              className={`transition-all ${
-                index % 2 === 0 ? "bg-gray-900" : "bg-gray-900"
-              } hover:bg-gray-100`}
-            >
-              {visibleColumns.map((key) => (
-                <td
-                  key={key}
-                  className="py-2 px-4 border-b border-gray-800 text-sm text-gray-700"
-                >
-                  {row[key]?.value ?? row[key]}
-                </td>
-              ))}
-            </motion.tr>
-          ))}
+          {sortedData.map((row, index) => {
+            const rowId = row?._id?.value ?? row?._id;
+            return (
+              <motion.tr
+                key={rowId}
+                layout
+                transition={{ type: "spring", stiffness: 70 }}
+                className={`transition-all ${
+                  index % 2 === 0 ? "bg-gray-900" : "bg-gray-900"
+                } hover:bg-gray-100`}
+              >
+                {selectable && (
+                  <td className="py-2 px-4 border-b text-left border-gray-800 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={!!selectedRows[rowId]}
+                      onChange={() => handleRowSelect(rowId)}
+                    />
+                  </td>
+                )}
+                {visibleColumns.map((key) => (
+                  <td
+                    key={key}
+                    className="py-2 px-4 border-b text-left border-gray-800 text-sm text-gray-700"
+                  >
+                    {row[key]?.value ?? row[key]}
+                  </td>
+                ))}
+              </motion.tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
