@@ -15,8 +15,10 @@ import {
 } from "../store";
 import toast from "react-hot-toast";
 import { displayToast } from "../components/shared";
+import { useNavigate } from "react-router-dom";
 
 export const useDiscussionSocket = ({
+  groupDiscussionId,
   events,
   sendMessage,
   currentSpeech,
@@ -31,6 +33,7 @@ export const useDiscussionSocket = ({
   refetch,
 }) => {
   const dispatch = useDispatch();
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (events.RANDOM_MEMBER) {
@@ -469,4 +472,44 @@ export const useDiscussionSocket = ({
       dispatch(setUpdateDiscussion({ updatedConversation }));
     }
   }, [events.CONVERSATION_UPDATE]);
+
+  //next round
+
+  useEffect(() => {
+    if (events.NEXT_ROUND_LOADING) {
+      displayToast({
+        id: "NEXT_ROUND_LOADING",
+        data: events.NEXT_ROUND_LOADING,
+      });
+    }
+  }, [events.NEXT_ROUND_LOADING]);
+
+  useEffect(() => {
+    if (events.NEXT_ROUND_SWITCH) {
+      const { newSession } = events.NEXT_ROUND_SWITCH;
+
+      if (newSession) {
+        navigate(`/gd/${groupDiscussionId}-${newSession}`, {
+          replace: true,
+        });
+
+        displayToast({
+          id: "NEXT_ROUND_SWITCH",
+          data: { message: "Switched to the next round successfully!" },
+          remove: ["NEXT_ROUND_LOADING"],
+        });
+      }
+    }
+  }, [events.NEXT_ROUND_SWITCH]);
+
+  useEffect(() => {
+    if (events.NEXT_ROUND_ERROR) {
+      const { error } = events.NEXT_ROUND_ERROR;
+      displayToast({
+        id: "NEXT_ROUND_ERROR",
+        data: { message: `Error creating next round: ${error}` },
+        remove: ["NEXT_ROUND_LOADING"],
+      });
+    }
+  }, [events.NEXT_ROUND_ERROR]);
 };

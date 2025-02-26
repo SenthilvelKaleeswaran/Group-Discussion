@@ -193,6 +193,7 @@ export const GroupDiscussion = () => {
   const player = useAudioPlayer(events);
 
   useDiscussionSocket({
+    groupDiscussionId,
     events,
     sendMessage,
     currentSpeech,
@@ -377,7 +378,12 @@ export const GroupDiscussion = () => {
           groupDiscussionId={groupDiscussionId}
         />
 
-        <FeedbackTable aiParticipants={data?.aiParticipants} events={events} />
+        <FeedbackTable
+          aiParticipants={data?.aiParticipants}
+          events={events}
+          socket={socket}
+          sessionId={sessionId}
+        />
 
         {/* <DiscussionIndicator
           data={data}

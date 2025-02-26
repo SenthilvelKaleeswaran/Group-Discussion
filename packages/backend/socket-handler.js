@@ -15,7 +15,7 @@ const {
   changeOrder,
   muteAllParticipants,
 } = require("./controllers-socket/participant");
-const { updateSession } = require("./controllers-socket/session");
+const { updateSession, nextRound } = require("./controllers-socket/session");
 const Conversation = require("./models/conversation");
 const Participant = require("./models/participant");
 const Session = require("./models/session");
@@ -100,7 +100,7 @@ const socketHandler = (io, socket) => {
       });
     }
 
-    const { participant, role } = participantList;
+    const { participant = {}, role } = participantList;
 
     const list = [
       ...participant?.participant,
@@ -198,6 +198,8 @@ const socketHandler = (io, socket) => {
           message: "Invalid discussion queue action type.",
         });
     });
+
+    socket.on("NEXT_ROUND",async(data)=>await nextRound({io,socket,...data}) )
 
     socket.on(
       "NEXT_PARTICIPANT",

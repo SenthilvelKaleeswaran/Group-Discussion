@@ -22,6 +22,18 @@ const SessionSchema = new mongoose.Schema({
     type : Number,
     default : 0
   },
+
+  switchedFrom : {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Session",
+
+  },
+
+  switchedTo : {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Session",
+
+  },
   // moderators: {
   //   type: Map,
   //   of: new mongoose.Schema({
