@@ -7,8 +7,10 @@ import { useOutsideClickListener } from "./use-outside-listener";
 import { useStreaming } from "./use-audio-streaming";
 import { useAudioControls } from "./use-audio-controls";
 import { useAudioPlayer } from "./use-audio-player";
+import {useDiscussionForm} from './use-discussion-form'
 export {
     useStreaming,
+    useDiscussionForm,
     useDiscussionSocket,
     useMembers,
     useOutsideClickListener,

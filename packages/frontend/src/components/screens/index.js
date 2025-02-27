@@ -12,6 +12,7 @@ import { ConversationCountdown } from "./group-discussion/ConversationCountdown"
 import { AiParticipantPopup } from "./group-discussion/AiParticipantPopup";
 import { DiscussionProgress } from "./group-discussion/DiscussionProgress";
 import { FeedbackTable } from "./group-discussion/FeedbackTable";
+import { DiscussionForm } from "./create-discussion/DiscussionForm";
 
 export {
   AiParticipantPopup,
@@ -19,6 +20,7 @@ export {
   ConversationCountdown,
   ConversationSection,
   ConversationSpace,
+  DiscussionForm,
   DiscussionIndicator,
   DiscussionProgress,
   DiscussionSettings,

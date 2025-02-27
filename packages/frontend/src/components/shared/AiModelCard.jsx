@@ -95,7 +95,7 @@ const AiModelCard = ({
   handleChange,
 }) => {
   return (
-    <div className="grid grid-cols-2 gap-6">
+    <div className="grid grid-cols-4 gap-6">
       {models?.map((detail) => (
         <SelectableContainer
           key={detail._id}
@@ -104,6 +104,7 @@ const AiModelCard = ({
             e.stopPropagation();
             handleChange(detail._id);
           }}
+          
         >
           <Card
             detail={detail}
