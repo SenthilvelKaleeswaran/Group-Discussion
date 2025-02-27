@@ -62,15 +62,20 @@ const nextRound = async ({
 
     const { participant: participantList } = participant;
 
-    selectedParticipants.forEach((item) => {
-      const data = participantList.get(item?.userId);
-      if (data) {
-        if (item?.status === "SELECTED") {
+    // Iterate over the participantList and update statuses
+    participantList.forEach((data, userId) => {
+      console.log({ userId, data });
+      if (selectedParticipants[userId]) {
+        data.participantSatus = selectedParticipants[userId];
+        if (selectedParticipants[userId] === "SELECTED") {
           data.switchedTo = newId;
-        } 
-        data.participantSatus = item?.status;
+        }
+      } else {
+        data.participantSatus = "REJECTED";
       }
     });
+
+    // Save the updated participant list
 
     await participant.save();
 

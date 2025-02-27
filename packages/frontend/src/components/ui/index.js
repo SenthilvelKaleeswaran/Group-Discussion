@@ -31,6 +31,14 @@ import {
 } from "./Tab.jsx";
 import TextInput from "./TextInput.jsx";
 import { Table } from "./Table.jsx";
+import{
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalHeader,
+  ModalTrigger,
+  ModalFooter,
+} from "./Modal.jsx";
 
 export {
   Badge,
@@ -47,6 +55,12 @@ export {
   DropdownMenuGroup,
   DropdownSelect,
   Group,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalHeader,
+  ModalTrigger,
+  ModalFooter,
   Options,
   Option,
   Select,

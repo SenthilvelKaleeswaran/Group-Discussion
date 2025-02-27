@@ -199,7 +199,9 @@ const socketHandler = (io, socket) => {
         });
     });
 
-    socket.on("NEXT_ROUND",async(data)=>await nextRound({io,socket,...data}) )
+    socket.on("NEXT_ROUND", async ({ type, ...data }) => {
+      if (type === "ANOTHER") await nextRound({ io, socket, ...data });
+    });
 
     socket.on(
       "NEXT_PARTICIPANT",
@@ -247,7 +249,7 @@ const socketHandler = (io, socket) => {
     );
 
     socket.on("GENERATE_FEEDBACK", async ({ sessionId }) => {
-     await  generateFeedback({sessionId,socket,io})
+      await generateFeedback({ sessionId, socket, io });
     });
 
     socket.on("TRANSCRIPT", async (transcript) => {
