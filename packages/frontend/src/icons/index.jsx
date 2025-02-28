@@ -34,6 +34,8 @@ import { IoReloadOutline } from "react-icons/io5";
 import { MdDeleteSweep } from "react-icons/md";
 import { GoStack } from "react-icons/go";
 import { MdClose } from "react-icons/md";
+import { LuLayoutList } from "react-icons/lu";
+import { MdDisplaySettings } from "react-icons/md";
 
 const Icon = ({ name, ...props }) => {
   const IconsList = {
@@ -53,6 +55,7 @@ const Icon = ({ name, ...props }) => {
     HorizontalDots: HiDotsHorizontal,
     InProgress: MdTimeline,
     InActive: HiStatusOffline,
+    List : LuLayoutList,
     Loader: FiLoader,
     LoadArrow : MdDeleteSweep,
     NotStartedQueue: TbTimeDurationOff,
@@ -63,6 +66,7 @@ const Icon = ({ name, ...props }) => {
     Require: LuTarget,
     Robot: VscRobot,
     Rotate: FaRotate,
+    SettingsSession : MdDisplaySettings,
     Settings: IoSettings,
     User: FaUser,
     Users: FaUsers,

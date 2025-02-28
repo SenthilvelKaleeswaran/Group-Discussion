@@ -383,6 +383,7 @@ export const GroupDiscussion = () => {
           events={events}
           socket={socket}
           sessionId={sessionId}
+          session={data}
         />
 
         {/* <DiscussionIndicator

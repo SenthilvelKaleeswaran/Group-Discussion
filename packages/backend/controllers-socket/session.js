@@ -25,8 +25,9 @@ const nextRound = async ({
   io,
   socket,
   selectedParticipants,
+  discussionDetails,
+  userId,
   sessionId,
-  ...restData
 }) => {
   try {
     io.to(sessionId).emit("NEXT_ROUND_LOADING", {
@@ -38,13 +39,34 @@ const nextRound = async ({
       throw new Error("Session not found");
     }
 
+    const {
+      _id,
+      topic,
+      createdBy,
+      createdAt,
+      sessionPassword,
+      status,
+      sessionStartTime,
+      sessionEndTime,
+      updatedAt,
+      globalOrder,
+      queue,
+      ...rest,
+    } = session;
+
+    console.log({discussionDetails,rest})
+
+    const {showResult, restDiscussionDetails} = discussionDetails
+
     const newSession = new Session({
-      ...session.toObject(), // Copy all fields from the existing session
-      ...restData,
+      ...rest,
+      ...restDiscussionDetails,
       switchedFrom: sessionId,
-      switchedTo: undefined, // Reset switchedTo for the new session
-      status: "NOT_STARTED", // Assuming the new session starts as NOT_STARTED
+      status: "NOT_STARTED",
+      createdBy : userId
     });
+
+    console.log({newSession})
 
     await newSession.save();
 
@@ -52,8 +74,13 @@ const nextRound = async ({
 
     session.switchedTo = newId;
     session.status = "COMPLETED";
+    session.showResult = showResult
+
+    console.log({session})
+
 
     await session.save();
+
 
     const participant = await Participant.findOne({ sessionId });
     if (!participant) {
@@ -75,9 +102,12 @@ const nextRound = async ({
       }
     });
 
+    console.log({participantList})
+
+
     // Save the updated participant list
 
-    await participant.save();
+    // await participant.save();
 
     io.to(sessionId).emit("NEXT_ROUND_SWITCH", { newSession: newId });
   } catch (error) {

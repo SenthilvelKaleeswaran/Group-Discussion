@@ -3,14 +3,12 @@ import { Button, Modal, Table } from "../../ui";
 import { useSelector, useDispatch } from "react-redux";
 import { displayToast, Loader } from "../../shared";
 import { CreateDiscussion } from "../../../screens";
-import { NewDiscussionMoadal } from "./NewDiscussionModal";
+import {  NewDiscussionModal } from "./NewDiscussionModal";
 
 const Actions = ({ userId, updateUserStatus, initialStatus }) => {
-  const [selectedStatus, setSelectedStatus] = useState(initialStatus || null);
 
   const handleStatusChange = (status) => {
-    const newStatus = selectedStatus === status ? null : status;
-    setSelectedStatus(newStatus);
+    const newStatus = initialStatus === status ? null : status;
     updateUserStatus(userId, newStatus);
   };
 
@@ -25,7 +23,7 @@ const Actions = ({ userId, updateUserStatus, initialStatus }) => {
       {statusOptions.map(({ status, emoji, label }) => (
         <Button
           key={status}
-          label={selectedStatus === status ? `${emoji} ${label}ed` : label}
+          label={initialStatus === status ? `${emoji} ${label}ed` : label}
           variant="ghost"
           onClick={() => handleStatusChange(status)}
         />
@@ -76,7 +74,7 @@ const calculateOverallScore = (array, userPoints) => {
   return val;
 };
 
-export function FeedbackTable({ socket, events, aiParticipants, sessionId }) {
+export function FeedbackTable({ socket, events, aiParticipants, sessionId,session }) {
   const { participants, loading } = useSelector((state) => state.participants);
   const { userPoints = {}, discussion = [] } = useSelector(
     (state) => state.conversation
@@ -210,14 +208,9 @@ export function FeedbackTable({ socket, events, aiParticipants, sessionId }) {
     setData(getTableData());
   }, [getTableData]);
 
-  useEffect(() => {
-    setData(getTableData());
-  }, [userStatus]);
-
-
   if (loading || participants?.length === 0) return <Loader />;
 
-  console.log({data,userStatus})
+  console.log({data,userStatus,aiParticipants})
 
   
   
@@ -226,15 +219,17 @@ export function FeedbackTable({ socket, events, aiParticipants, sessionId }) {
     <div>
       <Table data={data} sortKey="totalScore" />
       <div className="flex gap-4">
-        <Button label="Make Another Round" onClick={handleMakeAnotherRound} />
-        <Button label="Declare Result" onClick={handleDeclareResult} />
-      </div>
-
-      <NewDiscussionMoadal
+      <NewDiscussionModal
         participant={participants?.participant}
         participantStatus={userStatus}
         handleStatusChange={updateUserStatus}
+        aiParticipants={aiParticipants}
+        session={session}
+        socket={socket}
       />
+        {/* <Button label="Make Another Round" onClick={handleMakeAnotherRound} /> */}
+        <Button label="Declare Result" onClick={handleDeclareResult} />
+      </div>
     </div>
   );
 }

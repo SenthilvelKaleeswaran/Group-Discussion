@@ -7,14 +7,13 @@ import { Section } from "./Section";
 export const DiscussionForm = ({
   form,
   discussionDetails,
-  aiParticipants,
   aiModelData,
   handleChange,
   getConditions,
   handleModelsChange,
 }) => {
 
-  console.log({aiModelData,aiParticipants})
+  console.log({aiModelData,aiParticipants : discussionDetails?.aiParticipants})
   return (
     <div className="flex h-full overflow-y-scroll bg-gray-800 p-8  shadow-lg w-full space-y-8">
       <form className="space-y-6">
@@ -69,7 +68,7 @@ export const DiscussionForm = ({
               </p>
               <AiModelCard
                 models={aiModelData}
-                selectedModels={aiParticipants}
+                selectedModels={discussionDetails?.aiParticipants}
                 handleChange={handleModelsChange}
               />
             </div>

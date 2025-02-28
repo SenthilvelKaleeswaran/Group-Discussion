@@ -489,9 +489,9 @@ export const useDiscussionSocket = ({
       const { newSession } = events.NEXT_ROUND_SWITCH;
 
       if (newSession) {
-        navigate(`/gd/${groupDiscussionId}-${newSession}`, {
-          replace: true,
-        });
+        // navigate(`/gd/${groupDiscussionId}-${newSession}`, {
+        //   replace: true,
+        // });
 
         displayToast({
           id: "NEXT_ROUND_SWITCH",
