@@ -1,15 +1,17 @@
 import { useMutation, useQuery } from "react-query";
 import { createDiscussion, getAiModels } from "../utils/api-call";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
 
 export const useDiscussionForm = ({ data }) => {
   const [form, setForm] = useState("details");
+
+  const getAiParticipants = () => {
+    return data?.aiParticipants?.map((_) => _?._id) || [];
+  };
   const [discussionDetails, setDiscussionDetails] = useState({
     topic: "Online Class vs Offline Class",
     topicSetting: "manual",
-    aiParticipants: [],
     participants: [],
     otherParticipants: [],
     discussionMode: "selection",
@@ -35,9 +37,11 @@ export const useDiscussionForm = ({ data }) => {
     rounds: "single",
     // sessionStartTime: null,
     // sessionEndTime: null,
-   ...data,
+    displayResult : [],
+    ...data,
+    aiParticipants: getAiParticipants(),
+
   });
-  const [aiParticipants, setAiParticipants] = useState([]);
 
   const navigate = useNavigate();
 
@@ -57,7 +61,7 @@ export const useDiscussionForm = ({ data }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    mutate({...discussionDetails, aiParticipants });
+    mutate(discussionDetails);
   };
 
   const handleChange = (e) => {
@@ -65,20 +69,20 @@ export const useDiscussionForm = ({ data }) => {
     setDiscussionDetails((prev) => {
       if (type === "checkbox") {
         return {
-         ...prev,
+          ...prev,
           [name]: checked,
         };
       }
       if (name === "isTopicAiGenerated") {
         return {
-         ...prev,
+          ...prev,
           isTopicAiGenerated: checked,
-          topic: checked? "" : "Online vs Offline Class",
+          topic: checked ? "" : "Online vs Offline Class",
         };
       }
       return {
-       ...prev,
-        [name]: type === "number"? parseInt(value) || 0 : value,
+        ...prev,
+        [name]: type === "number" ? parseInt(value) || 0 : value,
       };
     });
   };
@@ -93,9 +97,9 @@ export const useDiscussionForm = ({ data }) => {
 
     const evaluateConditions = (conditionsArray) =>
       conditionsArray?.length > 0
-       ? conditionsArray.every(({ id, value }) => {
+        ? conditionsArray.every(({ id, value }) => {
             return Array.isArray(value)
-             ? value.includes(discussionDetails[id])
+              ? value.includes(discussionDetails[id])
               : discussionDetails[id] === value;
           })
         : false;
@@ -106,24 +110,29 @@ export const useDiscussionForm = ({ data }) => {
       disabled,
       required: evaluateConditions(requiredCondition),
       hideCorrection:
-        type === "select" || (disabledCondition?.length > 0 &&!disabled),
+        type === "select" || (disabledCondition?.length > 0 && !disabled),
     };
   };
 
-  const handleModelsChange = (id) => {
-    setAiParticipants((prev) => {
-      const updated = prev.includes(id)
-       ? prev.filter((item) => item!== id)
-        : [...prev, id];
+  const handleModelsChange = useCallback((id) => {
+    setDiscussionDetails((prev) => {
+
+      const updated = {...prev}
+      const {aiParticipants} = updated
+
+      updated.aiParticipants = aiParticipants?.includes(id)
+        ? aiParticipants?.filter((item) => item !== id)
+        : [...aiParticipants, id];
+
       return updated;
     });
-  };
+  }, []);
 
   return {
     form,
     setForm,
     discussionDetails,
-    aiParticipants,
+    setDiscussionDetails,
     aiModelData,
     mutate,
     isLoading,

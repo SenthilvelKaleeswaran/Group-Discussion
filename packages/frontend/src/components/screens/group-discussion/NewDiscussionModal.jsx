@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Modal,
   ModalBody,
@@ -7,192 +7,287 @@ import {
   ModalTrigger,
   ModalFooter,
   Button,
+  Checkbox,
 } from "../../ui";
-import { CreateDiscussion } from "../../../screens";
 import { useDiscussionForm } from "../../../hooks";
 import { DiscussionForm } from "../create-discussion/DiscussionForm";
-import { RenderSpace } from "../../shared";
-import { formatCapitializedText, formatTopicName } from "../../../utils";
+import { displayToast, RenderSpace } from "../../shared";
+import { formatCapitializedText } from "../../../utils";
+import Icon from "../../../icons";
+import { useSelector } from "react-redux";
 
-export const NewDiscussionMoadal = ({
+// Constants
+const PARTICIPANT_CATEGORIES = [
+  { id: "SELECTED", label: "Selected Participants", color: "text-green-500" },
+  { id: "REJECTED", label: "Rejected Participants", color: "text-red-500" },
+  {
+    id: "WAITING_LIST",
+    label: "Waitlisted Participants",
+    color: "text-yellow-500",
+  },
+  {
+    id: "NOT_SELECTED",
+    label: "Not Selected Participants",
+    color: "text-gray-500",
+  },
+];
+
+const STATUS_OPTIONS = {
+  SELECTED: [
+    { status: "REJECTED", label: "🔴 Reject" },
+    { status: "WAITING_LIST", label: "🟡 Wait List" },
+  ],
+  REJECTED: [
+    { status: "SELECTED", label: "🟢 Select" },
+    { status: "WAITING_LIST", label: "🟡 Wait List" },
+  ],
+  WAITING_LIST: [
+    { status: "SELECTED", label: "🟢 Select" },
+    { status: "REJECTED", label: "🔴 Reject" },
+  ],
+  NOT_SELECTED: [
+    { status: "SELECTED", label: "🟢 Select" },
+    { status: "REJECTED", label: "🔴 Reject" },
+    { status: "WAITING_LIST", label: "🟡 Wait" },
+  ],
+};
+
+const order = ["details", "members", "participants", "session"];
+
+const previewDetails = {
+  details: {
+    name: "Session Details",
+    icon: "List",
+  },
+  members: {
+    name: "AI Participants",
+    icon: "Robot",
+  },
+  participants: {
+    name: "Participants",
+    icon: "Users",
+  },
+  session: {
+    name: "Settings",
+    icon: "SettingsSession",
+  },
+};
+
+// Session Settings Component
+const SessionSettings = ({
+  groupedParticipants,
+  setDiscussionDetails,
+  handleMakeAnotherRound,
+}) => {
+  const handleChange = (id) => {
+    setDiscussionDetails((prev) => ({
+      ...prev,
+      displayResult: prev.displayResult.includes(id)
+        ? prev.displayResult.filter((item) => item !== id)
+        : [...prev.displayResult, id],
+    }));
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center h-full p-6 rounded-lg">
+      <h2 className="mb-4 text-xl font-semibold text-left text-gray-500">
+        Show result to
+      </h2>
+      <div className="flex flex-col gap-3 mb-4 mx-4">
+        {PARTICIPANT_CATEGORIES.map(({ id, label }) => (
+          <RenderSpace condition={groupedParticipants[id]?.length > 0}>
+            <Checkbox
+              key={id}
+              label={label}
+              onChange={() => handleChange(id)}
+            />
+          </RenderSpace>
+        ))}
+      </div>
+      <Button
+        label="Create"
+        variant="success"
+        onClick={handleMakeAnotherRound}
+      />
+    </div>
+  );
+};
+
+// Main Component
+export const NewDiscussionModal = ({
   participant,
   participantStatus,
   handleStatusChange,
+  session,
+  socket,
 }) => {
-  const order = ["details", "members", "participants"];
-
+  console.log("render");
   const {
     form,
     setForm,
     discussionDetails,
-    aiParticipants,
+    setDiscussionDetails,
     aiModelData,
-    mutate,
-    isLoading,
-    isError,
-    error,
-    handleSubmit,
     handleChange,
     getConditions,
     handleModelsChange,
-  } = useDiscussionForm({ order });
+  } = useDiscussionForm({ data: session });
 
-  const getIndex = (item) => {
-    return order.indexOf(item);
+  const handleMakeAnotherRound = () => {
+    // if (selectedIds.length === 0) {
+    //   displayToast({
+    //     data: { error: "Select participants for the next round." },
+    //   });
+    //   return;
+    // }
+
+    const { _id, ...rest } = discussionDetails;
+
+    socket.emit("NEXT_ROUND", {
+      selectedParticipants: participantStatus,
+      discussionDetails: rest,
+      sessionId: session?._id,
+      type: "ANOTHER",
+    });
   };
 
-  const handleBack = () => {
-    const index = order.indexOf(form);
+  console.log({ form, discussionDetails });
 
-    setForm(order[index - 1]);
-  };
+  const groupedParticipants = useMemo(() => {
+    const grouped = Object.fromEntries(
+      PARTICIPANT_CATEGORIES.map(({ id }) => [id, []])
+    );
 
-  const handleNext = () => {
-    const index = order.indexOf(form);
-
-    setForm(order[index + 1]);
-  };
-
-  function groupParticipants() {
-    const grouped = {
-      SELECTED: [],
-      REJECTED: [],
-      WAITING_LIST: [],
-      NOT_SELECTED: [],
-    };
-
-    participant?.map((item) => {
-      const status = participantStatus[item?.userId];
-      if (status) {
-        grouped[status].push(item);
-      } else {
-        grouped["NOT_SELECTED"].push(item);
-      }
+    participant?.forEach((item) => {
+      const status = participantStatus[item?.userId] || "NOT_SELECTED";
+      grouped[status].push(item);
     });
 
     return grouped;
-  }
+  }, [participant, participantStatus]);
 
-  const statusStyle = {
-    SELECTED: "text-green-500",
-    REJECTED: "text-red-500",
-    WAITING_LIST: "text-yellow-500",
+  const handleNavigation = (direction) => {
+    const currentIndex = order.indexOf(form);
+    setForm(order[currentIndex + direction]);
   };
 
-  const statusOptions = {
-    SELECTED: [
-      { status: "REJECTED", label: "🔴 Reject" },
-      { status: "WAITING_LIST", label: "🟡 Wait List" },
-    ],
-    REJECTED: [
-      { status: "SELECTED", label: "🟢 Select" },
-      { status: "WAITING_LIST", label: "🟡 Wait List" },
-    ],
-    WAITING_LIST: [
-      { status: "SELECTED", label: "🟢 Select" },
-      { status: "REJECTED", label: "🔴 Reject" },
-    ],
-    NOT_SELECTED: [
-      { status: "SELECTED", label: "🟢 Select" },
-      { status: "REJECTED", label: "🔴 Reject" },
-      { status: "WAITING_LIST", label: "🟡 Wait" },
-    ],
-  };
+  const renderActionButtons = (userId, status) => (
+    <div className="flex gap-2">
+      {STATUS_OPTIONS[status]?.map(({ status: newStatus, label }) => (
+        <Button
+          key={newStatus}
+          label={label}
+          variant="ghost"
+          className={
+            PARTICIPANT_CATEGORIES.find((c) => c.id === newStatus)?.color
+          }
+          onClick={() => handleStatusChange(userId, newStatus)}
+        />
+      ))}
+    </div>
+  );
 
-  // Example usage:
-  const groupedParticipants = groupParticipants();
-  console.log({ groupedParticipants, form });
-
-  console.log({ participant, form, participantStatus });
-
-  const renderActionButtons = (userId, key) => {
-    return (
-      <div className="flex gap-2 w-full">
-        {statusOptions[key]?.map(({ status, label }) => (
-          <Button
-            key={status}
-            label={label}
-            variant="ghost"
-            className={statusStyle[status]}
-            onClick={() => handleStatusChange(userId, status)}
+  const renderBody = () => {
+    switch (form) {
+      case "details":
+      case "members":
+        return (
+          <DiscussionForm
+            form={form}
+            discussionDetails={discussionDetails}
+            aiModelData={aiModelData}
+            handleChange={handleChange}
+            getConditions={getConditions}
+            handleModelsChange={handleModelsChange}
           />
-        ))}
-      </div>
-    );
+        );
+      case "participants":
+        return (
+          <div className="flex gap-4 w-full h-full">
+            {PARTICIPANT_CATEGORIES.map(({ id, color }) => (
+              <div
+                key={id}
+                className="w-full h-full border rounded-md space-y-4"
+              >
+                <p className={`${color} mt-4`}>{formatCapitializedText(id)}</p>
+                <div className="overflow-y-auto rounded-md">
+                  {groupedParticipants[id].map((item, index) => (
+                    <div
+                      key={item?.userId || index}
+                      className="border border-gray-700 p-4 rounded-md hover:bg-gray-800 space-y-2"
+                    >
+                      <div className="flex gap-2">
+                        <span>{index + 1}.</span>
+                        <span>{item?.name}</span>
+                      </div>
+                      {renderActionButtons(item?.userId, id)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      default:
+        return (
+          <SessionSettings
+            groupedParticipants={groupedParticipants}
+            setDiscussionDetails={setDiscussionDetails}
+            handleMakeAnotherRound={handleMakeAnotherRound}
+          />
+        );
+    }
   };
 
   return (
     <Modal>
-      <ModalTrigger>Open Modal</ModalTrigger>
-      <ModalContent className="w-full mx-4">
+      <ModalTrigger>Make Another Round</ModalTrigger>
+      <ModalContent className="w-full mx-4 items-center">
         <ModalHeader>
-          <div className="flex gap-4 justify-between items-center w-full">
-            <p>Preview for Session</p>
-            <div className="flex gap-4">
-              <RenderSpace condition={form !== "details"}>
-                <Button label="Back" variant="secondary" onClick={handleBack} />
-              </RenderSpace>
+          <div className="flex items-center  justify-between w-full gap-4">
+            <div className="flex gap-2 items-center">
+              <Icon name={previewDetails[form]?.icon} className={`text-xl`} />
+              <p className="text-lg">{previewDetails[form]?.name}</p>
+            </div>
 
-              <RenderSpace condition={true}>
-                <Button label="Next" variant="primary" onClick={handleNext} />
-              </RenderSpace>
+            <div className="flex items-center gap-4">
+              <div className="flex gap-2">
+                {Object.entries(previewDetails).map(([key, value]) => (
+                  <div
+                    className={`${
+                      key === form ? "bg-gray-800 shadow-2xl rounded-md" : ""
+                    } p-3 cursor-pointer`}
+                    onClick={() => setForm(key)}
+                  >
+                    <Icon
+                      name={value?.icon}
+                      className={`${
+                        key === form ? "text-purple-500" : ""
+                      } text-xl`}
+                    />
+                  </div>
+                ))}
+              </div>
 
-              <RenderSpace condition={form === "participants"}>
-                <Button
-                  label={isLoading ? "Creating..." : "Create"}
-                  variant="success"
-                  type="submit"
-                />
-              </RenderSpace>
-            </div>{" "}
+              <Button
+                label="Back"
+                variant="secondary"
+                onClick={() => handleNavigation(-1)}
+                disabled={form === "details"}
+              />
+              <Button
+                label="Next"
+                variant="primary"
+                onClick={() => handleNavigation(1)}
+                disabled={form === "session"}
+              />
+            </div>
           </div>
         </ModalHeader>
-        <ModalBody className="h-[calc(100vh-150px)] w-full rounded-full">
-          {form === "details" || form === "members" ? (
-            <DiscussionForm
-              form={form}
-              discussionDetails={discussionDetails}
-              aiParticipants={aiParticipants}
-              aiModelData={aiModelData}
-              handleChange={handleChange}
-              getConditions={getConditions}
-              handleModelsChange={handleModelsChange}
-            />
-          ) : (
-            <div className="flex gap-4 w-full  justify-between">
-              {Object.entries(groupedParticipants).map(([key, value]) => (
-                <div className="space-y-4 w-full">
-                  <p className={statusStyle[key]}>{formatCapitializedText(key)}</p>
-                  <div className="space-y-4 w-full">
-                    {value?.map((item, index) => (
-                      <div className="gap-2 border border-gray-700 w-full px-4 py-2 rounded-md hover:bg-gray-800">
-                        <div className="flex gap-2">
-                          <p>{index + 1} .</p>
-                          <p className="text-left">{item?.name}</p>
-                        </div>
-                        {renderActionButtons(item?.userId, key)}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+        <ModalBody className="h-[calc(100vh-100px)] w-full">
+          {renderBody()}
         </ModalBody>
-        <ModalFooter>
-          <button className="px-4 py-2 bg-gray-700 rounded-md hover:bg-gray-400">
-            Cancel
-          </button>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-            Confirm
-          </button>
-        </ModalFooter>
       </ModalContent>
     </Modal>
   );
 };
-export default function App() {
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100"></div>
-  );
-}

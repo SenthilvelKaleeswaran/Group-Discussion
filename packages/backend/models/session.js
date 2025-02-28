@@ -18,21 +18,19 @@ const SessionSchema = new mongoose.Schema({
     ref: "GroupDiscussion",
     required: true,
   },
-  globalOrder : {
-    type : Number,
-    default : 0
+  globalOrder: {
+    type: Number,
+    default: 0,
   },
 
-  switchedFrom : {
+  switchedFrom: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Session",
-
   },
 
-  switchedTo : {
+  switchedTo: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Session",
-
   },
   // moderators: {
   //   type: Map,
@@ -83,7 +81,7 @@ const SessionSchema = new mongoose.Schema({
   discussionLengthSetting: {
     type: String,
     enum: ["limit", "noLimit", "onDiscussion"],
-    default: "fixed",
+    default: "limit",
   },
 
   // Points Settings
@@ -132,7 +130,7 @@ const SessionSchema = new mongoose.Schema({
   conclusionLengthSetting: {
     type: String,
     enum: ["limit", "noLimit", "range"],
-    default: "fixed",
+    default: "limit",
   },
 
   // AI Settings
@@ -211,6 +209,12 @@ const SessionSchema = new mongoose.Schema({
   },
   queue: {
     type: [QueueSchema],
+  },
+
+  showResult: {
+    type: [String],
+    enum: ["SELECTED", "REJECTED", "WAITING_LIST"],
+    default: [],
   },
 });
 

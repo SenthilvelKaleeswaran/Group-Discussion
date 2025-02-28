@@ -200,7 +200,7 @@ const socketHandler = (io, socket) => {
     });
 
     socket.on("NEXT_ROUND", async ({ type, ...data }) => {
-      if (type === "ANOTHER") await nextRound({ io, socket, ...data });
+      if (type === "ANOTHER") await nextRound({ io, socket,userId, ...data });
     });
 
     socket.on(

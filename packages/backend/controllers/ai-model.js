@@ -2,7 +2,6 @@ const AIModel = require('../models/ai-model');
 const getAIModels = async (req, res) => {
   try {
     const aiModels = await AIModel.find({});
-    console.log({aiModels})
     res.status(200).json(aiModels);
   } catch (error) {
     res.status(500).json({
