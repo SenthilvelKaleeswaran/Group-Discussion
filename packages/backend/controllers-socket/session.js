@@ -57,7 +57,6 @@ const nextRound = async ({
     console.log({discussionDetails,rest})
 
     const {showResult, restDiscussionDetails} = discussionDetails
-
     
     const newSession = new Session({
       ...rest,
