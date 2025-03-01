@@ -58,6 +58,7 @@ const nextRound = async ({
 
     const {showResult, restDiscussionDetails} = discussionDetails
 
+    
     const newSession = new Session({
       ...rest,
       ...restDiscussionDetails,
