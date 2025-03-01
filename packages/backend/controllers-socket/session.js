@@ -51,7 +51,7 @@ const nextRound = async ({
       updatedAt,
       globalOrder,
       queue,
-      ...rest,
+      ...rest
     } = session;
 
     console.log({discussionDetails,rest})
