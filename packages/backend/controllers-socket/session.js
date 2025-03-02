@@ -34,7 +34,7 @@ const nextRound = async ({
       loading: "Creating next round",
     });
 
-    const session = await Session.findById(sessionId);
+    const session = await Session.findOne({ _id: sessionId });
     if (!session) {
       throw new Error("Session not found");
     }
@@ -52,21 +52,22 @@ const nextRound = async ({
       globalOrder,
       queue,
       ...rest
-    } = session;
+    } = session.toObject();
 
-    console.log({discussionDetails,rest})
+    console.log({ discussionDetails, rest });
 
-    const {showResult, restDiscussionDetails} = discussionDetails
-    
+
+    const { displayResult, restDiscussionDetails } = discussionDetails;
+
     const newSession = new Session({
       ...rest,
       ...restDiscussionDetails,
       switchedFrom: sessionId,
       status: "NOT_STARTED",
-      createdBy : userId
+      createdBy: userId,
     });
 
-    console.log({newSession})
+    console.log({ newSession });
 
     await newSession.save();
 
@@ -74,13 +75,11 @@ const nextRound = async ({
 
     session.switchedTo = newId;
     session.status = "COMPLETED";
-    session.showResult = showResult
+    session.displayResult = displayResult;
 
-    console.log({session})
-
+    console.log({ session });
 
     await session.save();
-
 
     const participant = await Participant.findOne({ sessionId });
     if (!participant) {
@@ -102,14 +101,13 @@ const nextRound = async ({
       }
     });
 
-    console.log({participantList})
-
+    console.log({ participantList });
 
     // Save the updated participant list
 
-    // await participant.save();
+    await participant.save();
 
-    io.to(sessionId).emit("NEXT_ROUND_SWITCH", { newSession: newId });
+    io.to(sessionId).emit("NEXT_ROUND_SWITCH", { newSession: newId,displayResult,participant });
   } catch (error) {
     console.error("Error in nextRound:", error.message);
     io.to(sessionId).emit("NEXT_ROUND_ERROR", { error: error.message });
