@@ -26,12 +26,19 @@ const getConversationData = (data) => {
   return data?.map((item) => item?.messages).flat();
 };
 
-const generateFeedback = async ({ io, socket, sessionId }) => {
+const generateFeedback = async ({
+  io,
+  socket,
+  sessionId,
+  selectedParticipants,
+  startedBy,
+}) => {
   try {
     io.to(sessionId).emit("FEEDBACK_LOADING", "Generating Feedback");
 
     console.log({ sessionId });
     const session = await Session.findOne({ _id: sessionId });
+
     const conversation = await Conversation.aggregate([
       {
         $match: {
@@ -99,9 +106,20 @@ const generateFeedback = async ({ io, socket, sessionId }) => {
       return;
     }
 
+    if (selectedParticipants?.length > 0) {
+      session.feedbackSelectedParticipant = {
+        participants: selectedParticipants,
+        startedBy,
+      };
+    }
+
+    session.feedbackStatus =
+      selectedParticipants?.length > 0 ? "SELECTED_IN_PROGRESS" : "IN_PROGRESS";
+    await session.save();
+
     const {
       topic,
-      aiParticipants
+      aiParticipants,
       //   conclusionPoints, // bb
       //   conclusionBy, // bb
       // noOfUsers, // bb
@@ -233,80 +251,90 @@ const generateFeedback = async ({ io, socket, sessionId }) => {
       // Iterate through the 'participant' map
       participants.participant.forEach((item, key) => {
         // Check if feedback is falsy
-        const isConversed = conversation?.find((_)=>_?.groupId?.toString() === item?.userId?.toString())
-        console.log({isConversed,conversation,userId:item,kkkkkk : !isFalsyObject(isConversed)})
-        if (isFalsyObject(item?.feedback) && !isFalsyObject(isConversed)) {
-          const promise = delay(count * 30000).then(async () => {
-            try {
-              const feedback = await generateAIResponse({
-                prompt:
-                  discussionInstructionPrompt({
-                    topic,
-                    aiParticipants: aiParticipants?.length,
-                    discussionLength,
-                    noOfUsers,
-                    user: item?.userId,
-                  }) +
-                  `\nFull Discussion : ${JSON.stringify(
-                    modifiedConversation
-                  )}\n` +
-                  OverAllAnalysisPrompt +
-                  `\nAI Response:`,
-                isParse: true,
-              });
-
-              console.log({ feedback });
-
-              // Use setTimeout with 0 to save feedback asynchronously without blocking the loop
-              setTimeout(async () => {
-                console.log(
-                  `Saving user analysis for participant with key: ${key}`
-                );
-                try {
-                  // Update the specific participant's feedback in the map
-                  const updatedParticipant = await Participant.findOneAndUpdate(
-                    {
-                      _id: participants._id,
-                      [`participant.${key}`]: { $exists: true }, // Ensure the participant key exists
-                    },
-                    {
-                      $set: {
-                        [`participant.${key}.feedback`]: feedback,
-                      },
-                    },
-                    { new: true }
-                  );
-
-                  console.log({ updatedParticipant });
-
-                  // Emit analysis update to the client
-                  io.to(sessionId).emit("FEEDBACK_USER_UPDATE", {
-                    userId: item?.userId || item?.aiId,
-                    feedback,
-                  });
-                } catch (err) {
-                  console.error(
-                    `Error saving user analysis for participant with key: ${key}`,
-                    err
-                  );
-                }
-              }, 0);
-
-              return {
-                userId: item?.userId,
-                feedback,
-              };
-            } catch (error) {
-              console.error(
-                `Error in API call for participant with key: ${key}`,
-                error
-              );
-              return null; // Avoid breaking the Promise.all
-            }
+        if (selectedParticipants?.includes(key)) {
+          const isConversed = conversation?.find(
+            (_) => _?.groupId?.toString() === item?.userId?.toString()
+          );
+          console.log({
+            isConversed,
+            conversation,
+            userId: item,
+            kkkkkk: !isFalsyObject(isConversed),
           });
+          if (isFalsyObject(item?.feedback) && !isFalsyObject(isConversed)) {
+            const promise = delay(count * 30000).then(async () => {
+              try {
+                const feedback = await generateAIResponse({
+                  prompt:
+                    discussionInstructionPrompt({
+                      topic,
+                      aiParticipants: aiParticipants?.length,
+                      discussionLength,
+                      noOfUsers,
+                      user: item?.userId,
+                    }) +
+                    `\nFull Discussion : ${JSON.stringify(
+                      modifiedConversation
+                    )}\n` +
+                    OverAllAnalysisPrompt +
+                    `\nAI Response:`,
+                  isParse: true,
+                });
 
-          promises.push(promise);
-          count += 1; // Increment delay counter
+                console.log({ feedback });
+
+                // Use setTimeout with 0 to save feedback asynchronously without blocking the loop
+                setTimeout(async () => {
+                  console.log(
+                    `Saving user analysis for participant with key: ${key}`
+                  );
+                  try {
+                    // Update the specific participant's feedback in the map
+                    const updatedParticipant =
+                      await Participant.findOneAndUpdate(
+                        {
+                          _id: participants._id,
+                          [`participant.${key}`]: { $exists: true }, // Ensure the participant key exists
+                        },
+                        {
+                          $set: {
+                            [`participant.${key}.feedback`]: feedback,
+                          },
+                        },
+                        { new: true }
+                      );
+
+                    console.log({ updatedParticipant });
+
+                    // Emit analysis update to the client
+                    io.to(sessionId).emit("FEEDBACK_USER_UPDATE", {
+                      userId: item?.userId || item?.aiId,
+                      feedback,
+                    });
+                  } catch (err) {
+                    console.error(
+                      `Error saving user analysis for participant with key: ${key}`,
+                      err
+                    );
+                  }
+                }, 0);
+
+                return {
+                  userId: item?.userId,
+                  feedback,
+                };
+              } catch (error) {
+                console.error(
+                  `Error in API call for participant with key: ${key}`,
+                  error
+                );
+                return null; // Avoid breaking the Promise.all
+              }
+            });
+
+            promises.push(promise);
+            count += 1; // Increment delay counter
+          }
         }
       });
 
@@ -329,6 +357,8 @@ const generateFeedback = async ({ io, socket, sessionId }) => {
       .catch((error) =>
         console.error("Error generating user analysis:", error)
       );
+
+    
   } catch (error) {
     console.error("Error generating feedback:", error);
     return;

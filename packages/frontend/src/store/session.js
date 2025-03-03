@@ -26,6 +26,8 @@ const sessionSlice = createSlice({
       notStarted: [],
     },
     userSession : {},
+    userFeedbackStatus : {},
+    selectedParticipants : [],
     globalOrder: 0,
     loading: false,
     error: null,
@@ -66,9 +68,20 @@ const sessionSlice = createSlice({
       } else {
         state.userSession = action.payload; 
       }
-    }
+    },
+    setFeedbackStatus: (state, action) => {
+      const { userId, newStatus } = action.payload;
+      if (newStatus === null) {
+        delete state.userFeedbackStatus[userId];
+      } else {
+        state.userFeedbackStatus[userId] = newStatus;
+      }
+    },
+    setSelectedParticipants : (state, action) => {
+      state.selectedParticipants = action.payload;
+    },
     
-  },
+  }, 
   extraReducers: (builder) => {
     builder
       .addCase(fetchSessionQueue.pending, (state) => {
@@ -87,7 +100,7 @@ const sessionSlice = createSlice({
   },
 });
 
-export const { updateGroupDiscussion, setDiscussionQueue,setUserSession } =
+export const { updateGroupDiscussion, setDiscussionQueue,setUserSession,setFeedbackStatus,setSelectedParticipants } =
   sessionSlice.actions;
 
 export default sessionSlice.reducer;

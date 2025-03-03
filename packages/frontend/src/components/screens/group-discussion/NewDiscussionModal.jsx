@@ -120,6 +120,7 @@ export const NewDiscussionModal = ({
   handleStatusChange,
   session,
   socket,
+  disabled
 }) => {
   console.log("render");
   const {
@@ -239,8 +240,10 @@ export const NewDiscussionModal = ({
     }
   };
 
+  console.log({ disabled})
+
   return (
-    <Modal>
+    <Modal  disabled={disabled}>
       <ModalTrigger>Make Another Round</ModalTrigger>
       <ModalContent className="w-full mx-4 items-center">
         <ModalHeader>

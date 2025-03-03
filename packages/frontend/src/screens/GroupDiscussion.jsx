@@ -32,6 +32,7 @@ import {
 import {
   DoubleTapPopup,
   InitialTimer,
+  RenderSpace,
   TimeProgressBar,
 } from "../components/shared";
 
@@ -39,6 +40,7 @@ import { AudioStreamingComponent } from "../components/screens/group-discussion/
 import { useDispatch, useSelector } from "react-redux";
 import Draggable from "react-draggable";
 import { setDiscussionQueue } from "../store";
+import DiscussionCompletion from "./DiscussionCompletion";
 
 const signalingServer = "http://localhost:5000";
 
@@ -57,10 +59,13 @@ export const GroupDiscussion = () => {
   const [status, setStatus] = useState("");
   const [choosingRandomMember, setChoosingRandomMember] = useState(false);
 
-  const { mutedParticipants = [], userStatus = "" } = useSelector(
-    (state) => state.controls
-  );
+  const {
+    mutedParticipants = [],
+    userStatus = "",
+    userRole,
+  } = useSelector((state) => state.controls);
 
+  console.log({ userRole });
   const { currentConverstion: transcript = "" } = useSelector(
     (state) => state.conversation
   );
@@ -69,6 +74,9 @@ export const GroupDiscussion = () => {
     data,
     error: groupDiscussionError,
     isLoading: issLoading,
+    isPending,
+    isFetched,
+    isFetching,
     refetch,
   } = useQuery(
     [`group-discussion-${groupDiscussionId}`, groupDiscussionId],
@@ -149,11 +157,13 @@ export const GroupDiscussion = () => {
     events,
   });
 
-  console.log({ transcript });
-
   const isListeningRef = useRef(isListening);
 
   const isCompleted = data?.status === "COMPLETED" || status === "Completed";
+  const isDiscussionRunning =
+    data?.status === "NOT_STARTED" || data?.status === "IN_PROGRESS";
+
+  console.log({ data, aaa: !!data, issLoading, isDiscussionRunning });
 
   useEffect(() => {
     isListeningRef.current = isListening;
@@ -358,13 +368,17 @@ export const GroupDiscussion = () => {
       />
 
       <AiParticipantPopup data={data} socket={socket} sessionId={sessionId} />
-
-      <div className="max-w-3xl w-full flex-1.5 p-8 space-y-2 bg-gray-800 shadow-lg rounded-lg">
+      <div className=" w-full flex-1.5 p-8 space-y-2 bg-gray-800 shadow-lg rounded-lg">
         <p className="font-bold">{data?.topic}</p>
         <DiscussionProgress events={events} />
 
         <ConversationCountdown />
-        <p>{transcript}</p>
+        <AudioStreamingComponent
+          socket={socket}
+          sessionId={sessionId}
+          groupDiscussionId={groupDiscussionId}
+          isCompleted={!isDiscussionRunning}
+        />
 
         <SessionButton
           status={data?.status}
@@ -372,113 +386,115 @@ export const GroupDiscussion = () => {
           sessionId={sessionId}
         />
 
-        <AudioStreamingComponent
-          socket={socket}
-          sessionId={sessionId}
-          groupDiscussionId={groupDiscussionId}
-        />
-
-        <FeedbackTable
-          aiParticipants={data?.aiParticipants}
-          events={events}
-          socket={socket}
-          sessionId={sessionId}
-          session={data}
-        />
-
-        {/* <DiscussionIndicator
-          data={data}
-          conversation={conversation}
-          currentMember={currentMember}
-        /> */}
-        {!isCompleted && !isLoading && !isListening && status?.length > 0 ? (
-          <TimeProgressBar duration={TIME_INTERVAL} />
-        ) : null}
-
-        <div className="text-blue-600">{getStatus()}</div>
-
-        <p>{transcript || currentWord}</p>
-
-        {/* Group Members Section */}
-        <div className="mb-8">
-          {/* <h1 className="text-2xl font-bold mb-4">Group Members</h1> */}
-          <MemberCard data={members} currentMember={currentMember} />
-        </div>
-
-        {isCompleted ? (
-          <div className="flex flex-col items-center justify-center bg-gray-800 p-8 rounded-lg shadow-lg space-y-6 text-center">
-            <h2 className="text-2xl font-bold text-yellow-400">
-              🏆 Discussion Battle Finished!
-            </h2>
-            <p className="text-sm text-gray-300">
-              Your discussion journey has concluded. What’s next?
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-md">
-              {data?.feedback?.length ? (
-                <button
-                  onClick={() => handleFeedbackGeneration({ id })}
-                  disabled={isFeedbackGenerating}
-                  className="py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition duration-300"
-                >
-                  📊 View Feedback
-                </button>
-              ) : (
-                <button
-                  onClick={() => handleFeedbackGeneration({ id })}
-                  disabled={isFeedbackGenerating}
-                  className="py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-md transition duration-300"
-                >
-                  {isFeedbackGenerating
-                    ? "✨ Generating...."
-                    : "✨ Generate Feedback"}
-                </button>
-              )}
-              <button className="py-2 px-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg shadow-md transition duration-300">
-                🔄 Start New Discussion
-              </button>
-              <button className="py-2 px-4 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg shadow-md transition duration-300">
-                📖 View Past Discussions
-              </button>
-            </div>
-          </div>
+        {!!data && !issLoading && !isDiscussionRunning ? (
+          <DiscussionCompletion data={data} socket={socket} events={events} />
         ) : (
           <div>
-            {isConclusion ? <div>Conclusion Battle Starts</div> : null}
-            {isConclusion && getConclusionBy()}
+            <p>{transcript}</p>
+
+            {/* <DiscussionIndicator
+           data={data}
+           conversation={conversation}
+           currentMember={currentMember}
+         /> */}
+            {!isCompleted &&
+            !isLoading &&
+            !isListening &&
+            status?.length > 0 ? (
+              <TimeProgressBar duration={TIME_INTERVAL} />
+            ) : null}
+
+            <div className="text-blue-600">{getStatus()}</div>
+
+            <p>{transcript || currentWord}</p>
+
+            {/* Group Members Section */}
+            <div className="mb-8">
+              {/* <h1 className="text-2xl font-bold mb-4">Group Members</h1> */}
+              <MemberCard data={members} currentMember={currentMember} />
+            </div>
+
+            {isCompleted ? (
+              <div className="flex flex-col items-center justify-center bg-gray-800 p-8 rounded-lg shadow-lg space-y-6 text-center">
+                <h2 className="text-2xl font-bold text-yellow-400">
+                  🏆 Discussion Battle Finished!
+                </h2>
+                <p className="text-sm text-gray-300">
+                  Your discussion journey has concluded. What’s next?
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-md">
+                  {data?.feedback?.length ? (
+                    <button
+                      onClick={() => handleFeedbackGeneration({ id })}
+                      disabled={isFeedbackGenerating}
+                      className="py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition duration-300"
+                    >
+                      📊 View Feedback
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleFeedbackGeneration({ id })}
+                      disabled={isFeedbackGenerating}
+                      className="py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-md transition duration-300"
+                    >
+                      {isFeedbackGenerating
+                        ? "✨ Generating...."
+                        : "✨ Generate Feedback"}
+                    </button>
+                  )}
+                  <button className="py-2 px-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg shadow-md transition duration-300">
+                    🔄 Start New Discussion
+                  </button>
+                  <button className="py-2 px-4 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg shadow-md transition duration-300">
+                    📖 View Past Discussions
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                {isConclusion ? <div>Conclusion Battle Starts</div> : null}
+                {isConclusion && getConclusionBy()}
+              </div>
+            )}
+
+            {/* Recording Section */}
+            {/* <div className="text-center mb-8">
+           <RecordingButton
+             isListening={isListening}
+             startListening={startListening}
+             stopListening={stopListening}
+           />
+         </div> */}
           </div>
         )}
-
-        {/* Recording Section */}
-        {/* <div className="text-center mb-8">
-          <RecordingButton
+      </div>
+      <RenderSpace condition={isDiscussionRunning}>
+        <div className="w-full min-h-screen h-full overflow-scroll bg-gray-900 shadow-lg rounded-lg">
+          <Conversation
+            currentWord={currentWord}
+            transcript={transcript}
+            currentMember={currentMember}
+            isSpeaking={isSpeaking}
             isListening={isListening}
-            startListening={startListening}
-            stopListening={stopListening}
+            isLoading={isLoading}
+            currentSpeech={currentSpeech}
+            data={{ ...data, discussion: conversation }}
+            discussionLength={data?.discussionLength}
+            conclusionBy={data?.conclusionBy}
+            conclusionPoints={data?.conclusionPoints}
+            isLiveDiscussion
+            events={events}
+            processingPoint={processingPoint}
           />
-        </div> */}
-      </div>
-      <div className="w-full min-h-screen h-full overflow-scroll bg-gray-900 shadow-lg rounded-lg">
-        <Conversation
-          currentWord={currentWord}
-          transcript={transcript}
-          currentMember={currentMember}
-          isSpeaking={isSpeaking}
-          isListening={isListening}
-          isLoading={isLoading}
-          currentSpeech={currentSpeech}
-          data={{ ...data, discussion: conversation }}
-          discussionLength={data?.discussionLength}
-          conclusionBy={data?.conclusionBy}
-          conclusionPoints={data?.conclusionPoints}
-          isLiveDiscussion
-          events={events}
-          processingPoint={processingPoint}
-        />{" "}
-      </div>
-      <div className="w-full min-h-screen h-full overflow-scroll bg-gray-900 shadow-lg rounded-lg">
-        <DiscussionSettings sessionId={sessionId} socket={socket} />
-      </div>
+        </div>
+      </RenderSpace>
+
+      <RenderSpace condition={isDiscussionRunning}>
+        <div className="w-full min-h-screen h-full overflow-scroll bg-gray-900 shadow-lg rounded-lg">
+          <DiscussionSettings sessionId={sessionId} socket={socket} />
+        </div>
+      </RenderSpace>
     </div>
   );
 };

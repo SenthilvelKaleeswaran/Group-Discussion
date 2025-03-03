@@ -1,12 +1,10 @@
 import { store } from "./store";
 import {
-  updateMessage,
   setCurrentConverstion,
   setConverstionTimer,
   setDiscussion,
   setAddDiscussion,
   setUpdateDiscussion,
-  setUserPoints
 } from "./conversation";
 import {
   fetchGroupDiscussion,
@@ -22,13 +20,17 @@ import {
   setUserStatus,
 } from "./controls";
 
-import { setDiscussionQueue, setUserSession } from "./session";
+import {
+  setDiscussionQueue,
+  setUserSession,
+  setFeedbackStatus,
+  setSelectedParticipants,
+} from "./session";
 
 export {
   store,
   updateGroupDiscussion,
   fetchGroupDiscussion,
-  updateMessage,
   updateParticipants,
   fetchParticipants,
   setUserRole,
@@ -44,5 +46,6 @@ export {
   setDiscussion,
   setAddDiscussion,
   setUpdateDiscussion,
-  setUserPoints
+  setFeedbackStatus,
+  setSelectedParticipants,
 };

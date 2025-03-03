@@ -7,6 +7,7 @@ export const AudioStreamingComponent = ({
   socket,
   sessionId,
   groupDiscussionId,
+  isCompleted
 }) => {
   const { localStream, remoteStreams, switchToNextSpeakerMic } =
     useStreaming({
@@ -35,6 +36,12 @@ export const AudioStreamingComponent = ({
   }, [localStream]);
 
   const isMuted = mutedUsers?.includes(userId);
+
+  if(isCompleted){
+    return(
+      <div>Completed</div>
+    )
+  }
 
   return (
     <div className="p-8">

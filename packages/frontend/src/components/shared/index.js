@@ -10,7 +10,7 @@ import { InitialTimer } from "./InitialTimer.jsx";
 import { DoubleTapPopup } from "./DoubleTapPopup.jsx";
 import { UserCard } from "./UserCard.jsx";
 import { IconContainer, IconWithLoader } from "./VariantsIcon.jsx";
-import {ButtonIcon} from './VariantsButton.jsx'
+import { ButtonIcon, ButtonDropdown } from "./VariantsButton.jsx";
 import { AnimatingTimer } from "./AnimatingTimer.jsx";
 
 export {
@@ -18,6 +18,7 @@ export {
   AnimatingTimer,
   BlinkingIcon,
   ButtonIcon,
+  ButtonDropdown,
   displayToast,
   DoubleTapPopup,
   IconWithLoader,
