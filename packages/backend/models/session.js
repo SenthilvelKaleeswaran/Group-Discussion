@@ -11,6 +11,15 @@ const QueueSchema = new mongoose.Schema({
   },
 });
 
+const FeedbackSelectedParticipantSchema = new mongoose.Schema({
+  participants: { type: [mongoose.Schema.Types.ObjectId] },
+  startedTime: { type: Date, default: Date.now },
+  startedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
+});
+
 const SessionSchema = new mongoose.Schema({
   // Topic Settings
   groupDiscussionId: {
@@ -198,7 +207,27 @@ const SessionSchema = new mongoose.Schema({
   sessionPassword: { type: String },
   status: {
     type: String,
-    enum: ["NOT_STARTED", "IN_PROGRESS", "COMPLETED", "HOLDED"],
+    enum: [
+      "NOT_STARTED",
+      "IN_PROGRESS",
+      "COMPLETED",
+      "HOLDED",
+      "FEEDBACK_GENERATING",
+      "FEEDBACK_GENERATED",
+      "FEEDBACK_GENERATION_STOPPED",
+    ],
+    default: "NOT_STARTED",
+  },
+  feedbackStatus: {
+    type: String,
+    enum: [
+      "NOT_STARTED",
+      "IN_PROGRESS",
+      "COMPLETED",
+      "SELECTED_IN_PROGRESS",
+      "SELECTED_COMPLETED",
+      "HOLDED",
+    ],
     default: "NOT_STARTED",
   },
   sessionStartTime: {
@@ -211,9 +240,14 @@ const SessionSchema = new mongoose.Schema({
     type: [QueueSchema],
   },
 
-  showResult: {
+  displayResult: {
     type: [String],
     enum: ["SELECTED", "REJECTED", "WAITING_LIST"],
+    default: [],
+  },
+
+  feedbackSelectedParticipant: {
+    type: [FeedbackSelectedParticipantSchema],
     default: [],
   },
 });

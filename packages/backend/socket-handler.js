@@ -248,8 +248,8 @@ const socketHandler = (io, socket) => {
       }
     );
 
-    socket.on("GENERATE_FEEDBACK", async ({ sessionId }) => {
-      await generateFeedback({ sessionId, socket, io });
+    socket.on("GENERATE_FEEDBACK", async ({ sessionId,selectedParticipants }) => {
+      await generateFeedback({ sessionId, socket, io,selectedParticipants,startedBy });
     });
 
     socket.on("TRANSCRIPT", async (transcript) => {

@@ -8,9 +8,7 @@ export function SessionButton({ status, socket, sessionId }) {
     socket.emit("UPDATE_SESSION_STATUS", { type });
   };
 
-  const handleGenerateFeedback = () => {
-    socket.emit("GENERATE_FEEDBACK", { sessionId });
-  };
+
 
   const renderButton = () => {
     switch (status) {
@@ -52,19 +50,19 @@ export function SessionButton({ status, socket, sessionId }) {
           />
         );
 
-      case "COMPLETED":
-        return (
-          <div className="flex gap-2">
-            <Button label="Completed" variant="success" disabled />
-            <Button
-              id="FEEDBACK"
-              condition={status === "FEEDBACK"}
-              onClick={() => handleGenerateFeedback()}
-              label={"Generate Feedback"}
-              buttonProps={{ label: "Generate Feedback" }}
-            />
-          </div>
-        );
+      // case "COMPLETED":
+      //   return (
+      //     <div className="flex gap-2">
+      //       <Button label="Completed" variant="success" disabled />
+      //       <Button
+      //         id="FEEDBACK"
+      //         condition={status === "FEEDBACK"}
+      //         onClick={() => handleGenerateFeedback()}
+      //         label={"Generate Feedback"}
+      //         buttonProps={{ label: "Generate Feedback" }}
+      //       />
+      //     </div>
+      //   );
 
       default:
         return null;

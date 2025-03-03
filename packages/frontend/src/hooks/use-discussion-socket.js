@@ -113,23 +113,25 @@ export const useDiscussionSocket = ({
 
   useEffect(() => {
     if (events.PARTICIPANT_LIST) {
-      const { participant, role } = events.PARTICIPANT_LIST;
-      console.log({ PARTICIPANT_LIST: participant, role });
+      const { participant } = events.PARTICIPANT_LIST;
+      console.log({ PARTICIPANT_LIST: participant });
       dispatch(updateParticipants(participant));
-      dispatch(setUserRole(role));
     }
   }, [events.PARTICIPANT_LIST]);
 
   useEffect(() => {
     if (events.USER_SESSION) {
-      const data = events.USER_SESSION;
-      dispatch(setUserSession(data));
+      const {userSession,role} = events.USER_SESSION;
+      dispatch(setUserSession(userSession));
+      dispatch(setUserRole(role));
+
     }
   }, [events.USER_SESSION]);
 
   useEffect(() => {
     if (events.PARTICIPANT_LIST) {
       const { participant } = events.PARTICIPANT_LIST;
+      console.log({PARTICIPANT_LIST : events.PARTICIPANT_LIST})
 
       const list = [
         ...participant?.participant,

@@ -10,7 +10,6 @@ import { NameCard } from "./ConversationComponent";
 import { getConversationStyle } from "../../../utils";
 import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
-import { setUserPoints } from "../../../store";
 
 const StatusCard = ({ title, message, additionalText }) => (
   <div className="relative flex items-center justify-center pb-8 pt-4">
@@ -115,7 +114,7 @@ const DiscussionPoints = ({ data, isLiveDiscussion = false, events }) => {
       });
     
       // Dispatch user points to the Redux store
-      dispatch(setUserPoints({ ...userPoints }));
+      // dispatch(setUserPoints({ ...userPoints }));
     
       // Reverse the array if it's a live discussion
       if (isLiveDiscussion) {

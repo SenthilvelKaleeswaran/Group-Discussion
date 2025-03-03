@@ -3,10 +3,10 @@ import { Button, Modal, Table } from "../../ui";
 import { useSelector, useDispatch } from "react-redux";
 import { displayToast, Loader } from "../../shared";
 import { CreateDiscussion } from "../../../screens";
-import {  NewDiscussionModal } from "./NewDiscussionModal";
+import { NewDiscussionModal } from "./NewDiscussionModal";
+import { setFeedbackStatus, setSelectedParticipants } from "../../../store";
 
 const Actions = ({ userId, updateUserStatus, initialStatus }) => {
-
   const handleStatusChange = (status) => {
     const newStatus = initialStatus === status ? null : status;
     updateUserStatus(userId, newStatus);
@@ -74,58 +74,48 @@ const calculateOverallScore = (array, userPoints) => {
   return val;
 };
 
-export function FeedbackTable({ socket, events, aiParticipants, sessionId,session }) {
+export function FeedbackTable({
+  socket,
+  events,
+  aiParticipants,
+  sessionId,
+  session,
+}) {
+  const dispatch = useDispatch();
+
   const { participants, loading } = useSelector((state) => state.participants);
+
   const { userPoints = {}, discussion = [] } = useSelector(
     (state) => state.conversation
   );
-  const dispatch = useDispatch();
 
-  const [selectedIds, setSelectedIds] = useState([]);
-  const [userStatus, setUserStatus] = useState({}); // Store user status updates
+  const { userFeedbackStatus = {} } = useSelector((state) => state.session);
 
-  console.log({ userStatus });
+  console.log({ userFeedbackStatus });
 
-  // Function to update user status in the array
-  const updateUserStatus = (userId, newStatus) => {
-    setUserStatus((prev) => {
-      const updatedStatus = { ...prev };
-      if (newStatus === null) {
-        delete updatedStatus[userId];
-      } else {
-        updatedStatus[userId] = newStatus;
-      }
-      return updatedStatus;
-    });
+  const onSelectionChange = (data)=>{
+    dispatch(setSelectedParticipants(data)); 
+  }
+
+  const updateUserStatus = (userId, status) => {
+    dispatch(setFeedbackStatus({ userId, newStatus: status }));
   };
 
-  // Handle "Make Another Round"
-  const handleMakeAnotherRound = () => {
-    if (selectedIds.length === 0) {
-      displayToast({
-        data: { error: "Select participants for the next round." },
-      });
-      return;
-    }
-
-    socket.emit("NEXT_ROUND", {
-      selectedParticipants: userStatus,
-      sessionId,
-      type: "ANOTHER",
-    });
+  const getButtonStatus = () => {
+    return status === "FEEDBACK_GENERATING";
   };
 
   // Handle "Declare Result"
   const handleDeclareResult = () => {
-    if (selectedIds.length === 0) {
-      displayToast({
-        data: { error: "No participants selected to declare the result." },
-      });
-      return;
-    }
+    // if (selectedIds.length === 0) {
+    //   displayToast({
+    //     data: { error: "No participants selected to declare the result." },
+    //   });
+    //   return;
+    // }
 
     socket.emit("DECLARE_RESULT", {
-      selectedParticipants: userStatus,
+      selectedParticipants: userFeedbackStatus,
       sessionId,
     });
   };
@@ -134,6 +124,7 @@ export function FeedbackTable({ socket, events, aiParticipants, sessionId,sessio
     () => calculateOverallScore(discussion, userPoints),
     [discussion, userPoints]
   );
+  const { status } = session;
 
   const getTableData = useCallback(() => {
     if (loading || !userPoints) return [];
@@ -142,6 +133,14 @@ export function FeedbackTable({ socket, events, aiParticipants, sessionId,sessio
       ...(participants?.participant || []),
       ...(aiParticipants || []),
     ];
+
+    const getValue = (data, current, total) => {
+      console.log({ data, current, total });
+      if (status === "COMPLETED") {
+        return data[total] || 0;
+      }
+      return `${data[current] || 0} / ${data[total] || 0}`;
+    };
 
     return users.map((item) => {
       const userId = item?.userId || item?._id;
@@ -153,23 +152,32 @@ export function FeedbackTable({ socket, events, aiParticipants, sessionId,sessio
         evaluateMetrics(item?.feedback || {}) || 0
       );
 
-      const initialStatus = userStatus[userId] || null;
+      const initialStatus = userFeedbackStatus[userId] || null;
 
       return {
         _id: { display: false, value: item?._id },
         userId: { display: false, value: userId },
         name: { value: item?.name },
-        totalPoints: {
-          value: `${userPointData.feedback || 0} / ${
-            userPointData.points || 0
-          }`,
+        totalDiscussionPoints: {
+          value: getValue(userPointData, "feedback", "points"),
         },
         conclusionPoints: {
-          value: `${userPointData.conclusionFeedback || 0} / ${
-            userPointData.conclusionPoints || 0
-          }`,
+          value: getValue(
+            userPointData,
+            "conclusionFeedback",
+            "conclusionPoints"
+          ),
         },
-        discussionScore: { value: discussionScoreValue },
+        totalPoints: {
+          value:
+            getValue(userPointData, "feedback", "points") +
+            getValue(userPointData, "conclusionFeedback", "conclusionPoints"),
+          display: status === "COMPLETED",
+        },
+        discussionScore: {
+          value: discussionScoreValue,
+          display: status !== "COMPLETED",
+        },
         performanceFeedback: {
           value: !isFalsyObject(
             participants?.participant?.find((_) => _?.userId === item?.userId)
@@ -177,10 +185,15 @@ export function FeedbackTable({ socket, events, aiParticipants, sessionId,sessio
           )
             ? "✅"
             : "❌",
+          display: status !== "COMPLETED",
         },
-        feedbackScore: { value: feedbackScoreValue },
+        feedbackScore: {
+          value: feedbackScoreValue,
+          display: status !== "COMPLETED",
+        },
         totalScore: {
           value: Number((discussionScoreValue + feedbackScoreValue).toFixed(2)),
+          display: status !== "COMPLETED",
         },
         actions: {
           value: (
@@ -199,7 +212,7 @@ export function FeedbackTable({ socket, events, aiParticipants, sessionId,sessio
     loading,
     userPoints,
     discussionScore,
-    userStatus,
+    userFeedbackStatus,
   ]);
 
   const [data, setData] = useState([]);
@@ -208,27 +221,38 @@ export function FeedbackTable({ socket, events, aiParticipants, sessionId,sessio
     setData(getTableData());
   }, [getTableData]);
 
+
+  
+
   if (loading || participants?.length === 0) return <Loader />;
 
-  console.log({data,userStatus,aiParticipants})
-
-  
-  
+  console.log({ data, userFeedbackStatus, aiParticipants });
 
   return (
-    <div>
-      <Table data={data} sortKey="totalScore" />
-      <div className="flex gap-4">
-      <NewDiscussionModal
-        participant={participants?.participant}
-        participantStatus={userStatus}
-        handleStatusChange={updateUserStatus}
-        aiParticipants={aiParticipants}
-        session={session}
-        socket={socket}
+    <div className="space-y-4">
+      <Table
+        data={data}
+        sortKey={status === "COMPLETED" ? "totalPoints" : "totalScore"}
+        selectable
+        onSelectionChange={onSelectionChange}
+        
       />
+      <div className="flex gap-4 items-center justify-center">
+        <NewDiscussionModal
+          participant={participants?.participant}
+          participantStatus={userFeedbackStatus}
+          handleStatusChange={updateUserStatus}
+          aiParticipants={aiParticipants}
+          session={session}
+          socket={socket}
+          disabled={getButtonStatus()}
+        />
         {/* <Button label="Make Another Round" onClick={handleMakeAnotherRound} /> */}
-        <Button label="Declare Result" onClick={handleDeclareResult} />
+        <Button
+          label="Declare Result"
+          onClick={handleDeclareResult}
+          disabled={getButtonStatus()}
+        />
       </div>
     </div>
   );

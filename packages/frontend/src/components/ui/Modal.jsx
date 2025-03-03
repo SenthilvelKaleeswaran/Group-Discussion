@@ -2,11 +2,11 @@ import { createContext, useContext, useState } from "react";
 
 const ModalContext = createContext();
 
- const Modal = ({ children }) => {
+ const Modal = ({ children,disabled }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <ModalContext.Provider value={{ isOpen, setIsOpen }}>
+    <ModalContext.Provider value={{ isOpen, setIsOpen,disabled }}>
       {children}
     </ModalContext.Provider>
   );
@@ -14,10 +14,12 @@ const ModalContext = createContext();
 
 // **Modal Trigger Button**
 const ModalTrigger = ({ children }) => {
-  const { setIsOpen } = useContext(ModalContext);
+  const { setIsOpen,disabled } = useContext(ModalContext);
+  console.log({disabled})
   return (
     <button
       onClick={() => setIsOpen(true)}
+      disabled={disabled}
       className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
     >
       {children}

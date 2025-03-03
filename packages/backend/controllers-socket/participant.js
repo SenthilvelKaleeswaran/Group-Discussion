@@ -114,7 +114,7 @@ const addParticipant = async ({
 
     const userSession = participant[role].get(userId);
 
-    io.to(socket?.id).emit("USER_SESSION", userSession);
+    io.to(socket?.id).emit("USER_SESSION", {userSession,role});
 
     io.to(sessionId).emit("PARTICIPANT_LIST", participantList);
     return participantList;
