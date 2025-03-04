@@ -12,6 +12,7 @@ import {
   setDiscussion,
   setAddDiscussion,
   setUpdateDiscussion,
+  setPermissions,
 } from "../store";
 import toast from "react-hot-toast";
 import { displayToast } from "../components/shared";
@@ -33,7 +34,7 @@ export const useDiscussionSocket = ({
   refetch,
 }) => {
   const dispatch = useDispatch();
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (events.RANDOM_MEMBER) {
@@ -121,9 +122,13 @@ export const useDiscussionSocket = ({
 
   useEffect(() => {
     if (events.USER_SESSION) {
-      const {userSession,role} = events.USER_SESSION;
-      dispatch(setUserSession(userSession));
-      dispatch(setUserRole(role));
+      const { userSession, role } = events.USER_SESSION;
+      if (userSession) dispatch(setUserSession(userSession));
+      if (role){ 
+        dispatch(setUserRole(role))
+        console.timeEnd("Time")
+      }
+      
 
     }
   }, [events.USER_SESSION]);
@@ -131,7 +136,7 @@ export const useDiscussionSocket = ({
   useEffect(() => {
     if (events.PARTICIPANT_LIST) {
       const { participant } = events.PARTICIPANT_LIST;
-      console.log({PARTICIPANT_LIST : events.PARTICIPANT_LIST})
+      console.log({ PARTICIPANT_LIST: events.PARTICIPANT_LIST });
 
       const list = [
         ...participant?.participant,
@@ -514,4 +519,14 @@ export const useDiscussionSocket = ({
       });
     }
   }, [events.NEXT_ROUND_ERROR]);
+
+  // permission
+
+  useEffect(() => {
+    if (events.PERMISSION_CONTROLS) {
+      console.log({ PERMISSION_CONTROLS: events.PERMISSION_CONTROLS });
+      dispatch(setPermissions(events.PERMISSION_CONTROLS));
+      console.timeEnd('TimePermission')
+    }
+  }, [events.PERMISSION_CONTROLS]);
 };

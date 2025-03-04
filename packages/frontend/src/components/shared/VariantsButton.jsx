@@ -39,7 +39,7 @@ export const ButtonDropdown = ({
 
   const getDefaultOption = () => {
     let option = null;
-    if (!disabled) {
+    if (!disabled || defaultOption !== "no_id") {
       if (!defaultOption) {
         option = options[0];
       } else {
@@ -59,7 +59,7 @@ export const ButtonDropdown = ({
       console.log({ bbbbbbbb: buttonRef.current.offsetWidth });
       setDropdownWidth(`${buttonRef.current.offsetWidth}px`);
     }
-  }, [isOpen,selectedOption]);
+  }, [isOpen, selectedOption]);
 
   const handleOptionClick = (option) => {
     if (option.disabled || disabled) return; // Prevent closing when selecting a disabled option
@@ -73,7 +73,7 @@ export const ButtonDropdown = ({
   return (
     <div className="relative inline-block">
       <div
-        className="flex bg-blue-500 hover:bg-blue-700 rounded-md"
+        className="flex bg-blue-500 hover:bg-blue-700 rounded-lg"
         ref={buttonRef}
       >
         <Button
@@ -97,7 +97,7 @@ export const ButtonDropdown = ({
 
       {isOpen && (
         <div
-          className="absolute left-0 mt-2 bg-blue-500 border rounded shadow-lg z-10 min-w-48 p-2"
+          className="absolute left-0 mt-2 bg-blue-500 border shadow-lg z-10 min-w-48 p-2"
           style={{ width: dropdownWidth }} // Set dropdown width to match button
         >
           {options.map((option) => (

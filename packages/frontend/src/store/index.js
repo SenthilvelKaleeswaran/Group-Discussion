@@ -18,6 +18,7 @@ import {
   setMuteInitialLoad,
   setUserRole,
   setUserStatus,
+  setPermissions
 } from "./controls";
 
 import {
@@ -48,4 +49,5 @@ export {
   setUpdateDiscussion,
   setFeedbackStatus,
   setSelectedParticipants,
+  setPermissions
 };

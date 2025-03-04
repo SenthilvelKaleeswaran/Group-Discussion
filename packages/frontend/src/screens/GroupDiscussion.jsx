@@ -45,6 +45,8 @@ import DiscussionCompletion from "./DiscussionCompletion";
 const signalingServer = "http://localhost:5000";
 
 export const GroupDiscussion = () => {
+  console.time("Time")
+  console.time("TimePermission")
   const { id } = useParams();
   const [groupDiscussionId, sessionId] = id.split("-");
   const navigate = useNavigate();
@@ -163,7 +165,7 @@ export const GroupDiscussion = () => {
   const isDiscussionRunning =
     data?.status === "NOT_STARTED" || data?.status === "IN_PROGRESS";
 
-  console.log({ data, aaa: !!data, issLoading, isDiscussionRunning });
+  console.log({ data, aaa: !!data, issLoading,userRole, isDiscussionRunning });
 
   useEffect(() => {
     isListeningRef.current = isListening;

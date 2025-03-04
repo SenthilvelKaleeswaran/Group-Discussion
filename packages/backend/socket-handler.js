@@ -15,6 +15,7 @@ const {
   changeOrder,
   muteAllParticipants,
 } = require("./controllers-socket/participant");
+const { getPermissionControls } = require("./controllers-socket/permission");
 const { updateSession, nextRound } = require("./controllers-socket/session");
 const Conversation = require("./models/conversation");
 const Participant = require("./models/participant");
@@ -101,6 +102,9 @@ const socketHandler = (io, socket) => {
     }
 
     const { participant = {}, role } = participantList;
+
+    // const permissions = await getPermissionControls({ role, sessionId });
+    // socket.emit("PERMISSION_CONTROLS", permissions);
 
     const list = [
       ...participant?.participant,
@@ -200,7 +204,7 @@ const socketHandler = (io, socket) => {
     });
 
     socket.on("NEXT_ROUND", async ({ type, ...data }) => {
-      if (type === "ANOTHER") await nextRound({ io, socket,userId, ...data });
+      if (type === "ANOTHER") await nextRound({ io, socket, userId, ...data });
     });
 
     socket.on(
@@ -248,8 +252,8 @@ const socketHandler = (io, socket) => {
       }
     );
 
-    socket.on("GENERATE_FEEDBACK", async ({ sessionId,selectedParticipants }) => {
-      await generateFeedback({ sessionId, socket, io,selectedParticipants,startedBy });
+    socket.on("GENERATE_FEEDBACK", async (data) => {
+      await generateFeedback({ socket, io, ...data });
     });
 
     socket.on("TRANSCRIPT", async (transcript) => {
