@@ -93,16 +93,27 @@ export function FeedbackTable({
 
   console.log({ userFeedbackStatus });
 
-  const onSelectionChange = (data)=>{
-    dispatch(setSelectedParticipants(data)); 
-  }
+  const onSelectionChange = (data) => {
+    console.log({selectedParticipants : data,icame : 'icame'})
+    dispatch(setSelectedParticipants(data));
+  };
 
   const updateUserStatus = (userId, status) => {
     dispatch(setFeedbackStatus({ userId, newStatus: status }));
   };
 
+  const { status, feedbackStatus = "" } = session;
+
+  const isFeedbackInprogress =
+    feedbackStatus === "SELECTED_IN_PROGRESS" ||
+    feedbackStatus === "IN_PROGRESS";
+
+  const getCheckStatus = () => {
+    return feedbackStatus === "SELECTED_COMPLETED" || feedbackStatus !== "COMPLETED" || isFeedbackInprogress 
+  }
+
   const getButtonStatus = () => {
-    return status === "FEEDBACK_GENERATING";
+    return isFeedbackInprogress;
   };
 
   // Handle "Declare Result"
@@ -124,7 +135,6 @@ export function FeedbackTable({
     () => calculateOverallScore(discussion, userPoints),
     [discussion, userPoints]
   );
-  const { status } = session;
 
   const getTableData = useCallback(() => {
     if (loading || !userPoints) return [];
@@ -136,7 +146,7 @@ export function FeedbackTable({
 
     const getValue = (data, current, total) => {
       console.log({ data, current, total });
-      if (status === "COMPLETED") {
+      if (feedbackStatus === "NOT_STARTED") {
         return data[total] || 0;
       }
       return `${data[current] || 0} / ${data[total] || 0}`;
@@ -172,11 +182,11 @@ export function FeedbackTable({
           value:
             getValue(userPointData, "feedback", "points") +
             getValue(userPointData, "conclusionFeedback", "conclusionPoints"),
-          display: status === "COMPLETED",
+          display: feedbackStatus === "NOT_STARTED",
         },
         discussionScore: {
           value: discussionScoreValue,
-          display: status !== "COMPLETED",
+          display: feedbackStatus !== "NOT_STARTED",
         },
         performanceFeedback: {
           value: !isFalsyObject(
@@ -185,15 +195,15 @@ export function FeedbackTable({
           )
             ? "✅"
             : "❌",
-          display: status !== "COMPLETED",
+          display: feedbackStatus !== "NOT_STARTED",
         },
         feedbackScore: {
           value: feedbackScoreValue,
-          display: status !== "COMPLETED",
+          display: feedbackStatus !== "NOT_STARTED",
         },
         totalScore: {
           value: Number((discussionScoreValue + feedbackScoreValue).toFixed(2)),
-          display: status !== "COMPLETED",
+          display: feedbackStatus !== "NOT_STARTED",
         },
         actions: {
           value: (
@@ -221,23 +231,21 @@ export function FeedbackTable({
     setData(getTableData());
   }, [getTableData]);
 
-
-  
-
   if (loading || participants?.length === 0) return <Loader />;
 
   console.log({ data, userFeedbackStatus, aiParticipants });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 rounded-lg">
       <Table
         data={data}
-        sortKey={status === "COMPLETED" ? "totalPoints" : "totalScore"}
-        selectable
+        sortKey={
+          feedbackStatus === "NOT_STARTED" ? "totalPoints" : "totalScore"
+        }
+        selectable={getCheckStatus()}
         onSelectionChange={onSelectionChange}
-        
       />
-      <div className="flex gap-4 items-center justify-center">
+      {/* <div className="flex gap-4 items-center justify-center">
         <NewDiscussionModal
           participant={participants?.participant}
           participantStatus={userFeedbackStatus}
@@ -247,13 +255,12 @@ export function FeedbackTable({
           socket={socket}
           disabled={getButtonStatus()}
         />
-        {/* <Button label="Make Another Round" onClick={handleMakeAnotherRound} /> */}
         <Button
           label="Declare Result"
           onClick={handleDeclareResult}
           disabled={getButtonStatus()}
         />
-      </div>
+      </div> */}
     </div>
   );
 }

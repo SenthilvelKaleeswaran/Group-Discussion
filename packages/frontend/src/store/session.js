@@ -78,7 +78,8 @@ const sessionSlice = createSlice({
       }
     },
     setSelectedParticipants : (state, action) => {
-      state.selectedParticipants = action.payload;
+      console.log({selectedParticipantspayload :action.payload })
+      state.selectedParticipants = [...action.payload]
     },
     
   }, 

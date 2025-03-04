@@ -170,7 +170,6 @@ export const Feedback = () => {
         totalSpokenScore += parseFloat(item?.totalMetricsScore) || 0;
       });
 
-      console.log({ aaaa: value?.conversation, totalSpokenScore });
       const spokenPoints = value?.conversation?.length || 0;
 
       const calc = (

@@ -15,6 +15,7 @@ const gTTS = require("gtts");
 const mp3Duration = require("mp3-duration");
 const { updateSessionQueueStatus } = require("./common");
 const Conversation = require("../models/conversation");
+const { getPermissionControls } = require("./permission");
 
 const updateParticipant = async ({
   groupDiscussionId,
@@ -65,6 +66,7 @@ const addParticipant = async ({
   userId,
   io,
 }) => {
+  console.time("Time");
   if (!groupDiscussionId || !userId || !sessionId) {
     console.error(
       "Error: groupDiscussionId and userId are required",
@@ -78,6 +80,14 @@ const addParticipant = async ({
   try {
     let participant = await Participant.findOne({ sessionId });
     const role = getUserRole(participant, userId);
+
+    socket.emit("USER_SESSION", { role });
+    console.timeEnd("Time");
+
+    setTimeout(async () => {
+      const permissions = await getPermissionControls({ role, sessionId });
+      socket.emit("PERMISSION_CONTROLS", permissions);
+    }, 0);
 
     if (!participant[role]) participant[role] = new Map();
 
@@ -114,7 +124,7 @@ const addParticipant = async ({
 
     const userSession = participant[role].get(userId);
 
-    io.to(socket?.id).emit("USER_SESSION", {userSession,role});
+    socket.emit("USER_SESSION", { userSession });
 
     io.to(sessionId).emit("PARTICIPANT_LIST", participantList);
     return participantList;
@@ -777,7 +787,7 @@ const chooseNextParticipant = async ({
           return takeNextParticipant(index);
         }
       } else if (currentPerson?.aiId?.toString()) {
-        const {responseText ,newConversation} = await generateConversation({
+        const { responseText, newConversation } = await generateConversation({
           socket,
           io,
           passedSession: session,

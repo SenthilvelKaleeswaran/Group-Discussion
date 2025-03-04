@@ -9,7 +9,7 @@ const controlsSlice = createSlice({
     userStatus : '',
     isMuteLoading: false,
     muteInitialLoad: true,
-    
+    permission : {}
   },
   reducers: {
     updateMutedParticipants: (state, action) => {
@@ -39,6 +39,9 @@ const controlsSlice = createSlice({
     setMutingList: (state, action) => {
       state.mutingList = action.payload;
     },
+    setPermissions :  (state, action) => {
+      state.permission = action.payload;
+    }
   },
 });
 
@@ -48,7 +51,8 @@ export const {
   setMutingList,
   setMuteInitialLoad,
   setUserRole,
-  setUserStatus
+  setUserStatus,
+  setPermissions
 } = controlsSlice.actions;
 
 export default controlsSlice.reducer;

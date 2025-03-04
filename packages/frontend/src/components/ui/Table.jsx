@@ -44,17 +44,17 @@ export const Table = ({ data, sortKey, selectable = false, onSelectionChange }) 
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full bg-transparent border border-gray-200 rounded-lg shadow-sm">
+      <table className="min-w-full bg-transparent border border-gray-700 rounded-lg shadow-sm">
         <thead className="bg-gray-800">
           <tr>
             {selectable && (
-              <th className="py-2 px-4 border-b border-gray-200 text-left text-sm font-semibold text-gray-600">
+              <th className="py-2 px-4 border-b border-gray-700 text-left text-sm font-semibold text-gray-600">
               </th>
             )}
             {visibleColumns.map((key) => (
               <th
                 key={key}
-                className="py-2 px-4 border-b border-gray-200 text-left text-sm font-semibold text-gray-600"
+                className="py-2 px-4 border-b border-gray-700 text-left text-sm font-semibold text-gray-600"
               >
                 {formatTopicName(key)}
               </th>
@@ -71,10 +71,10 @@ export const Table = ({ data, sortKey, selectable = false, onSelectionChange }) 
                 transition={{ type: "spring", stiffness: 70 }}
                 className={`transition-all ${
                   index % 2 === 0 ? "bg-gray-900" : "bg-gray-900"
-                } hover:bg-gray-100`}
+                } hover:bg-gray-800`}
               >
                 {selectable && (
-                  <td className="py-2 px-4 border-b text-left border-gray-800 text-sm text-gray-700">
+                  <td className="py-2 px-4 border-b text-left border-gray-800 text-sm text-gray-500">
                     <input
                       type="checkbox"
                       checked={!!selectedRows[rowId]}
