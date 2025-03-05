@@ -13,6 +13,7 @@ import {
   setAddDiscussion,
   setUpdateDiscussion,
   setPermissions,
+  updateSession,
 } from "../store";
 import toast from "react-hot-toast";
 import { displayToast } from "../components/shared";
@@ -20,6 +21,7 @@ import { useNavigate } from "react-router-dom";
 
 export const useDiscussionSocket = ({
   groupDiscussionId,
+  sessionId,
   events,
   sendMessage,
   currentSpeech,
@@ -124,12 +126,10 @@ export const useDiscussionSocket = ({
     if (events.USER_SESSION) {
       const { userSession, role } = events.USER_SESSION;
       if (userSession) dispatch(setUserSession(userSession));
-      if (role){ 
-        dispatch(setUserRole(role))
-        console.timeEnd("Time")
+      if (role) {
+        dispatch(setUserRole(role));
+        console.timeEnd("Time");
       }
-      
-
     }
   }, [events.USER_SESSION]);
 
@@ -184,6 +184,9 @@ export const useDiscussionSocket = ({
   }, [events.MUTE_ERROR]);
 
   // session
+
+ 
+
   useEffect(() => {
     if (events.START_SESSION_LOADING) {
       displayToast({
@@ -526,7 +529,7 @@ export const useDiscussionSocket = ({
     if (events.PERMISSION_CONTROLS) {
       console.log({ PERMISSION_CONTROLS: events.PERMISSION_CONTROLS });
       dispatch(setPermissions(events.PERMISSION_CONTROLS));
-      console.timeEnd('TimePermission')
+      console.timeEnd("TimePermission");
     }
   }, [events.PERMISSION_CONTROLS]);
 };

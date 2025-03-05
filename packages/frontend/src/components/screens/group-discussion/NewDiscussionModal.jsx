@@ -88,22 +88,38 @@ const SessionSettings = ({
     }));
   };
 
+  const isAnySelected =
+    groupedParticipants["SELECTED"]?.length ||
+    groupedParticipants["REJECTED"]?.length ||
+    groupedParticipants["WAITING_LIST"]?.length;
+
   return (
-    <div className="flex flex-col items-center justify-center h-full p-6 rounded-lg">
-      <h2 className="mb-4 text-xl font-semibold text-left text-gray-500">
-        Show result to
-      </h2>
-      <div className="flex flex-col gap-3 mb-4 mx-4">
-        {PARTICIPANT_CATEGORIES.map(({ id, label }) => (
-          <RenderSpace condition={groupedParticipants[id]?.length > 0}>
-            <Checkbox
-              key={id}
-              label={label}
-              onChange={() => handleChange(id)}
-            />
-          </RenderSpace>
-        ))}
-      </div>
+    <div className="flex flex-col items-center justify-center gap-4 h-full p-6 rounded-lg">
+      {isAnySelected ? (
+        <div>
+          <h2 className="mb-4 text-xl font-semibold text-left text-gray-500">
+            Show result to
+          </h2>
+          <div className="flex flex-col gap-3 mb-4 mx-4">
+            {PARTICIPANT_CATEGORIES.map(({ id, label }) => (
+              <RenderSpace condition={groupedParticipants[id]?.length > 0 && id !== 'NOT_SELECTED'}>
+                <Checkbox
+                  key={id}
+                  label={label}
+                  onChange={() => handleChange(id)}
+                />
+              </RenderSpace>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <p>
+            If nobody is selected,then all are{" "}
+            <span className="text-red-500">Rejected</span>
+            {" "}defaultly.
+          </p>
+      )}
+
       <Button
         label="Create"
         variant="success"
@@ -120,7 +136,7 @@ export const NewDiscussionModal = ({
   handleStatusChange,
   session,
   socket,
-  disabled
+  disabled,
 }) => {
   console.log("render");
   const {
@@ -166,6 +182,8 @@ export const NewDiscussionModal = ({
 
     return grouped;
   }, [participant, participantStatus]);
+
+  console.log({ groupedParticipants });
 
   const handleNavigation = (direction) => {
     const currentIndex = order.indexOf(form);
@@ -240,10 +258,10 @@ export const NewDiscussionModal = ({
     }
   };
 
-  console.log({ disabled})
+  console.log({ disabled });
 
   return (
-    <Modal  disabled={disabled}>
+    <Modal disabled={disabled}>
       <ModalTrigger>Make Another Round</ModalTrigger>
       <ModalContent className="w-full mx-4 items-center">
         <ModalHeader>

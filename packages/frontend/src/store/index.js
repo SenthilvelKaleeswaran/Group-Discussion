@@ -26,11 +26,12 @@ import {
   setUserSession,
   setFeedbackStatus,
   setSelectedParticipants,
+  updateSession
 } from "./session";
 
 export {
   store,
-  updateGroupDiscussion,
+  updateSession,
   fetchGroupDiscussion,
   updateParticipants,
   fetchParticipants,

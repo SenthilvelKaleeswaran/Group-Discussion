@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { THREE_SECOND_TIME_INTERVAL, TIME_INTERVAL } from "../constants";
-import { useMutation, useQuery } from "react-query";
+import { useMutation, useQuery, useQueryClient } from "react-query";
 
 import { useNavigate, useParams } from "react-router";
 import {
@@ -45,12 +45,14 @@ import DiscussionCompletion from "./DiscussionCompletion";
 const signalingServer = "http://localhost:5000";
 
 export const GroupDiscussion = () => {
-  console.time("Time")
-  console.time("TimePermission")
+  console.time("Time");
+  console.time("TimePermission");
   const { id } = useParams();
   const [groupDiscussionId, sessionId] = id.split("-");
   const navigate = useNavigate();
   const userId = localStorage.getItem("userId");
+
+  const queryClient = useQueryClient();
 
   const dispatch = useDispatch();
 
@@ -81,7 +83,7 @@ export const GroupDiscussion = () => {
     isFetching,
     refetch,
   } = useQuery(
-    [`group-discussion-${groupDiscussionId}`, groupDiscussionId],
+    [`group-discussion-${id}`, groupDiscussionId],
     () => getActiveSession(id),
     {
       onSuccess: (data) => {
@@ -96,6 +98,10 @@ export const GroupDiscussion = () => {
       },
     }
   );
+
+  
+
+  console.log({updatedData : data})
 
   const { error: queueError, isLoading: isQueueLoading } = useQuery(
     [`queue-${sessionId}`, sessionId],
@@ -165,7 +171,7 @@ export const GroupDiscussion = () => {
   const isDiscussionRunning =
     data?.status === "NOT_STARTED" || data?.status === "IN_PROGRESS";
 
-  console.log({ data, aaa: !!data, issLoading,userRole, isDiscussionRunning });
+  console.log({ data, aaa: !!data, issLoading, userRole, isDiscussionRunning });
 
   useEffect(() => {
     isListeningRef.current = isListening;
@@ -204,8 +210,19 @@ export const GroupDiscussion = () => {
 
   const player = useAudioPlayer(events);
 
+  useEffect(() => {
+    if (events.UPDATED_SESSION) {
+      console.log({ UPDATED_SESSION: events.UPDATED_SESSION });
+      queryClient.setQueryData([`group-discussion-${id}`,groupDiscussionId], {
+        ...data,
+        ...events.UPDATED_SESSION,
+      });
+    }
+  }, [events.UPDATED_SESSION]);
+
   useDiscussionSocket({
     groupDiscussionId,
+    sessionId,
     events,
     sendMessage,
     currentSpeech,
@@ -372,7 +389,7 @@ export const GroupDiscussion = () => {
       <AiParticipantPopup data={data} socket={socket} sessionId={sessionId} />
       <div className=" w-full flex-1.5 p-8 space-y-2 bg-gray-800 shadow-lg rounded-lg">
         <p className="font-bold">{data?.topic}</p>
-        <DiscussionProgress events={events} />
+        {/* <DiscussionProgress events={events} /> */}
 
         <ConversationCountdown />
         <AudioStreamingComponent
