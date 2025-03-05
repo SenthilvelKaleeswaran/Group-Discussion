@@ -1,47 +1,60 @@
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { ButtonDropdown, PermissionGuard } from "../components/shared";
 import { Button } from "../components/ui";
 import { NewDiscussionModal } from "../components/screens/group-discussion/NewDiscussionModal";
-import { setFeedbackStatus } from "../store";
+import { setFeedbackStatus, setSelectedParticipants } from "../store";
 import { FeedbackTable } from "../components/screens";
 
-// Extracted GenerateFeedbackButton Component
 const GenerateFeedbackButton = React.memo(
-  ({
-    isFeedbackInprogress,
-    feedbackStatus,
-    handleGenerateFeedback,
-    selectedParticipants,
-  }) => {
-    console.log({ selectedParticipants2: selectedParticipants });
+  ({ isFeedbackInprogress, feedbackStatus, socket, sessionId }) => {
     const userId = localStorage.getItem("userId");
+    const selectedParticipants = useSelector(
+      (state) => state.session.selectedParticipants
+    );
+
+    const dispatch = useDispatch()
 
     useEffect(() => {
       console.log({ selectedParticipants5: selectedParticipants });
     }, [selectedParticipants]);
 
-    // const handleGenerateFeedback = ()=>{}
-    const options = [
-      {
-        id: "generate",
-        label: "Generate Feedback for all",
-        onClick: () => handleGenerateFeedback(),
+    const handleGenerateFeedback = useCallback(
+      (data = {}) => {
+        socket.emit("GENERATE_FEEDBACK", { sessionId, ...data });
+        dispatch(setSelectedParticipants([]));
       },
-      {
-        id: "generate_selected",
-        label: `Generate Feedback for selected`,
-        onClick: () => {
-          console.log({
-            selectedParticipants4: selectedParticipants,
-            aaaaaa: this,
-          });
-          handleGenerateFeedback({ selectedParticipants, startedBy: userId });
-        },
+      [selectedParticipants]
+    );
 
-        disabled: selectedParticipants?.length === 0,
-      },
-    ];
+    const options = useMemo(
+      () => [
+        {
+          id: "generate",
+          label: "Generate Feedback for all",
+          onClick: () => handleGenerateFeedback(),
+        },
+        {
+          id: "generate_selected",
+          label: "Generate Feedback for selected",
+          onClick: () =>
+            handleGenerateFeedback({ selectedParticipants, startedBy: userId }),
+          disabled: selectedParticipants?.length === 0,
+        },
+      ],
+      [selectedParticipants, handleGenerateFeedback, userId] // Recreate options when dependencies change
+    );
+
+    // Define defaultLabel with useMemo
+    const defaultLabel = useMemo(
+      () =>
+        feedbackStatus === "SELECTED_IN_PROGRESS"
+          ? "Generating Feedback for selected"
+          : feedbackStatus === "IN_PROGRESS"
+          ? "Generating Feedback"
+          : "Generate Feedback",
+      [feedbackStatus] // Recalculate defaultLabel when feedbackStatus changes
+    );
 
     return (
       <PermissionGuard
@@ -50,13 +63,7 @@ const GenerateFeedbackButton = React.memo(
       >
         <ButtonDropdown
           options={options}
-          defaultLabel={
-            feedbackStatus === "SELECTED_IN_PROGRESS"
-              ? "Generating Feedback for selected"
-              : feedbackStatus === "IN_PROGRESS"
-              ? "Generating Feedback"
-              : "Generate Feedback"
-          }
+          defaultLabel={defaultLabel}
           defaultOption={
             isFeedbackInprogress
               ? "no_id"
@@ -125,7 +132,6 @@ export default function DiscussionCompletion({ data, events, socket }) {
     (state) => state.controls
   );
 
-  const { userSession, queue = {} } = useSelector((state) => state.session);
   const { participants, loading } = useSelector((state) => state.participants);
 
   const {
@@ -135,16 +141,14 @@ export default function DiscussionCompletion({ data, events, socket }) {
     _id: sessionId,
   } = data;
 
-  const { userFeedbackStatus = {}, selectedParticipants } = useSelector(
-    (state) => state.session
-  );
+  const {
+    userFeedbackStatus = {},
+    selectedParticipants,
+    sessionData,
+  } = useSelector((state) => state.session);
 
-  console.log({ selectedParticipants1: selectedParticipants });
+  console.log({ selectedParticipants1: selectedParticipants, sessionData });
 
-  function handleGenerateFeedback() {
-    console.log({ data, selectedParticipants3: selectedParticipants });
-    // socket.emit("GENERATE_FEEDBACK", { sessionId, ...data });
-  }
   const handleDeclareResult = useCallback(() => {
     socket.emit("DECLARE_RESULT", {
       selectedParticipants: userFeedbackStatus,
@@ -160,37 +164,15 @@ export default function DiscussionCompletion({ data, events, socket }) {
   );
 
   const isFeedbackInprogress =
-    feedbackStatus === "SELECTED_IN_PROGRESS" ||
+    feedbackStatus ===
+      "SELECTED_IN_PROGRESS" ||
     feedbackStatus === "IN_PROGRESS";
 
   const isFeedbackCompleted =
-    feedbackStatus === "SELECTED_COMPLETED" || feedbackStatus === "COMPLETED";
+    feedbackStatus === "SELECTED_COMPLETED" ||
+    feedbackStatus === "COMPLETED";
 
   const getButtonStatus = () => isFeedbackInprogress;
-
-  const userId = localStorage.getItem("userId");
-
-  // const handleGenerateFeedback = ()=>{}
-  const options = [
-    {
-      id: "generate",
-      label: "Generate Feedback for all",
-      onClick: () => handleGenerateFeedback(),
-    },
-    {
-      id: "generate_selected",
-      label: `Generate Feedback for selected`,
-      onClick: () => {
-        console.log({
-          selectedParticipants4: [...selectedParticipants],
-          aaaaaa: this,
-        });
-        handleGenerateFeedback();
-      },
-
-      disabled: selectedParticipants?.length === 0,
-    },
-  ];
 
   return (
     <div className="space-y-8">
@@ -213,15 +195,7 @@ export default function DiscussionCompletion({ data, events, socket }) {
               </div>
             )}
 
-            <div className="text-xl font-bold">
-              {feedbackStatus === "COMPLETED"
-                ? "🎉🏆 Feedback Generation Completed! 🏆🎉"
-                : isFeedbackInprogress
-                ? "🌟🏆 Feedback in Progress... 🏆🌟"
-                : status === "COMPLETED"
-                ? "🎊🏆 Discussion Battle Finished! 🏆🎊"
-                : "🔄 Processing... 🔄"}
-            </div>
+            
             <p className="text-sm text-gray-200">
               {feedbackStatus === "COMPLETED"
                 ? "All feedback has been processed successfully. 📊🔍"
@@ -235,30 +209,12 @@ export default function DiscussionCompletion({ data, events, socket }) {
         </div>
 
         {/* Optimized components */}
-        <PermissionGuard
-          field="generateFeedbackButton"
-          condition={!isFeedbackInprogress && feedbackStatus !== "COMPLETED"}
-        >
-          <ButtonDropdown
-            options={options}
-            defaultLabel={
-              feedbackStatus === "SELECTED_IN_PROGRESS"
-                ? "Generating Feedback for selected"
-                : feedbackStatus === "IN_PROGRESS"
-                ? "Generating Feedback"
-                : "Generate Feedback"
-            }
-            defaultOption={
-              isFeedbackInprogress
-                ? "no_id"
-                : selectedParticipants?.length === 0
-                ? "generate"
-                : "generate_selected"
-            }
-            loading={isFeedbackInprogress}
-            disabled={false}
-          />
-        </PermissionGuard>
+        <GenerateFeedbackButton
+          isFeedbackInprogress={isFeedbackInprogress}
+          feedbackStatus={feedbackStatus}
+          socket={socket}
+          sessionId={sessionId}
+        />
 
         <div className="flex gap-4">
           <MakeAnotherRoundButton

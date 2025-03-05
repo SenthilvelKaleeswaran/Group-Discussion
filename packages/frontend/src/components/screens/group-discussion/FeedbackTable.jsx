@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Button, Modal, Table } from "../../ui";
 import { useSelector, useDispatch } from "react-redux";
-import { displayToast, Loader } from "../../shared";
+import { displayToast, Loader, RenderSpace } from "../../shared";
 import { CreateDiscussion } from "../../../screens";
 import { NewDiscussionModal } from "./NewDiscussionModal";
 import { setFeedbackStatus, setSelectedParticipants } from "../../../store";
@@ -89,12 +89,12 @@ export function FeedbackTable({
     (state) => state.conversation
   );
 
-  const { userFeedbackStatus = {} } = useSelector((state) => state.session);
+  const { userFeedbackStatus = {},selectedParticipants=[] } = useSelector((state) => state.session);
 
   console.log({ userFeedbackStatus });
 
   const onSelectionChange = (data) => {
-    console.log({selectedParticipants : data,icame : 'icame'})
+    console.log({ selectedParticipants: data, icame: "icame" });
     dispatch(setSelectedParticipants(data));
   };
 
@@ -102,39 +102,34 @@ export function FeedbackTable({
     dispatch(setFeedbackStatus({ userId, newStatus: status }));
   };
 
-  const { status, feedbackStatus = "" } = session;
+  const { status, feedbackStatus = "", feedbackSelectedParticipant } = session;
 
   const isFeedbackInprogress =
     feedbackStatus === "SELECTED_IN_PROGRESS" ||
     feedbackStatus === "IN_PROGRESS";
 
-  const getCheckStatus = () => {
-    return feedbackStatus === "SELECTED_COMPLETED" || feedbackStatus !== "COMPLETED" || isFeedbackInprogress 
-  }
+   
+  const highlightedRows = isFeedbackInprogress
+    ? feedbackSelectedParticipant?.[feedbackSelectedParticipant?.length - 1]
+        ?.participants
+    : []
+  
+    console.log({feedbackSelectedParticipant})
 
-  const getButtonStatus = () => {
-    return isFeedbackInprogress;
-  };
+  console.log({ feedbackSelectedParticipant ,highlightedRows});
 
-  // Handle "Declare Result"
-  const handleDeclareResult = () => {
-    // if (selectedIds.length === 0) {
-    //   displayToast({
-    //     data: { error: "No participants selected to declare the result." },
-    //   });
-    //   return;
-    // }
-
-    socket.emit("DECLARE_RESULT", {
-      selectedParticipants: userFeedbackStatus,
-      sessionId,
-    });
-  };
+  const feedbackSelectedParticipantList = feedbackSelectedParticipant
+    ?.map((_) => _?.participants)
+    .flat();
 
   const discussionScore = useMemo(
     () => calculateOverallScore(discussion, userPoints),
     [discussion, userPoints]
   );
+
+  const getValue = (data, current, total) => {
+    return `${data[current] || 0} / ${data[total] || 0}`;
+  };
 
   const getTableData = useCallback(() => {
     if (loading || !userPoints) return [];
@@ -144,78 +139,90 @@ export function FeedbackTable({
       ...(aiParticipants || []),
     ];
 
-    const getValue = (data, current, total) => {
-      console.log({ data, current, total });
-      if (feedbackStatus === "NOT_STARTED") {
-        return data[total] || 0;
-      }
-      return `${data[current] || 0} / ${data[total] || 0}`;
-    };
+    console.log({ users });
 
-    return users.map((item) => {
-      const userId = item?.userId || item?._id;
-      const userPointData = userPoints[userId] || {};
-      const discussionScoreValue = Number(
-        (discussionScore[userId] || 0).toFixed(2)
-      );
-      const feedbackScoreValue = Number(
-        evaluateMetrics(item?.feedback || {}) || 0
-      );
+    // Separate selected and not selected users in one iteration
+    const { selectedList, notSelectedList } = users.reduce(
+      (acc, item) => {
+        const userId = item?.userId || item?._id;
+        const userPointData = userPoints[userId] || {};
+        const initialStatus = userFeedbackStatus[userId] || null;
+        const discussionScoreValue = Number(
+          (discussionScore[userId] || 0).toFixed(2)
+        );
+        const feedbackScoreValue = Number(
+          evaluateMetrics(item?.feedback || {}) || 0
+        );
+        const totalScore = Number(
+          (discussionScoreValue + feedbackScoreValue).toFixed(2)
+        );
+        const isSelected = feedbackSelectedParticipantList?.includes(item?._id);
 
-      const initialStatus = userFeedbackStatus[userId] || null;
+        const commonData = {
+          _id: { display: false, value: item?._id },
+          userId: { display: false, value: userId },
+          name: { value: item?.name },
+          totalDiscussionPoints: {
+            value: getValue(userPointData, "feedback", "points"),
+          },
+          conclusionPoints: {
+            value: getValue(
+              userPointData,
+              "conclusionFeedback",
+              "conclusionPoints"
+            ),
+          },
+        };
 
-      return {
-        _id: { display: false, value: item?._id },
-        userId: { display: false, value: userId },
-        name: { value: item?.name },
-        totalDiscussionPoints: {
-          value: getValue(userPointData, "feedback", "points"),
-        },
-        conclusionPoints: {
-          value: getValue(
-            userPointData,
-            "conclusionFeedback",
-            "conclusionPoints"
-          ),
-        },
-        totalPoints: {
-          value:
-            getValue(userPointData, "feedback", "points") +
-            getValue(userPointData, "conclusionFeedback", "conclusionPoints"),
-          display: feedbackStatus === "NOT_STARTED",
-        },
-        discussionScore: {
-          value: discussionScoreValue,
-          display: feedbackStatus !== "NOT_STARTED",
-        },
-        performanceFeedback: {
-          value: !isFalsyObject(
-            participants?.participant?.find((_) => _?.userId === item?.userId)
-              ?.feedback
-          )
-            ? "✅"
-            : "❌",
-          display: feedbackStatus !== "NOT_STARTED",
-        },
-        feedbackScore: {
-          value: feedbackScoreValue,
-          display: feedbackStatus !== "NOT_STARTED",
-        },
-        totalScore: {
-          value: Number((discussionScoreValue + feedbackScoreValue).toFixed(2)),
-          display: feedbackStatus !== "NOT_STARTED",
-        },
-        actions: {
-          value: (
-            <Actions
-              userId={userId}
-              updateUserStatus={updateUserStatus}
-              initialStatus={initialStatus}
-            />
-          ),
-        },
-      };
-    });
+        if (isSelected) {
+          acc.selectedList.push({
+            ...commonData,
+            discussionScore: { value: discussionScoreValue },
+            performanceFeedback: {
+              value: participants?.participant?.some(
+                (p) => p?.userId === item?.userId && p?.feedback
+              )
+                ? "✅"
+                : "❌",
+            },
+            feedbackScore: { value: feedbackScoreValue },
+            totalScore: { value: totalScore },
+            actions: {
+              value: (
+                <Actions
+                  userId={userId}
+                  updateUserStatus={updateUserStatus}
+                  initialStatus={initialStatus}
+                />
+              ),
+            },
+          });
+        } else {
+          acc.notSelectedList.push({
+            ...commonData,
+            totalPoints: {
+              value:
+                (userPointData["points"] || 0) +
+                (userPointData["conclusionPoints"] || 0),
+            },
+            actions: {
+              value: (
+                <Actions
+                  userId={userId}
+                  updateUserStatus={updateUserStatus}
+                  initialStatus={initialStatus}
+                />
+              ),
+            },
+          });
+        }
+
+        return acc;
+      },
+      { selectedList: [], notSelectedList: [] }
+    );
+
+    return { selectedList, notSelectedList };
   }, [
     participants?.participant,
     aiParticipants,
@@ -223,44 +230,55 @@ export function FeedbackTable({
     userPoints,
     discussionScore,
     userFeedbackStatus,
+    session,
   ]);
 
   const [data, setData] = useState([]);
+
+  console.log({ updatedhighlightedRows: highlightedRows });
 
   useEffect(() => {
     setData(getTableData());
   }, [getTableData]);
 
-  if (loading || participants?.length === 0) return <Loader />;
+  if (loading || participants?.length === 0) return <div className="h-24 bg-gray-900 rounded-md place-content-center place-items-center"><Loader /></div> 
 
   console.log({ data, userFeedbackStatus, aiParticipants });
 
   return (
-    <div className="space-y-4 rounded-lg">
-      <Table
-        data={data}
-        sortKey={
-          feedbackStatus === "NOT_STARTED" ? "totalPoints" : "totalScore"
-        }
-        selectable={getCheckStatus()}
-        onSelectionChange={onSelectionChange}
-      />
-      {/* <div className="flex gap-4 items-center justify-center">
-        <NewDiscussionModal
-          participant={participants?.participant}
-          participantStatus={userFeedbackStatus}
-          handleStatusChange={updateUserStatus}
-          aiParticipants={aiParticipants}
-          session={session}
-          socket={socket}
-          disabled={getButtonStatus()}
-        />
-        <Button
-          label="Declare Result"
-          onClick={handleDeclareResult}
-          disabled={getButtonStatus()}
-        />
-      </div> */}
+    <div className="space-y-8 rounded-lg">
+      <RenderSpace condition={data?.selectedList?.length}>
+        <div className="bg-gray-900 p-4 rounded-md space-y-4">
+          <RenderSpace condition={data?.notSelectedList?.length}>
+            {isFeedbackInprogress ? (
+              <Loader text="Feedback Generating...." />
+            ) : (
+              <p className="text-left text-base">Feedback generated</p>
+            )}
+          </RenderSpace>
+          <Table
+            data={data?.selectedList}
+            sortKey={"totalScore"}
+            highlightedRows={highlightedRows}
+          />
+        </div>
+      </RenderSpace>
+
+      <RenderSpace condition={data?.notSelectedList?.length}>
+        <div className="bg-gray-900 p-4 rounded-md space-y-4">
+          <RenderSpace condition={data?.selectedList?.length}>
+            <p className="text-left text-base">Feedback Not Generated</p>
+          </RenderSpace>
+
+          <Table
+            data={data?.notSelectedList}
+            sortKey={"totalPoints"}
+            selectable
+            onSelectionChange={onSelectionChange}
+            selectedRows= {selectedParticipants}
+          />
+        </div>
+      </RenderSpace>
     </div>
   );
 }

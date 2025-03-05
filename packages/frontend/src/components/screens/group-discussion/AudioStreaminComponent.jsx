@@ -37,55 +37,53 @@ export const AudioStreamingComponent = ({
 
   const isMuted = mutedUsers?.includes(userId);
 
-  if(isCompleted){
-    return(
-      <div>Completed</div>
-    )
+  if(!isCompleted){
+    return (
+      <div className="p-8">
+        <h2>Video Conference</h2>
+  
+        <video
+          ref={localVideoRef}
+          autoPlay
+          playsInline
+          muted={isMuted || muteInitialLoad}
+          style={{ width: "100px", border: "2px solid black" }}
+        />
+        <p>User: {userId}</p>
+  
+        <RenderSpace condition={!muteInitialLoad}>
+          <Button
+            onClick={() => toggleMute(userId, !isMuted)}
+            label={
+              mutingList?.includes(userId)
+                ? "Loading..."
+                : isMuted
+                ? "Unmute Myself"
+                : "Mute Myself"
+            }
+            disabled={mutingList?.includes(userId) || muteInitialLoad}
+          />
+        </RenderSpace>
+  
+        <div className="p-4">
+          <h3>Remote Streams</h3>
+          {remoteStreams.map(({ socketId, stream, userId }) => (
+            <RemoteVideo
+              key={socketId}
+              stream={stream}
+              userId={userId}
+              mutedUsers={mutedUsers}
+              toggleMute={toggleMute}
+              muteInitialLoad={muteInitialLoad}
+              mutingList={mutingList}
+            />
+          ))}
+        </div>
+      </div>
+    );
   }
 
-  return (
-    <div className="p-8">
-      <h2>Video Conference</h2>
-
-      <video
-        ref={localVideoRef}
-        autoPlay
-        playsInline
-        muted={isMuted || muteInitialLoad}
-        style={{ width: "100px", border: "2px solid black" }}
-      />
-      <p>User: {userId}</p>
-
-      <RenderSpace condition={!muteInitialLoad}>
-        <Button
-          onClick={() => toggleMute(userId, !isMuted)}
-          label={
-            mutingList?.includes(userId)
-              ? "Loading..."
-              : isMuted
-              ? "Unmute Myself"
-              : "Mute Myself"
-          }
-          disabled={mutingList?.includes(userId) || muteInitialLoad}
-        />
-      </RenderSpace>
-
-      <div className="p-4">
-        <h3>Remote Streams</h3>
-        {remoteStreams.map(({ socketId, stream, userId }) => (
-          <RemoteVideo
-            key={socketId}
-            stream={stream}
-            userId={userId}
-            mutedUsers={mutedUsers}
-            toggleMute={toggleMute}
-            muteInitialLoad={muteInitialLoad}
-            mutingList={mutingList}
-          />
-        ))}
-      </div>
-    </div>
-  );
+ 
 };
 
 const RemoteVideo = ({

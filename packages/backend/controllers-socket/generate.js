@@ -36,7 +36,7 @@ const generateFeedback = async ({
   try {
     io.to(sessionId).emit("FEEDBACK_LOADING", "Generating Feedback");
 
-    console.log({ sessionId,startedBy,selectedParticipants });
+    console.log({ sessionId, startedBy, selectedParticipants });
     const session = await Session.findOne({ _id: sessionId });
 
     const conversation = await Conversation.aggregate([
@@ -107,15 +107,20 @@ const generateFeedback = async ({
     }
 
     if (selectedParticipants?.length > 0) {
-      session.feedbackSelectedParticipant = {
+      session.feedbackSelectedParticipant.push({
         participants: selectedParticipants,
         startedBy,
-      };
+      });
     }
 
     session.feedbackStatus =
       selectedParticipants?.length > 0 ? "SELECTED_IN_PROGRESS" : "IN_PROGRESS";
     await session.save();
+
+    io.to(sessionId).emit("UPDATED_SESSION", {
+      feedbackStatus: session.feedbackStatus,
+      feedbackSelectedParticipant: session.feedbackSelectedParticipant,
+    });
 
     const {
       topic,
@@ -364,34 +369,42 @@ const generateFeedback = async ({
         (session?.feedbackSelectedParticipant || [])
           ?.map((_) => _?.participants)
           .flat()
+          ?.map((_) => _.toString())
       ),
     ];
 
-    console.log({feedbackSelectedParticipant})
+    console.log({ feedbackSelectedParticipant });
 
-    const participantList = participants?.participant?.keys();
+    const participantList = [...participants?.participant?.values()]?.map((_) =>
+      _?._id?.toString()
+    );
 
-    console.log({participantList})
+    console.log({ participantList });
     let status = "COMPLETED";
 
     if (selectedParticipants?.length !== 0) {
       if (participantList?.length > feedbackSelectedParticipant?.length) {
-        status = `SELECTED_${status}`
+        status = `SELECTED_${status}`;
       } else {
-        status = participantList?.participant?.every((key) =>
-          feedbackSelectedParticipant?.includes(key)
-        )
+        status = participantList?.every((key) => feedbackSelectedParticipant?.includes(key))
           ? status
-          : `SELECTED_${status}`
+          : `SELECTED_${status}`;
       }
     }
 
-    console.log({status})
+    console.log({ status });
 
     session.feedbackStatus = status;
     await session.save();
 
-    console.log({finlSession : session})
+    setTimeout(() => {
+      console.log({ sttusssss: status });
+      io.to(sessionId).emit("UPDATED_SESSION", {
+        feedbackStatus: status,
+      });
+    }, 1000);
+
+    console.log({ finlSession: session });
   } catch (error) {
     console.error("Error generating feedback:", error);
     return;

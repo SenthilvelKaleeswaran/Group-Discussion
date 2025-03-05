@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { getActiveSession, getConversation } from "../utils/api-call";
 
-// Fetch group discussion by ID
+// Fetch group sessionData by ID
 export const fetchSessionQueue = createAsyncThunk(
   "groupDiscussions/fetchSessionQueue",
   async (groupDiscussionId, { rejectWithValue }) => {
@@ -19,22 +19,22 @@ export const fetchSessionQueue = createAsyncThunk(
 const sessionSlice = createSlice({
   name: "session", // Renamed slice for clarity
   initialState: {
-    discussion: {},
+    sessionData: {},
     queue: {
       done: [],
       inProgress: {},
       notStarted: [],
     },
-    userSession : {},
-    userFeedbackStatus : {},
-    selectedParticipants : [],
+    userSession: {},
+    userFeedbackStatus: {},
+    selectedParticipants: [],
     globalOrder: 0,
     loading: false,
     error: null,
   },
   reducers: {
     updateSession: (state, action) => {
-      state.discussion = action.payload;
+      state.sessionData = { ...state.sessionData, ...action.payload };
     },
     setDiscussionQueue: (state, action) => {
       const { queue = [], globalOrder = 0 } = action.payload;
@@ -45,12 +45,14 @@ const sessionSlice = createSlice({
       const notStarted = sorted?.slice(globalOrder) || [];
 
       const inProgress =
-        done.length > 0 && done[done.length - 1]?.status === "IN_PROGRESS" 
+        done.length > 0 && done[done.length - 1]?.status === "IN_PROGRESS"
           ? done.pop()
-          : notStarted?.length > 0 && notStarted[0]?.status === "IN_PROGRESS" ? notStarted.shift() : {}
+          : notStarted?.length > 0 && notStarted[0]?.status === "IN_PROGRESS"
+          ? notStarted.shift()
+          : {};
 
       state.queue = {
-        done : done.reverse(),
+        done: done.reverse(),
         notStarted,
         inProgress,
       };
@@ -59,14 +61,14 @@ const sessionSlice = createSlice({
     },
     setUserSession: (state, action) => {
       const { userStatus } = action.payload;
-    
+
       if (userStatus) {
         state.userSession = {
-          ...state.userSession, 
-          userStatus, 
+          ...state.userSession,
+          userStatus,
         };
       } else {
-        state.userSession = action.payload; 
+        state.userSession = action.payload;
       }
     },
     setFeedbackStatus: (state, action) => {
@@ -77,12 +79,11 @@ const sessionSlice = createSlice({
         state.userFeedbackStatus[userId] = newStatus;
       }
     },
-    setSelectedParticipants : (state, action) => {
-      console.log({selectedParticipantspayload :action.payload })
-      state.selectedParticipants = [...action.payload]
+    setSelectedParticipants: (state, action) => {
+      console.log({ selectedParticipantspayload: action.payload });
+      state.selectedParticipants = action.payload
     },
-    
-  }, 
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchSessionQueue.pending, (state) => {
@@ -92,7 +93,7 @@ const sessionSlice = createSlice({
       .addCase(fetchSessionQueue.fulfilled, (state, action) => {
         state.loading = false;
         console.log({ action });
-        state.discussion = action.payload; // Fix key to match initial state
+        state.sessionData = action.payload; // Fix key to match initial state
       })
       .addCase(fetchSessionQueue.rejected, (state, action) => {
         state.loading = false;
@@ -101,7 +102,12 @@ const sessionSlice = createSlice({
   },
 });
 
-export const { updateGroupDiscussion, setDiscussionQueue,setUserSession,setFeedbackStatus,setSelectedParticipants } =
-  sessionSlice.actions;
+export const {
+  setDiscussionQueue,
+  setUserSession,
+  setFeedbackStatus,
+  setSelectedParticipants,
+  updateSession,
+} = sessionSlice.actions;
 
 export default sessionSlice.reducer;

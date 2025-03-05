@@ -21,54 +21,40 @@ export const ButtonIcon = ({
   );
 };
 
+
 export const ButtonDropdown = ({
   options = [],
   defaultLabel = "Select",
   defaultOption = "",
   className,
   disabled,
-  loading = true,
+  loading = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-
   const [selectedOption, setSelectedOption] = useState(null);
   const buttonRef = useRef(null);
   const [dropdownWidth, setDropdownWidth] = useState("auto");
 
-  console.log({ buttonRef });
-
-  const getDefaultOption = () => {
-    let option = null;
-    if (!disabled || defaultOption !== "no_id") {
-      if (!defaultOption) {
-        option = options[0];
-      } else {
-        option = options?.find((_) => _?.id === defaultOption);
-      }
-    }
-
-    setSelectedOption(option);
-  };
-
   useEffect(() => {
-    getDefaultOption();
-  }, [defaultOption, disabled]);
+    const newSelectedOption =
+      defaultOption !== "no_id"
+        ? options.find((option) => option.id === defaultOption) || options[0]
+        : null;
+    setSelectedOption(newSelectedOption);
+  }, [options, defaultOption]);
 
   useEffect(() => {
     if (buttonRef.current) {
-      console.log({ bbbbbbbb: buttonRef.current.offsetWidth });
       setDropdownWidth(`${buttonRef.current.offsetWidth}px`);
     }
   }, [isOpen, selectedOption]);
 
   const handleOptionClick = (option) => {
-    if (option.disabled || disabled) return; // Prevent closing when selecting a disabled option
+    if (option.disabled || disabled) return;
     setSelectedOption(option);
+    option.onClick(); 
     setIsOpen(false);
-    option.onClick && option.onClick(); // Execute onClick if provided
   };
-
-  console.log({ options, selectedOption });
 
   return (
     <div className="relative inline-block">
@@ -77,28 +63,23 @@ export const ButtonDropdown = ({
         ref={buttonRef}
       >
         <Button
-          onClick={() => selectedOption?.onClick()}
+          onClick={() => selectedOption?.onClick?.()} // Optional chaining to handle null
           className={`flex items-center justify-between rounded-r-none gap-2 ${className}`}
-          disabled={disabled || loading}
+          disabled={disabled || loading || !selectedOption} // Disable if no option
         >
           <p>{selectedOption?.label || defaultLabel}</p>
         </Button>
-        <Button
-          ref={buttonRef}
-          onClick={() => setIsOpen((prev) => !prev)}
-          disabled={loading}
-        >
+        <Button onClick={() => setIsOpen((prev) => !prev)} disabled={loading}>
           <Icon
             name={loading ? "Loader" : isOpen ? "ChevronUp" : "ChevronDown"}
-            className={` ${loading ? "animate-spin" : ""}`}
+            className={loading ? "animate-spin" : ""}
           />
         </Button>
       </div>
-
       {isOpen && (
         <div
           className="absolute left-0 mt-2 bg-blue-500 border shadow-lg z-10 min-w-48 p-2"
-          style={{ width: dropdownWidth }} // Set dropdown width to match button
+          style={{ width: dropdownWidth }}
         >
           {options.map((option) => (
             <button
@@ -107,7 +88,7 @@ export const ButtonDropdown = ({
                 option.disabled
                   ? "text-gray-400 cursor-not-allowed"
                   : "hover:bg-blue-400"
-              } ${option.className || ""}`}
+              }`}
               onClick={() => handleOptionClick(option)}
               disabled={option.disabled}
             >
