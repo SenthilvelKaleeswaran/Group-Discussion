@@ -499,9 +499,9 @@ export const useDiscussionSocket = ({
       const { newSession } = events.NEXT_ROUND_SWITCH;
 
       if (newSession) {
-        // navigate(`/gd/${groupDiscussionId}-${newSession}`, {
-        //   replace: true,
-        // });
+        navigate(`/gd/${groupDiscussionId}-${newSession}`, {
+          replace: true,
+        });
 
         displayToast({
           id: "NEXT_ROUND_SWITCH",
@@ -511,6 +511,14 @@ export const useDiscussionSocket = ({
       }
     }
   }, [events.NEXT_ROUND_SWITCH]);
+
+  useEffect(() => {
+    if (events.NEXT_ROUND_STAY) {
+      const { displayResult } = events.NEXT_ROUND_STAY;
+
+      
+    }
+  }, [events.NEXT_ROUND_STAY]);
 
   useEffect(() => {
     if (events.NEXT_ROUND_ERROR) {

@@ -13,7 +13,7 @@ const GenerateFeedbackButton = React.memo(
       (state) => state.session.selectedParticipants
     );
 
-    const dispatch = useDispatch()
+    const dispatch = useDispatch();
 
     useEffect(() => {
       console.log({ selectedParticipants5: selectedParticipants });
@@ -164,13 +164,11 @@ export default function DiscussionCompletion({ data, events, socket }) {
   );
 
   const isFeedbackInprogress =
-    feedbackStatus ===
-      "SELECTED_IN_PROGRESS" ||
+    feedbackStatus === "SELECTED_IN_PROGRESS" ||
     feedbackStatus === "IN_PROGRESS";
 
   const isFeedbackCompleted =
-    feedbackStatus === "SELECTED_COMPLETED" ||
-    feedbackStatus === "COMPLETED";
+    feedbackStatus === "SELECTED_COMPLETED" || feedbackStatus === "COMPLETED";
 
   const getButtonStatus = () => isFeedbackInprogress;
 
@@ -178,7 +176,9 @@ export default function DiscussionCompletion({ data, events, socket }) {
     <div className="space-y-8">
       <div className="flex flex-col items-center justify-center bg-gray-900 p-8 rounded-lg shadow-2xl border border-gray-800 space-y-6 text-center">
         <h2 className="text-2xl font-bold text-yellow-400">
-          {feedbackStatus === "COMPLETED"
+          {feedbackStatus === ""
+            ? "You are rejected"
+            : feedbackStatus === "COMPLETED"
             ? `🎉🏆 Feedback Generation Completed! 🏆🎉`
             : isFeedbackInprogress
             ? `🌟🏆 Feedback Generation in Progress... 🏆🌟`
@@ -195,7 +195,6 @@ export default function DiscussionCompletion({ data, events, socket }) {
               </div>
             )}
 
-            
             <p className="text-sm text-gray-200">
               {feedbackStatus === "COMPLETED"
                 ? "All feedback has been processed successfully. 📊🔍"
