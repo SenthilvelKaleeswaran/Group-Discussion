@@ -28,6 +28,7 @@ const nextRound = async ({
   discussionDetails,
   userId,
   sessionId,
+  ...rest
 }) => {
   try {
     io.to(sessionId).emit("NEXT_ROUND_LOADING", {
@@ -51,16 +52,15 @@ const nextRound = async ({
       updatedAt,
       globalOrder,
       queue,
-      ...rest
+      ...restData
     } = session.toObject();
 
     console.log({ discussionDetails, rest });
 
-
     const { displayResult, restDiscussionDetails } = discussionDetails;
 
     const newSession = new Session({
-      ...rest,
+      ...restData,
       ...restDiscussionDetails,
       switchedFrom: sessionId,
       status: "NOT_STARTED",
@@ -74,12 +74,14 @@ const nextRound = async ({
     const newId = newSession._id;
 
     session.switchedTo = newId;
-    session.status = "COMPLETED";
+    session.status = "DECLARED";
     session.displayResult = displayResult;
 
-    console.log({ session });
+
+    console.log({ session,newSession });
 
     await session.save();
+    await new Participant({ sessionId: newId.toString() }).save();
 
     const participant = await Participant.findOne({ sessionId });
     if (!participant) {
@@ -88,26 +90,73 @@ const nextRound = async ({
 
     const { participant: participantList } = participant;
 
+    const grouppedParticipants = {
+      SELECTED: [],
+      WAITING_LIST: [],
+      REJECTED: [],
+    };
+
     // Iterate over the participantList and update statuses
     participantList.forEach((data, userId) => {
       console.log({ userId, data });
-      if (selectedParticipants[userId]) {
-        data.participantSatus = selectedParticipants[userId];
-        if (selectedParticipants[userId] === "SELECTED") {
-          data.switchedTo = newId;
-        }
-      } else {
-        data.participantSatus = "REJECTED";
-      }
+      const status = selectedParticipants[userId] || "REJECTED";
+
+      data.participantSatus = status;
+      if (status === "SELECTED") data.switchedTo = newId;
+
+      grouppedParticipants[status].push(data?.socketId);
     });
 
-    console.log({ participantList });
-
-    // Save the updated participant list
+    console.log({ participantList, grouppedParticipants });
 
     await participant.save();
 
-    io.to(sessionId).emit("NEXT_ROUND_SWITCH", { newSession: newId,displayResult,participant });
+    if (rest.switchNow) {
+      const admins = Array.from(participant.admin.values()).map(
+        (p) => p.socketId
+      );
+      const moderators = Array.from(participant.moderator.values()).map(
+        (p) => p.socketId
+      );
+      const listeners = Array.from(participant.listener.values()).map(
+        (p) => p.socketId
+      );
+      const selectedUsers = grouppedParticipants["SELECTED"];
+
+      const usersToMove = [
+        ...admins,
+        ...moderators,
+        ...listeners,
+        ...selectedUsers,
+      ];
+
+      console.log({
+        admins,
+        moderators,
+        listeners,
+        selectedUsers,
+        usersToMove,
+      });
+
+      await Promise.all(
+        usersToMove.map((socketId) =>
+          io.to(socketId).emit("NEXT_ROUND_SWITCH", { newSession: newId })
+        )
+      );
+
+      await Promise.all(
+        usersToMove.map((socketId) =>
+          io.sockets.sockets.get(socketId)?.leave(sessionId)
+        )
+      );
+    }
+    io.to(sessionId).emit("UPDATED_SESSION", { displayResult,status : "DECLARED" });
+
+    // io.to(sessionId).emit("NEXT_ROUND_SWITCH", {
+    //   newSession: newId,
+    //   displayResult,
+    //   participant,
+    // });
   } catch (error) {
     console.error("Error in nextRound:", error.message);
     io.to(sessionId).emit("NEXT_ROUND_ERROR", { error: error.message });

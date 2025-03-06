@@ -78,6 +78,7 @@ const SessionSettings = ({
   groupedParticipants,
   setDiscussionDetails,
   handleMakeAnotherRound,
+  displayResult,
 }) => {
   const handleChange = (id) => {
     setDiscussionDetails((prev) => ({
@@ -94,32 +95,22 @@ const SessionSettings = ({
     groupedParticipants["WAITING_LIST"]?.length;
 
   return (
-    <div className="flex flex-col items-center justify-center gap-4 h-full p-6 rounded-lg">
-      {isAnySelected ? (
-        <div>
-          <h2 className="mb-4 text-xl font-semibold text-left text-gray-500">
-            Show result to
-          </h2>
-          <div className="flex flex-col gap-3 mb-4 mx-4">
-            {PARTICIPANT_CATEGORIES.map(({ id, label }) => (
-              <RenderSpace condition={groupedParticipants[id]?.length > 0 && id !== 'NOT_SELECTED'}>
-                <Checkbox
-                  key={id}
-                  label={label}
-                  onChange={() => handleChange(id)}
-                />
-              </RenderSpace>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <p>
-            If nobody is selected,then all are{" "}
-            <span className="text-red-500">Rejected</span>
-            {" "}defaultly.
-          </p>
-      )}
-
+    <div className="flex flex-col items-center justify-center h-full p-6 rounded-lg">
+      <h2 className="mb-4 text-xl font-semibold text-left text-gray-500">
+        Show result to
+      </h2>
+      <div className="flex flex-col gap-3 mb-4 mx-4">
+        {PARTICIPANT_CATEGORIES.map(({ id, label }) => (
+          <RenderSpace condition={groupedParticipants[id]?.length > 0}>
+            <Checkbox
+              key={id}
+              label={label}
+              onChange={() => handleChange(id)}
+              checked={displayResult?.includes(id)}
+            />
+          </RenderSpace>
+        ))}
+      </div>
       <Button
         label="Create"
         variant="success"
@@ -150,24 +141,6 @@ export const NewDiscussionModal = ({
     handleModelsChange,
   } = useDiscussionForm({ data: session });
 
-  const handleMakeAnotherRound = () => {
-    // if (selectedIds.length === 0) {
-    //   displayToast({
-    //     data: { error: "Select participants for the next round." },
-    //   });
-    //   return;
-    // }
-
-    const { _id, ...rest } = discussionDetails;
-
-    socket.emit("NEXT_ROUND", {
-      selectedParticipants: participantStatus,
-      discussionDetails: rest,
-      sessionId: session?._id,
-      type: "ANOTHER",
-    });
-  };
-
   console.log({ form, discussionDetails });
 
   const groupedParticipants = useMemo(() => {
@@ -183,7 +156,30 @@ export const NewDiscussionModal = ({
     return grouped;
   }, [participant, participantStatus]);
 
-  console.log({ groupedParticipants });
+  const handleMakeAnotherRound = () => {
+    // if (selectedIds.length === 0) {
+    //   displayToast({
+    //     data: { error: "Select participants for the next round." },
+    //   });
+    //   return;
+    // }
+
+    const { _id, ...rest } = discussionDetails;
+
+    rest?.displayResult?.filter((_) => {
+      if (groupedParticipants[_]?.length) {
+        return _;
+      }
+    });
+
+    socket.emit("NEXT_ROUND", {
+      selectedParticipants: participantStatus,
+      switchNow : true,
+      discussionDetails: rest,
+      sessionId: session?._id,
+      type: "ANOTHER",
+    });
+  };
 
   const handleNavigation = (direction) => {
     const currentIndex = order.indexOf(form);
@@ -253,12 +249,13 @@ export const NewDiscussionModal = ({
             groupedParticipants={groupedParticipants}
             setDiscussionDetails={setDiscussionDetails}
             handleMakeAnotherRound={handleMakeAnotherRound}
+            displayResult={discussionDetails?.displayResult}
           />
         );
     }
   };
 
-  console.log({ disabled });
+  console.log({ discussionDetails });
 
   return (
     <Modal disabled={disabled}>
