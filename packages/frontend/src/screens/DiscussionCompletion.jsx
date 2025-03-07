@@ -132,7 +132,9 @@ export default function DiscussionCompletion({ data, events, socket }) {
     (state) => state.controls
   );
 
-  const { participants, loading } = useSelector((state) => state.participants);
+  const { participants, loading, userSession } = useSelector(
+    (state) => state.participants
+  );
 
   const {
     status = "",
@@ -145,6 +147,8 @@ export default function DiscussionCompletion({ data, events, socket }) {
     userFeedbackStatus = {},
     selectedParticipants,
     sessionData,
+    displayResult,
+    displayFeedbackGenerationStatus = [],
   } = useSelector((state) => state.session);
 
   console.log({ selectedParticipants1: selectedParticipants, sessionData });
@@ -172,68 +176,117 @@ export default function DiscussionCompletion({ data, events, socket }) {
 
   const getButtonStatus = () => isFeedbackInprogress;
 
+  const getResultDeclaredData = () => {
+    const status = userSession?.result;
+    const showResult = displayResult?.incluedes(status);
+
+    let data = { topic: "", subTopic: "" };
+
+    if (showResult) {
+      if (userRole === "participant") {
+        data = {
+          topic: "Thank you prticipating",
+          subTopic: "The team will contact you. Once they realee the result",
+        };
+      } else {
+        data = {
+          topic: "The result  declred",
+          subTopic: "The result got declared",
+        };
+      }
+    }
+
+    return data;
+  };
+
+  const getDisplayData = () => {
+    const showStatus = [];
+   
+
+    if (feedbackStatus === "COMPLETED") {
+      if (userRole === "participant") {
+        return {
+          content: "🎉🏆 Feedback Generation Completed! 🏆🎉",
+          subContent: "",
+        };
+      }
+    } else if (feedbackStatus === "DECLARED") {
+    } else if (feedbackStatus === "HOLDED") {
+    }
+  };
+
+  const declarationSection = getResultDeclaredData();
+
   return (
     <div className="space-y-8">
-      <div className="flex flex-col items-center justify-center bg-gray-900 p-8 rounded-lg shadow-2xl border border-gray-800 space-y-6 text-center">
-        <h2 className="text-2xl font-bold text-yellow-400">
-          {feedbackStatus === ""
-            ? "You are rejected"
-            : feedbackStatus === "COMPLETED"
-            ? `🎉🏆 Feedback Generation Completed! 🏆🎉`
-            : isFeedbackInprogress
-            ? `🌟🏆 Feedback Generation in Progress... 🏆🌟`
-            : status === "COMPLETED"
-            ? `🎊🏆 Discussion Battle Finished! 🏆🎊`
-            : `🔄 Processing... 🔄`}
-        </h2>
+      {feedbackStatus === "DECLARED" ? (
+        <div className="space-y-4">
+          <p>{declarationSection?.topic}</p>
+          <p>{declarationSection?.subTopic}</p>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center bg-gray-900 p-8 rounded-lg shadow-2xl border border-gray-800 space-y-6 text-center">
+          <h2 className="text-2xl font-bold text-yellow-400">
+            {feedbackStatus === "DECLARED"
+              ? "You are rejected"
+              : feedbackStatus === "COMPLETED"
+              ? `🎉🏆 Feedback Generation Completed! 🏆🎉`
+              : isFeedbackInprogress
+              ? `🌟🏆 Feedback Generation in Progress... 🏆🌟`
+              : status === "COMPLETED"
+              ? `🎊🏆 Discussion Battle Finished! 🏆🎊`
+              : `🔄 Processing... 🔄`}
+          </h2>
 
-        <div className="flex flex-col items-center justify-center p-4 bg-gray-900 rounded-lg text-white">
-          <div className="flex flex-col items-center space-y-8">
-            {isFeedbackInprogress && (
-              <div className="flex items-center justify-center h-12 w-12 rounded-full bg-white bg-opacity-20 animate-ping">
-                <div className="h-8 w-8 border-t-4 border-b-4 border-white rounded-full animate-spin"></div>
-              </div>
-            )}
+          <div className="flex flex-col items-center justify-center p-4 bg-gray-900 rounded-lg text-white">
+            <div className="flex flex-col items-center space-y-8">
+              {isFeedbackInprogress && (
+                <div className="flex items-center justify-center h-12 w-12 rounded-full bg-white bg-opacity-20 animate-ping">
+                  <div className="h-8 w-8 border-t-4 border-b-4 border-white rounded-full animate-spin"></div>
+                </div>
+              )}
 
-            <p className="text-sm text-gray-200">
-              {feedbackStatus === "COMPLETED"
-                ? "All feedback has been processed successfully. 📊🔍"
-                : isFeedbackInprogress
-                ? "Please wait while we process your discussion. ⏳🔄"
-                : status === "COMPLETED"
-                ? "The discussion has concluded. Thank you for participating! 👏🎉"
-                : "Please wait while we set up your session. ⚙️🕒"}
-            </p>
+              <p className="text-sm text-gray-200">
+                {feedbackStatus === "COMPLETED"
+                  ? "All feedback has been processed successfully. 📊🔍"
+                  : isFeedbackInprogress
+                  ? "Please wait while we process your discussion. ⏳🔄"
+                  : status === "COMPLETED"
+                  ? "The discussion has concluded. Thank you for participating! 👏🎉"
+                  : "Please wait while we set up your session. ⚙️🕒"}
+              </p>
+            </div>
+          </div>
+
+          {/* Optimized components */}
+          <GenerateFeedbackButton
+            isFeedbackInprogress={isFeedbackInprogress}
+            feedbackStatus={feedbackStatus}
+            socket={socket}
+            sessionId={sessionId}
+          />
+
+          <div className="flex gap-4">
+            <MakeAnotherRoundButton
+              isFeedbackCompleted={isFeedbackCompleted}
+              participants={participants}
+              userFeedbackStatus={userFeedbackStatus}
+              updateUserStatus={updateUserStatus}
+              aiParticipants={aiParticipants}
+              data={data}
+              socket={socket}
+              getButtonStatus={getButtonStatus}
+            />
+
+            <DeclareResultButton
+              isFeedbackCompleted={isFeedbackCompleted}
+              handleDeclareResult={handleDeclareResult}
+              getButtonStatus={getButtonStatus}
+            />
           </div>
         </div>
+      )}
 
-        {/* Optimized components */}
-        <GenerateFeedbackButton
-          isFeedbackInprogress={isFeedbackInprogress}
-          feedbackStatus={feedbackStatus}
-          socket={socket}
-          sessionId={sessionId}
-        />
-
-        <div className="flex gap-4">
-          <MakeAnotherRoundButton
-            isFeedbackCompleted={isFeedbackCompleted}
-            participants={participants}
-            userFeedbackStatus={userFeedbackStatus}
-            updateUserStatus={updateUserStatus}
-            aiParticipants={aiParticipants}
-            data={data}
-            socket={socket}
-            getButtonStatus={getButtonStatus}
-          />
-
-          <DeclareResultButton
-            isFeedbackCompleted={isFeedbackCompleted}
-            handleDeclareResult={handleDeclareResult}
-            getButtonStatus={getButtonStatus}
-          />
-        </div>
-      </div>
       <PermissionGuard field="feedbackTable">
         <FeedbackTable
           aiParticipants={aiParticipants}

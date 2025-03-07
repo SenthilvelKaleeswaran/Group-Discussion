@@ -212,6 +212,7 @@ const SessionSchema = new mongoose.Schema({
       "IN_PROGRESS",
       "COMPLETED",
       "HOLDED",
+      "DECLARED",
     ],
     default: "NOT_STARTED",
   },
