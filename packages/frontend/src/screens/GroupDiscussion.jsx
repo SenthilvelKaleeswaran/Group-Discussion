@@ -31,6 +31,7 @@ import {
 
 import {
   DoubleTapPopup,
+  IconContainer,
   InitialTimer,
   RenderSpace,
   TimeProgressBar,
@@ -62,6 +63,11 @@ export const GroupDiscussion = () => {
   const [processingPoint, setProcessingPoint] = useState(null);
   const [status, setStatus] = useState("");
   const [choosingRandomMember, setChoosingRandomMember] = useState(false);
+  const [showFirst, setShowFirst] = useState(false);
+  const [showSecond, setShowSecond] = useState(false);
+  const [FirstComponent, setFirstComponent] = useState(null);
+  const [SecondComponent, setSecondComponent] = useState(null);
+  const [componentList, setComponentList] = useState([]);
 
   const {
     mutedParticipants = [],
@@ -99,9 +105,7 @@ export const GroupDiscussion = () => {
     }
   );
 
-  
-
-  console.log({updatedData : data})
+  console.log({ updatedData: data });
 
   const { error: queueError, isLoading: isQueueLoading } = useQuery(
     [`queue-${sessionId}`, sessionId],
@@ -213,7 +217,7 @@ export const GroupDiscussion = () => {
   useEffect(() => {
     if (events.UPDATED_SESSION) {
       console.log({ UPDATED_SESSION: events.UPDATED_SESSION });
-      queryClient.setQueryData([`group-discussion-${id}`,groupDiscussionId], {
+      queryClient.setQueryData([`group-discussion-${id}`, groupDiscussionId], {
         ...data,
         ...events.UPDATED_SESSION,
       });
@@ -376,8 +380,61 @@ export const GroupDiscussion = () => {
     return <div>Error: {groupDiscussionError}</div>;
   }
 
+  const sectionData = [
+    {
+      id: "Conversation",
+      icon: "Discussion",
+      color: "bg-green-700",
+      condition: true,
+      component: () => (
+        <div className="w-full h-full overflow-y-auto bg-gray-900 shadow-lg rounded-lg">
+          <Conversation
+            currentWord={currentWord}
+            transcript={transcript}
+            currentMember={currentMember}
+            isSpeaking={isSpeaking}
+            isListening={isListening}
+            isLoading={isLoading}
+            currentSpeech={currentSpeech}
+            data={{ ...data, discussion: conversation }}
+            discussionLength={data?.discussionLength}
+            conclusionBy={data?.conclusionBy}
+            conclusionPoints={data?.conclusionPoints}
+            isLiveDiscussion
+            events={events}
+            processingPoint={processingPoint}
+          />
+        </div>
+      ),
+    },
+    {
+      id: "Settings",
+      icon: "Participants",
+      color: "bg-violet-800",
+      condition: true,
+      component: () => (
+        <div className="w-full h-full overflow-y-auto bg-gray-900 shadow-lg rounded-lg">
+          <DiscussionSettings sessionId={sessionId} socket={socket} />
+        </div>
+      ),
+    },
+  ];
+
+  const handleSection = (id) => {
+    const { component } = sectionData?.find((_) => _?.id === id);
+    console.log({ component });
+    setFirstComponent(() => SecondComponent);
+    setSecondComponent(() => component);
+    setComponentList((prev) => ({
+      1: prev["2"],
+      2: id,
+    }));
+  };
+
+  console.log({ FirstComponent, SecondComponent, componentList });
+
   return (
-    <div className="flex gap-4 min-h-screen w-full bg-gray-700 text-gray-200 p-4 relative overflow-hidden">
+    <div className="flex gap-4 h-screen w-full bg-gray-700 p-4 text-gray-200  relative overflow-hidden">
       <InitialTimer socket={socket} />
       <QueuePopup
         sessionId={sessionId}
@@ -387,7 +444,7 @@ export const GroupDiscussion = () => {
       />
 
       <AiParticipantPopup data={data} socket={socket} sessionId={sessionId} />
-      <div className=" w-full flex-1.5 p-8 space-y-2 bg-gray-800 shadow-lg rounded-lg">
+      <div className=" w-full flex-1.5 p-4 space-y-2 bg-gray-800 shadow-lg rounded-lg overflow-y-auto">
         <p className="font-bold">{data?.topic}</p>
         {/* <DiscussionProgress events={events} /> */}
 
@@ -488,32 +545,37 @@ export const GroupDiscussion = () => {
           </div>
         )}
       </div>
-      <RenderSpace condition={isDiscussionRunning}>
-        <div className="w-full min-h-screen h-full overflow-scroll bg-gray-900 shadow-lg rounded-lg">
-          <Conversation
-            currentWord={currentWord}
-            transcript={transcript}
-            currentMember={currentMember}
-            isSpeaking={isSpeaking}
-            isListening={isListening}
-            isLoading={isLoading}
-            currentSpeech={currentSpeech}
-            data={{ ...data, discussion: conversation }}
-            discussionLength={data?.discussionLength}
-            conclusionBy={data?.conclusionBy}
-            conclusionPoints={data?.conclusionPoints}
-            isLiveDiscussion
-            events={events}
-            processingPoint={processingPoint}
-          />
-        </div>
+
+      <RenderSpace
+        condition={!!FirstComponent && typeof FirstComponent === "function"}
+      >
+        <FirstComponent />
       </RenderSpace>
 
-      <RenderSpace condition={isDiscussionRunning}>
-        <div className="w-full min-h-screen h-full overflow-scroll bg-gray-900 shadow-lg rounded-lg">
-          <DiscussionSettings sessionId={sessionId} socket={socket} />
-        </div>
+      <RenderSpace
+        condition={!!SecondComponent && typeof SecondComponent === "function"}
+      >
+        <SecondComponent />
       </RenderSpace>
+
+      <div className="fixed bottom-8  right-8 space-y-4">
+        {sectionData?.map((_) => (
+          <RenderSpace condition={_?.condition}>
+            <IconContainer
+              name={_?.icon}
+              containerClass={`w-10 h-10 place-items-center place-content-center rounded-full cursor-pointer ${
+                _?.color
+              } ${
+                Object.values(componentList)?.includes(_?.id)
+                  ? "border-blue-900 border-2"
+                  : ""
+              }`}
+              onClick={() => handleSection(_?.id)}
+              // disabled={Object.values(componentList)?.includes(_?.id)}
+            />
+          </RenderSpace>
+        ))}
+      </div>
     </div>
   );
 };

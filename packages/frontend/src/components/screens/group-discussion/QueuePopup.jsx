@@ -235,7 +235,7 @@ export function QueuePopup({ sessionId, error, isLoading, socket }) {
   ];
 
   return (
-    <div className="relative drop-shadow-2xl z-50">
+    <div className="absolute drop-shadow-2xl z-50">
       <DoubleTapPopup
         onKey="q"
         draggable

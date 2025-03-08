@@ -36,6 +36,9 @@ import { GoStack } from "react-icons/go";
 import { MdClose } from "react-icons/md";
 import { LuLayoutList } from "react-icons/lu";
 import { MdDisplaySettings } from "react-icons/md";
+import { GoCommentDiscussion } from "react-icons/go";
+import { FaUserGroup } from "react-icons/fa6";
+
 
 const Icon = ({ name, ...props }) => {
   const IconsList = {
@@ -47,6 +50,7 @@ const Icon = ({ name, ...props }) => {
     ChevronUp: FaChevronUp,
     Correct: IoCheckmarkCircle,
     Delete: LuTrash2,
+    Discussion : GoCommentDiscussion,
     Drag: GrDrag,
     Forward: IoPlayForward,
     MicrophoneOn: FiMic,
@@ -60,6 +64,7 @@ const Icon = ({ name, ...props }) => {
     LoadArrow : MdDeleteSweep,
     NotStartedQueue: TbTimeDurationOff,
     Pause: FaPause,
+    Participants : FaUserGroup,
     Play: FaPlay,
     Queue: LuListPlus,
     QueueStack : GoStack,

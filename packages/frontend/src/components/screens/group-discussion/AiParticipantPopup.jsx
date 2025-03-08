@@ -90,7 +90,7 @@ export function AiParticipantPopup({ data, socket, sessionId }) {
   ];
 
   return (
-    <div className="relative drop-shadow-2xl z-50">
+    <div className="absolute drop-shadow-2xl z-50">
       <DoubleTapPopup
         onKey="w"
         draggable
