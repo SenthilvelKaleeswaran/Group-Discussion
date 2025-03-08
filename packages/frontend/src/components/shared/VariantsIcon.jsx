@@ -9,12 +9,12 @@ export const IconWithLoader = ({ isLoading, ...rest }) => {
   );
 };
 
-export const IconContainer = ({ containerClass = "", onClick, ...rest }) => {
+export const IconContainer = ({ containerClass = "",disabled, onClick, ...rest }) => {
   return (
     <div
-      className={` rounded-full border p-1 ${containerClass} ${"cursor-pointer"} `}
-      onClick={onClick}
-      aria-disabled={rest?.isLoading ? "true" : "false"}
+      className={` rounded-full border p-1 ${containerClass} ${"cursor-pointer"} ${disabled ? 'opacity-70' : ''} `}
+      onClick={disabled ? null : ()=>onClick()}
+      aria-disabled={rest?.isLoading || disabled ? "true" : "false"}
     >
       <IconWithLoader {...rest} />
     </div>
