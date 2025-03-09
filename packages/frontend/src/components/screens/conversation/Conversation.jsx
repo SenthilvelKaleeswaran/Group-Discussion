@@ -73,7 +73,7 @@ export const Conversation = ({
   };
 
   return (
-    <div className="flex flex-col relative gap-4 bg-gray-800 h-[calc(100vh-100px)] rounded-md">
+    <div className="flex flex-col relative gap-4 bg-gray-700 h-full rounded-md">
       <RenderSpace condition={isLiveDiscussion}>
         <div className="bg-gray-900 w-full rounded-md p-2">
           <CurrentMember

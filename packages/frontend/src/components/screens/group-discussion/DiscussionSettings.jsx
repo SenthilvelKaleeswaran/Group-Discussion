@@ -19,12 +19,6 @@ export function DiscussionSettings({socket,sessionId}) {
       component: <ModeratorsList sessionId={sessionId} socket={socket} />,
     },
     {
-      id: "settings",
-      //   label: "Profile",
-      icon: "Settings",
-      component: <p>This is the Profile content.</p>,
-    },
-    {
       id: "blocked",
       icon: "Block",
       component: <p>Blocked</p>,
