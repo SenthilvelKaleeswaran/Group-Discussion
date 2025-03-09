@@ -63,8 +63,6 @@ export const GroupDiscussion = () => {
   const [processingPoint, setProcessingPoint] = useState(null);
   const [status, setStatus] = useState("");
   const [choosingRandomMember, setChoosingRandomMember] = useState(false);
-  const [showFirst, setShowFirst] = useState(false);
-  const [showSecond, setShowSecond] = useState(false);
   const [FirstComponent, setFirstComponent] = useState(null);
   const [SecondComponent, setSecondComponent] = useState(null);
   const [componentList, setComponentList] = useState([]);
@@ -84,9 +82,6 @@ export const GroupDiscussion = () => {
     data,
     error: groupDiscussionError,
     isLoading: issLoading,
-    isPending,
-    isFetched,
-    isFetching,
     refetch,
   } = useQuery(
     [`group-discussion-${id}`, groupDiscussionId],
@@ -445,8 +440,21 @@ export const GroupDiscussion = () => {
 
       <AiParticipantPopup data={data} socket={socket} sessionId={sessionId} />
       <div className=" w-full flex-1.5 p-4 space-y-2 bg-gray-800 shadow-lg rounded-lg overflow-y-auto">
-        <p className="font-bold">{data?.topic}</p>
-        {/* <DiscussionProgress events={events} /> */}
+        <div className="flex justify-between gap-4">
+          <div className="bg-gray-900 rounded-md w-full place-items-center place-content-center drop-shadow-2xl">
+            <p className="font-bold">
+              {data?.topic || "Online clss vs Off line Clss"}
+            </p>
+          </div>
+          <div>
+            <SessionButton
+              status={data?.status}
+              socket={socket}
+              sessionId={sessionId}
+            />
+          </div>
+        </div>
+        <DiscussionProgress events={events} />
 
         <ConversationCountdown />
         <AudioStreamingComponent
@@ -454,12 +462,6 @@ export const GroupDiscussion = () => {
           sessionId={sessionId}
           groupDiscussionId={groupDiscussionId}
           isCompleted={!isDiscussionRunning}
-        />
-
-        <SessionButton
-          status={data?.status}
-          socket={socket}
-          sessionId={sessionId}
         />
 
         {!!data && !issLoading && !isDiscussionRunning ? (
@@ -533,15 +535,6 @@ export const GroupDiscussion = () => {
                 {isConclusion && getConclusionBy()}
               </div>
             )}
-
-            {/* Recording Section */}
-            {/* <div className="text-center mb-8">
-           <RecordingButton
-             isListening={isListening}
-             startListening={startListening}
-             stopListening={stopListening}
-           />
-         </div> */}
           </div>
         )}
       </div>

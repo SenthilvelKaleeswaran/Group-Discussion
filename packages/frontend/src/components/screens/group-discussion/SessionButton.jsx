@@ -24,18 +24,18 @@ export function SessionButton({ status, socket, sessionId }) {
 
       case "IN_PROGRESS":
         return (
-          <div className="flex gap-2">
+          <div className="flex gap-4">
             <LoaderButton
               id="PAUSE_SESSION"
               condition={status === "PAUSED"}
               onClick={() => handleSessionUpdate("PAUSE_SESSION")}
-              buttonProps={{ label: "Pause" }}
+              buttonProps={{ label: "Pause",variant :'destructive' }}
             />
             <LoaderButton
               id="END_SESSION"
               condition={status === "COMPLETED"}
               onClick={() => handleSessionUpdate("END_SESSION")}
-              buttonProps={{ label: "End Discussion" }}
+              buttonProps={{ label: "Complete",variant: "success" }}
             />
           </div>
         );

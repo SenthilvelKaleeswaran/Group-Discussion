@@ -248,7 +248,7 @@ const DiscussionPoints = ({ data, isLiveDiscussion = false, events }) => {
       message = "No discussion points";
     }
     return (
-      <div className="place-content-center h-full">
+      <div className="place-content-center h-full bg-gray-900 rounded-md">
         <p className="text-gray-700">{message} </p>
       </div>
     );
