@@ -21,6 +21,7 @@ import {
   AiParticipantPopup,
   Conversation,
   ConversationCountdown,
+  DiscussionIndicator,
   DiscussionProgress,
   DiscussionSettings,
   FeedbackTable,
@@ -470,11 +471,11 @@ export const GroupDiscussion = () => {
           <div>
             <p>{transcript}</p>
 
-            {/* <DiscussionIndicator
+            <DiscussionIndicator
            data={data}
            conversation={conversation}
            currentMember={currentMember}
-         /> */}
+         />
             {!isCompleted &&
             !isLoading &&
             !isListening &&
