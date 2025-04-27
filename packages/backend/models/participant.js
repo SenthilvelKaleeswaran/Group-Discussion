@@ -20,10 +20,21 @@ const DetailsSchema = new mongoose.Schema({
     },
   },
   isActive: { type: Boolean, default: true },
-  switchedTo: { type: String, default: "" },
   name: { type: String },
   muteStatus: { type: Boolean, default: false },
   timing: [ParticipantTimingSchema],
+  feedback: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {},
+  },
+  participantSatus: {
+    type: String,
+    enum: ["SELECTED", "REJECTED", "WAITING_LIST"],
+  },
+  switchedTo : {
+    type: mongoose.Schema.Types.ObjectId,
+    ref : "Session"
+  }
 });
 
 const BlockSchema = new mongoose.Schema({

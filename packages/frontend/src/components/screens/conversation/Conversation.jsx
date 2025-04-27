@@ -2,8 +2,8 @@ import React, { useMemo, useEffect, useRef } from "react";
 import StreamingConversation from "./StreamingConversation";
 import Icon from "../../../icons";
 import DiscussionPoints from "./DiscussionPoints";
-import {CurrentMember} from "./CurrentMember";
-import  { BlinkingIcon, Loader,RenderSpace } from "../../shared";
+import { CurrentMember } from "./CurrentMember";
+import { BlinkingIcon, Loader, RenderSpace } from "../../shared";
 import { NameCard } from "./ConversationComponent";
 import { getNameCardStyle } from "../../../utils";
 
@@ -19,11 +19,7 @@ export const Conversation = ({
   isLiveDiscussion = false,
   events,
   processingPoint,
-
-
 }) => {
-
-
   const renderIcon = () => {
     if (isListening && transcript?.length > 0)
       return (
@@ -77,7 +73,7 @@ export const Conversation = ({
   };
 
   return (
-    <div className="flex flex-col relative gap-4 bg-gray-800 h-[calc(100vh-100px)] rounded-md">
+    <div className="flex flex-col relative gap-4 bg-gray-700 h-full rounded-md">
       <RenderSpace condition={isLiveDiscussion}>
         <div className="bg-gray-900 w-full rounded-md p-2">
           <CurrentMember
@@ -93,21 +89,24 @@ export const Conversation = ({
         </div>
       </RenderSpace>
 
-      <RenderSpace condition={isLiveDiscussion && !!processingPoint }>
-      <div className="space-y-4 p-2 bg-gray-900 rounded-md">
+      <RenderSpace 
+      // condition={isLiveDiscussion && !!processingPoint}
+      
+      >
+        <div className="space-y-4 p-2 bg-gray-900 rounded-md">
           <div
             className={`p-2 text-center space-y-2 shadow-lg rounded-lg transition transform hover:-translate-y-1`}
           >
             <div className="flex gap-4 items-center justify-between w-full">
-              <NameCard userDetails={processingPoint?.currentMember} />
+              {/* <NameCard userDetails={processingPoint?.currentMember} /> */}
               <div className="flex gap-2 items-center">
-              <Loader text='Processing' />
+                <Loader text="Processing" />
               </div>
             </div>
 
             <p className={`text-sm text-left p-2 rounded-md bg-blue-600`}>
               {processingPoint?.conversation || "No conversation available"}
-            </p> 
+            </p>
             {/* {generatingMetrics ? (
               <p>Loading ....</p>
             ) : (
@@ -116,9 +115,7 @@ export const Conversation = ({
               </div>
             )} */}
           </div>
-         
         </div>
-
       </RenderSpace>
 
       <DiscussionPoints

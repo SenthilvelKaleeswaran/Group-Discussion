@@ -1,0 +1,73 @@
+import React from "react";
+import { LoaderButton } from "../../shared/LoaderButton";
+import { Button } from "../../ui";
+
+export function SessionButton({ status, socket, sessionId }) {
+  const handleSessionUpdate = (type) => {
+    console.log({ type });
+    socket.emit("UPDATE_SESSION_STATUS", { type });
+  };
+
+
+
+  const renderButton = () => {
+    switch (status) {
+      case "NOT_STARTED":
+        return (
+          <LoaderButton
+            id="START_SESSION"
+            condition={status === "IN_PROGRESS"}
+            onClick={() => handleSessionUpdate("START_SESSION")}
+            buttonProps={{ label: "Start Discussion" }}
+          />
+        );
+
+      case "IN_PROGRESS":
+        return (
+          <div className="flex gap-4">
+            <LoaderButton
+              id="PAUSE_SESSION"
+              condition={status === "PAUSED"}
+              onClick={() => handleSessionUpdate("PAUSE_SESSION")}
+              buttonProps={{ label: "Pause",variant :'destructive' }}
+            />
+            <LoaderButton
+              id="END_SESSION"
+              condition={status === "COMPLETED"}
+              onClick={() => handleSessionUpdate("END_SESSION")}
+              buttonProps={{ label: "Complete",variant: "success" }}
+            />
+          </div>
+        );
+
+      case "PAUSED":
+        return (
+          <LoaderButton
+            id="RESUME_SESSION"
+            condition={status === "IN_PROGRESS"}
+            onClick={() => handleSessionUpdate("RESUME_SESSION")}
+            buttonProps={{ label: "Resume Discussion" }}
+          />
+        );
+
+      // case "COMPLETED":
+      //   return (
+      //     <div className="flex gap-2">
+      //       <Button label="Completed" variant="success" disabled />
+      //       <Button
+      //         id="FEEDBACK"
+      //         condition={status === "FEEDBACK"}
+      //         onClick={() => handleGenerateFeedback()}
+      //         label={"Generate Feedback"}
+      //         buttonProps={{ label: "Generate Feedback" }}
+      //       />
+      //     </div>
+      //   );
+
+      default:
+        return null;
+    }
+  };
+
+  return <div>{renderButton()}</div>;
+}

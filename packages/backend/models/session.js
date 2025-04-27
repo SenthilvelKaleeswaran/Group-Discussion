@@ -1,11 +1,45 @@
 const mongoose = require("mongoose");
 
+const QueueSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId },
+  name: { type: String },
+  aiId: { type: mongoose.Schema.Types.ObjectId },
+  order: { type: Number },
+  status: {
+    type: String,
+    enum: ["NOT_STARTED", "IN_PROGRESS", "COMPLETED", "IN_ACTIVE", "HOLDED"],
+  },
+});
+
+const FeedbackSelectedParticipantSchema = new mongoose.Schema({
+  participants: { type: [mongoose.Schema.Types.ObjectId] },
+  startedTime: { type: Date, default: Date.now },
+  startedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
+});
+
 const SessionSchema = new mongoose.Schema({
   // Topic Settings
   groupDiscussionId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "GroupDiscussion",
     required: true,
+  },
+  globalOrder: {
+    type: Number,
+    default: 0,
+  },
+
+  switchedFrom: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Session",
+  },
+
+  switchedTo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Session",
   },
   // moderators: {
   //   type: Map,
@@ -56,7 +90,7 @@ const SessionSchema = new mongoose.Schema({
   discussionLengthSetting: {
     type: String,
     enum: ["limit", "noLimit", "onDiscussion"],
-    default: "fixed",
+    default: "limit",
   },
 
   // Points Settings
@@ -105,7 +139,7 @@ const SessionSchema = new mongoose.Schema({
   conclusionLengthSetting: {
     type: String,
     enum: ["limit", "noLimit", "range"],
-    default: "fixed",
+    default: "limit",
   },
 
   // AI Settings
@@ -173,8 +207,26 @@ const SessionSchema = new mongoose.Schema({
   sessionPassword: { type: String },
   status: {
     type: String,
-    enum: ["notStarted", "inProgress", "completed", "holded", "paused"],
-    default: "notStarted",
+    enum: [
+      "NOT_STARTED",
+      "IN_PROGRESS",
+      "COMPLETED",
+      "HOLDED",
+      "DECLARED",
+    ],
+    default: "NOT_STARTED",
+  },
+  feedbackStatus: {
+    type: String,
+    enum: [
+      "NOT_STARTED",
+      "IN_PROGRESS",
+      "COMPLETED",
+      "SELECTED_IN_PROGRESS",
+      "SELECTED_COMPLETED",
+      "HOLDED",
+    ],
+    default: "NOT_STARTED",
   },
   sessionStartTime: {
     type: Date,
@@ -182,9 +234,22 @@ const SessionSchema = new mongoose.Schema({
   sessionEndTime: {
     type: Date,
   },
+  queue: {
+    type: [QueueSchema],
+  },
+
+  displayResult: {
+    type: [String],
+    enum: ["SELECTED", "REJECTED", "WAITING_LIST"],
+    default: [],
+  },
+
+  feedbackSelectedParticipant: {
+    type: [FeedbackSelectedParticipantSchema],
+    default: [],
+  },
 });
 
 const Session = mongoose.model("Session", SessionSchema);
 
 module.exports = Session;
-

@@ -20,7 +20,6 @@ const groupDiscussionsSlice = createSlice({
   name: "groupDiscussions", // Renamed slice for clarity
   initialState: {
     discussion: {}, 
-    userRole : '',
     loading: false,
     error: null,
   },
@@ -28,9 +27,7 @@ const groupDiscussionsSlice = createSlice({
     updateGroupDiscussion: (state, action) => {
       state.discussion = action.payload;
     },
-    updateUserRole : (state, action) => {
-      state.userRole = action.payload;
-    }
+    
   },
   extraReducers: (builder) => {
     builder
@@ -50,6 +47,6 @@ const groupDiscussionsSlice = createSlice({
   },
 });
 
-export const { updateGroupDiscussion,updateUserRole } = groupDiscussionsSlice.actions;
+export const { updateGroupDiscussion } = groupDiscussionsSlice.actions;
 
 export default groupDiscussionsSlice.reducer;

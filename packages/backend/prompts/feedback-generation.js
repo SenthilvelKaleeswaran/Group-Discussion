@@ -45,10 +45,7 @@ const getDiscussionInstruction = ({
   instruction += `
       Instruction: 
       1 - Above is the group discussion details.
-      2 - Last ${
-        conclusionPoints ? conclusionPoints : "N/A"
-      } points are conclusion points.
-      3 - Focus on the ${user} points from the above discussion.
+      2 - Focus on the ${user} points from the above discussion.
     `;
 
   return instruction;
@@ -113,8 +110,8 @@ const overAllAnalysis = () => {
    ${getJsonValue("Emotional Regulation", "<Out of Hundred>")}
    ${getJsonValue("Interpersonal Sensitivity ", "<Out of Hundred>")}
  },
-
-     "Content Quality": {
+ 
+ "Content Quality": {
       ${getJsonValue("Relevance to Topic", "<Out of Hundered>")}
       ${getJsonValue("Depth of Arguments", "<Out of Hundered>")}
       ${getJsonValue("Originality", "<Out of Hundered>")}

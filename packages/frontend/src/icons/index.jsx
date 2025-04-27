@@ -19,27 +19,63 @@ import { FaUserShield } from "react-icons/fa6";
 import { IoSettings } from "react-icons/io5";
 import { FiMicOff } from "react-icons/fi";
 import { ImBlocked } from "react-icons/im";
+import { HiDotsVertical } from "react-icons/hi";
+import { LuListPlus } from "react-icons/lu";
+import { FaUser } from "react-icons/fa";
+import { LuTrash2 } from "react-icons/lu";
+import { MdDragIndicator } from "react-icons/md";
+import { MdTimeline } from "react-icons/md";
+import { HiStatusOffline } from "react-icons/hi";
+import { MdOutlineMotionPhotosPaused } from "react-icons/md";
+import { CgPlayListRemove } from "react-icons/cg";
+import { TbTimeDurationOff } from "react-icons/tb";
+import { GrDrag } from "react-icons/gr";
+import { IoReloadOutline } from "react-icons/io5";
+import { MdDeleteSweep } from "react-icons/md";
+import { GoStack } from "react-icons/go";
+import { MdClose } from "react-icons/md";
+import { LuLayoutList } from "react-icons/lu";
+import { MdDisplaySettings } from "react-icons/md";
+import { GoCommentDiscussion } from "react-icons/go";
+import { FaUserGroup } from "react-icons/fa6";
+
 
 const Icon = ({ name, ...props }) => {
   const IconsList = {
-    Admin : FaUserShield,
+    Admin: FaUserShield,
     Backward: IoPlayBack,
-    Block : ImBlocked,
+    Block: ImBlocked,
+    Close : MdClose,
     ChevronDown: FaChevronDown,
     ChevronUp: FaChevronUp,
     Correct: IoCheckmarkCircle,
+    Delete: LuTrash2,
+    Discussion : GoCommentDiscussion,
+    Drag: GrDrag,
     Forward: IoPlayForward,
     MicrophoneOn: FiMic,
-    MicrophoneOff : FiMicOff,
+    MicrophoneOff: FiMicOff,
+    Hold: MdOutlineMotionPhotosPaused,
     HorizontalDots: HiDotsHorizontal,
+    InProgress: MdTimeline,
+    InActive: HiStatusOffline,
+    List : LuLayoutList,
     Loader: FiLoader,
+    LoadArrow : MdDeleteSweep,
+    NotStartedQueue: TbTimeDurationOff,
     Pause: FaPause,
+    Participants : FaUserGroup,
     Play: FaPlay,
+    Queue: LuListPlus,
+    QueueStack : GoStack,
     Require: LuTarget,
     Robot: VscRobot,
     Rotate: FaRotate,
-    Settings :IoSettings ,
-    Users : FaUsers,
+    SettingsSession : MdDisplaySettings,
+    Settings: IoSettings,
+    User: FaUser,
+    Users: FaUsers,
+    VerticlDots: HiDotsVertical,
     Wave: PiWaveformBold,
   };
 

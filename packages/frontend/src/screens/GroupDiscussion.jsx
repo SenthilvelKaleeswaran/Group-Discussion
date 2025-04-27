@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { THREE_SECOND_TIME_INTERVAL, TIME_INTERVAL } from "../constants";
-import { useMutation, useQuery } from "react-query";
+import { useMutation, useQuery, useQueryClient } from "react-query";
 
 import { useNavigate, useParams } from "react-router";
 import {
   generateConversation,
   generateFeedback,
   getActiveSession,
-  getGroupDiscussion,
+  getSessionQueue,
 } from "../utils/api-call";
 import {
+  useAudioPlayer,
   useDiscussionSocket,
   useMembers,
   useSpeechRecognization,
@@ -17,78 +18,225 @@ import {
   useWebSocket,
 } from "../hooks";
 import {
+  AiParticipantPopup,
   Conversation,
+  ConversationCountdown,
   DiscussionIndicator,
+  DiscussionProgress,
   DiscussionSettings,
+  FeedbackTable,
   MemberCard,
+  QueuePopup,
+  SessionButton,
 } from "../components/screens";
-import { TimeProgressBar } from "../components/shared";
 
-import { io } from "socket.io-client";
+import {
+  DoubleTapPopup,
+  IconContainer,
+  InitialTimer,
+  RenderSpace,
+  TimeProgressBar,
+} from "../components/shared";
 
-import { useDispatch, useSelector } from "react-redux";
-import { fetchGroupDiscussion } from "../store";
 import { AudioStreamingComponent } from "../components/screens/group-discussion/AudioStreaminComponent";
+import { useDispatch, useSelector } from "react-redux";
+import Draggable from "react-draggable";
+import { setDiscussionQueue } from "../store";
+import DiscussionCompletion from "./DiscussionCompletion";
 
 const signalingServer = "http://localhost:5000";
 
 export const GroupDiscussion = () => {
+  console.time("Time");
+  console.time("TimePermission");
   const { id } = useParams();
   const [groupDiscussionId, sessionId] = id.split("-");
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  // const {
-  //   discussion : data,
-  //   loading : issLoading,
-  //   error: groupDiscussionError,
-  // } = useSelector((state) => state.groupDiscussion);
+  const userId = localStorage.getItem("userId");
 
-  // useEffect(() => {
-  //   if (id) {
-  //     dispatch(fetchGroupDiscussion(id)); // Dispatch the thunk
-  //   }
-  // }, [dispatch, id]);
+  const queryClient = useQueryClient();
+
+  const dispatch = useDispatch();
 
   const [conversation, setConversation] = useState([]);
+  const [currentSpeech, setCurrentSpeech] = useState("");
+  const [startTime, setStartTime] = useState(null);
   const [processingPoint, setProcessingPoint] = useState(null);
   const [status, setStatus] = useState("");
+  const [choosingRandomMember, setChoosingRandomMember] = useState(false);
+  const [FirstComponent, setFirstComponent] = useState(null);
+  const [SecondComponent, setSecondComponent] = useState(null);
+  const [componentList, setComponentList] = useState([]);
+
+  const {
+    mutedParticipants = [],
+    userStatus = "",
+    userRole,
+  } = useSelector((state) => state.controls);
+
+  console.log({ userRole });
+  const { currentConverstion: transcript = "" } = useSelector(
+    (state) => state.conversation
+  );
 
   const {
     data,
     error: groupDiscussionError,
     isLoading: issLoading,
+    refetch,
   } = useQuery(
-    [`group-discussion-${groupDiscussionId}`, groupDiscussionId],
+    [`group-discussion-${id}`, groupDiscussionId],
     () => getActiveSession(id),
     {
       onSuccess: (data) => {
         if (Array.isArray(data)) {
         } else if (typeof data === "object") {
-          if (!sessionId) {
+          if (!sessionId)
             navigate(`/gd/${data.groupDiscussionId}-${data._id}`, {
               replace: true,
             });
-          }
         }
         setConversation(data?.conversationId?.messages);
       },
     }
   );
 
+  console.log({ updatedData: data });
+
+  const { error: queueError, isLoading: isQueueLoading } = useQuery(
+    [`queue-${sessionId}`, sessionId],
+    () => getSessionQueue(sessionId),
+    {
+      onSuccess: (data) => {
+        dispatch(setDiscussionQueue(data));
+      },
+    }
+  );
+
+  const { members, currentMember, selectMember, resetCurrentMember } =
+    useMembers(data);
+
+  // Hooks
+
+  const { isSpeaking, currentWord } = useSpeechSynthesis({
+    text: currentSpeech,
+    voice: currentMember?.voice,
+    startTime: startTime,
+  });
+
+  const strictPermission = () => {
+    if (userStatus === "IN_PROGRESS") return true;
+    if (mutedParticipants.includes(userId)) return true;
+
+    const lastPoint = conversation?.length === data?.discussionLength - 1;
+    const conclusionBy = data?.conclusionBy;
+
+    if (lastPoint && conclusionBy === "AI")
+      return (conversation || [])?.pop()?._id !== userId;
+
+    if (data?.conclusionPoint === 1 && conclusionBy === "You") return true;
+
+    return false;
+  };
+
+  const strictUserPermission = strictPermission();
+
+  const checkPermission = () => {
+    if (strictUserPermission) return true;
+    if (conversation?.length === data?.discussionLength - 1) return false;
+
+    return !isSpeaking || allowConclusion || !isCompleted;
+  };
+
+  const grantPermission = checkPermission();
+
   const { socket, sendMessage, events, isConnected, closeSocket } =
     useWebSocket(signalingServer, {
       disconnect: data?.status === "COMPLETED" || status === "Completed",
     });
 
-  console.log({ socket, sessionId: data?._id });
+  const { isListening, resetTranscript } = useSpeechRecognization({
+    isSpeaking,
+    grantPermission,
+    selectMember,
+    resetCurrentMember,
+    sessionId,
+    sendMessage,
+    events,
+  });
 
-  // const { localStream, remoteStreams, callPeer } = useAudioStreaming({
-  //   socket,
-  //   sendMessage,
-  //   sessionId,
-  //   groupDiscussionId,
-  // });
-  // console.log({ socket, localStream, remoteStreams, callPeer });
+  const isListeningRef = useRef(isListening);
+
+  const isCompleted = data?.status === "COMPLETED" || status === "Completed";
+  const isDiscussionRunning =
+    data?.status === "NOT_STARTED" || data?.status === "IN_PROGRESS";
+
+  console.log({ data, aaa: !!data, issLoading, userRole, isDiscussionRunning });
+
+  useEffect(() => {
+    isListeningRef.current = isListening;
+  }, [isListening]);
+
+  useEffect(() => {
+    if (
+      !isCompleted &&
+      transcript.length > 0 &&
+      currentSpeech.length === 0 &&
+      !isListening
+    ) {
+      handleGenerateConversation();
+    }
+  }, [isListening, transcript, currentSpeech, isCompleted]);
+
+  useEffect(() => {
+    if (currentSpeech?.length > 0 && isSpeaking) {
+      resetTranscript();
+    }
+  }, [isSpeaking]);
+
+  useEffect(() => {
+    if (!isCompleted && currentSpeech.length > 0 && !isSpeaking) {
+      setCurrentSpeech("");
+      setStatus("Your time to access the session");
+
+      setTimeout(() => {
+        if (!isListeningRef.current) {
+          handleGenerateConversation();
+        }
+        setStatus("");
+      }, THREE_SECOND_TIME_INTERVAL + 500);
+    }
+  }, [isListening, isSpeaking, isCompleted]);
+
+  const player = useAudioPlayer(events);
+
+  useEffect(() => {
+    if (events.UPDATED_SESSION) {
+      console.log({ UPDATED_SESSION: events.UPDATED_SESSION });
+      queryClient.setQueryData([`group-discussion-${id}`, groupDiscussionId], {
+        ...data,
+        ...events.UPDATED_SESSION,
+      });
+    }
+  }, [events.UPDATED_SESSION]);
+
+  useDiscussionSocket({
+    groupDiscussionId,
+    sessionId,
+    events,
+    sendMessage,
+    currentSpeech,
+    conversation,
+    closeSocket,
+    setChoosingRandomMember,
+    selectMember,
+    setCurrentSpeech,
+    setStartTime,
+    setConversation,
+    setProcessingPoint,
+    setStatus,
+    refetch,
+  });
 
   const isConclusion = useMemo(() => {
     return conversation?.length > data?.discussionLength;
@@ -97,10 +245,6 @@ export const GroupDiscussion = () => {
   const allowConclusion = useMemo(() => {
     return isConclusion && data?.conclusionBy !== "AI";
   }, []);
-
-  // Hooks
-  const { members, currentMember, selectMember, resetCurrentMember } =
-    useMembers(data);
 
   const { mutate, isLoading } = useMutation(generateConversation, {
     onSuccess: (data) => {
@@ -136,76 +280,6 @@ export const GroupDiscussion = () => {
       },
     });
 
-  const [currentSpeech, setCurrentSpeech] = useState("");
-
-  const { isSpeaking, currentWord } = useSpeechSynthesis({
-    text: currentSpeech,
-    voice: currentMember?.voice,
-  });
-
-  const userId = localStorage.getItem("userId");
-
-  const strictPermission = () => {
-    const lastPoint = conversation?.length === data?.discussionLength - 1;
-    const conclusionBy = data?.conclusionBy;
-
-    // Last point should speaken by user
-    if (lastPoint && conclusionBy === "AI")
-      return (conversation || [])?.pop()?._id !== userId;
-
-    // You need to conclude and only one conclusion point
-    if (data?.conclusionPoint === 1 && conclusionBy === "You") return true;
-
-    return false;
-  };
-
-  const strictUserPermission = strictPermission();
-  const isCompleted = data?.status === "COMPLETED" || status === "Completed";
-
-  const checkPermission = () => {
-    if (strictUserPermission) return true;
-    if (conversation?.length === data?.discussionLength - 1) {
-      return false;
-    }
-    return !isSpeaking || allowConclusion || !isCompleted;
-  };
-
-  const grantPermission = checkPermission();
-
-  const {
-    transcript,
-    isListening,
-    startListening,
-    stopListening,
-    resetTranscript,
-  } = useSpeechRecognization({
-    isSpeaking,
-    grantPermission,
-    selectMember,
-    resetCurrentMember,
-  });
-
-  const isListeningRef = useRef(isListening);
-
-  useEffect(() => {
-    isListeningRef.current = isListening;
-  }, [isListening]);
-
-  const [choosingRandomMember, setChoosingRandomMember] = useState(false);
-
-  useDiscussionSocket({
-    events,
-    currentSpeech,
-    conversation,
-    closeSocket,
-    setChoosingRandomMember,
-    selectMember,
-    setCurrentSpeech,
-    setConversation,
-    setProcessingPoint,
-    setStatus,
-  });
-
   const handleGenerateConversation = () => {
     // mutate({
     //   id,
@@ -228,37 +302,6 @@ export const GroupDiscussion = () => {
       });
     }
   };
-
-  useEffect(() => {
-    if (
-      !isCompleted &&
-      transcript.length > 0 &&
-      currentSpeech.length === 0 &&
-      !isListening
-    ) {
-      handleGenerateConversation();
-    }
-  }, [isListening, transcript, currentSpeech, isCompleted]);
-
-  useEffect(() => {
-    if (currentSpeech?.length > 0 && isSpeaking) {
-      resetTranscript();
-    }
-  }, [isSpeaking]);
-
-  useEffect(() => {
-    if (!isCompleted && currentSpeech.length > 0 && !isSpeaking) {
-      setCurrentSpeech("");
-      setStatus("Your time to access the session");
-
-      setTimeout(() => {
-        if (!isListeningRef.current) {
-          handleGenerateConversation();
-        }
-        setStatus("");
-      }, THREE_SECOND_TIME_INTERVAL + 500);
-    }
-  }, [isListening, isSpeaking, isCompleted]);
 
   const getStatus = () => {
     switch (true) {
@@ -321,11 +364,6 @@ export const GroupDiscussion = () => {
     }
   };
 
-  const handleCallPeer = () => {
-    const targetPeerId = "peer-id-to-call"; // Replace with the actual peer ID
-    callPeer(targetPeerId);
-  };
-
   if (issLoading) {
     return (
       <div className="text-blue-500 w-full h-full place-content-center">
@@ -338,112 +376,199 @@ export const GroupDiscussion = () => {
     return <div>Error: {groupDiscussionError}</div>;
   }
 
+  const sectionData = [
+    {
+      id: "Conversation",
+      icon: "Discussion",
+      color: "bg-green-700",
+      condition: true,
+      component: () => (
+        <div className="w-full h-full overflow-y-auto bg-gray-900 shadow-lg rounded-lg">
+          <Conversation
+            currentWord={currentWord}
+            transcript={transcript}
+            currentMember={currentMember}
+            isSpeaking={isSpeaking}
+            isListening={isListening}
+            isLoading={isLoading}
+            currentSpeech={currentSpeech}
+            data={{ ...data, discussion: conversation }}
+            discussionLength={data?.discussionLength}
+            conclusionBy={data?.conclusionBy}
+            conclusionPoints={data?.conclusionPoints}
+            isLiveDiscussion
+            events={events}
+            processingPoint={processingPoint}
+          />
+        </div>
+      ),
+    },
+    {
+      id: "Settings",
+      icon: "Participants",
+      color: "bg-violet-800",
+      condition: true,
+      component: () => (
+        <div className="w-full h-full overflow-y-auto bg-gray-900 shadow-lg rounded-lg">
+          <DiscussionSettings sessionId={sessionId} socket={socket} />
+        </div>
+      ),
+    },
+  ];
+
+  const handleSection = (id) => {
+    const { component } = sectionData?.find((_) => _?.id === id);
+    console.log({ component });
+    setFirstComponent(() => SecondComponent);
+    setSecondComponent(() => component);
+    setComponentList((prev) => ({
+      1: prev["2"],
+      2: id,
+    }));
+  };
+
+  console.log({ FirstComponent, SecondComponent, componentList });
+
   return (
-    <div className="flex gap-4 min-h-screen w-full bg-gray-700 text-gray-200 p-4">
-      <div className="max-w-3xl w-full flex-1.5  bg-gray-800 shadow-lg rounded-lg p-8">
-        <p className="font-bold">{data?.topic}</p>
+    <div className="flex gap-4 h-screen w-full bg-gray-700 p-4 text-gray-200  relative overflow-hidden">
+      <InitialTimer socket={socket} />
+      <QueuePopup
+        sessionId={sessionId}
+        socket={socket}
+        error={queueError}
+        isLoading={isQueueLoading}
+      />
+
+      <AiParticipantPopup data={data} socket={socket} sessionId={sessionId} />
+      <div className=" w-full flex-1.5 p-4 space-y-2 bg-gray-800 shadow-lg rounded-lg overflow-y-auto">
+        <div className="flex justify-between gap-4">
+          <div className="bg-gray-900 rounded-md w-full place-items-center place-content-center drop-shadow-2xl">
+            <p className="font-bold">
+              {data?.topic || "Online clss vs Off line Clss"}
+            </p>
+          </div>
+          <div>
+            <SessionButton
+              status={data?.status}
+              socket={socket}
+              sessionId={sessionId}
+            />
+          </div>
+        </div>
+        <DiscussionProgress events={events} />
+
+        <ConversationCountdown />
         <AudioStreamingComponent
           socket={socket}
           sessionId={sessionId}
           groupDiscussionId={groupDiscussionId}
+          isCompleted={!isDiscussionRunning}
         />
-        {/* {remoteStreams.map(({ peerId, stream }) => (
-          <audio key={peerId} srcObject={stream} autoPlay />
-        ))} */}
 
-        {/* <DiscussionIndicator
-          data={data}
-          conversation={conversation}
-          currentMember={currentMember}
-        /> */}
-
-        {!isCompleted && !isLoading && !isListening && status?.length > 0 ? (
-          <TimeProgressBar duration={TIME_INTERVAL} />
-        ) : null}
-
-        <div className="text-blue-600">{getStatus()}</div>
-
-        <p>{transcript || currentWord}</p>
-
-        {/* Group Members Section */}
-        <div className="mb-8">
-          {/* <h1 className="text-2xl font-bold mb-4">Group Members</h1> */}
-          <MemberCard data={members} currentMember={currentMember} />
-        </div>
-
-        {isCompleted ? (
-          <div className="flex flex-col items-center justify-center bg-gray-800 p-8 rounded-lg shadow-lg space-y-6 text-center">
-            <h2 className="text-2xl font-bold text-yellow-400">
-              🏆 Discussion Battle Finished!
-            </h2>
-            <p className="text-sm text-gray-300">
-              Your discussion journey has concluded. What’s next?
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-md">
-              {data?.feedback?.length ? (
-                <button
-                  onClick={() => handleFeedbackGeneration({ id })}
-                  disabled={isFeedbackGenerating}
-                  className="py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition duration-300"
-                >
-                  📊 View Feedback
-                </button>
-              ) : (
-                <button
-                  onClick={() => handleFeedbackGeneration({ id })}
-                  disabled={isFeedbackGenerating}
-                  className="py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-md transition duration-300"
-                >
-                  {isFeedbackGenerating
-                    ? "✨ Generating...."
-                    : "✨ Generate Feedback"}
-                </button>
-              )}
-              <button className="py-2 px-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg shadow-md transition duration-300">
-                🔄 Start New Discussion
-              </button>
-              <button className="py-2 px-4 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg shadow-md transition duration-300">
-                📖 View Past Discussions
-              </button>
-            </div>
-          </div>
+        {!!data && !issLoading && !isDiscussionRunning ? (
+          <DiscussionCompletion data={data} socket={socket} events={events} />
         ) : (
           <div>
-            {isConclusion ? <div>Conclusion Battle Starts</div> : null}
-            {isConclusion && getConclusionBy()}
+            <p>{transcript}</p>
+
+            <DiscussionIndicator
+           data={data}
+           conversation={conversation}
+           currentMember={currentMember}
+         />
+            {!isCompleted &&
+            !isLoading &&
+            !isListening &&
+            status?.length > 0 ? (
+              <TimeProgressBar duration={TIME_INTERVAL} />
+            ) : null}
+
+            <div className="text-blue-600">{getStatus()}</div>
+
+            <p>{transcript || currentWord}</p>
+
+            {/* Group Members Section */}
+            <div className="mb-8">
+              {/* <h1 className="text-2xl font-bold mb-4">Group Members</h1> */}
+              <MemberCard data={members} currentMember={currentMember} />
+            </div>
+
+            {isCompleted ? (
+              <div className="flex flex-col items-center justify-center bg-gray-800 p-8 rounded-lg shadow-lg space-y-6 text-center">
+                <h2 className="text-2xl font-bold text-yellow-400">
+                  🏆 Discussion Battle Finished!
+                </h2>
+                <p className="text-sm text-gray-300">
+                  Your discussion journey has concluded. What’s next?
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-md">
+                  {data?.feedback?.length ? (
+                    <button
+                      onClick={() => handleFeedbackGeneration({ id })}
+                      disabled={isFeedbackGenerating}
+                      className="py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition duration-300"
+                    >
+                      📊 View Feedback
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleFeedbackGeneration({ id })}
+                      disabled={isFeedbackGenerating}
+                      className="py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-md transition duration-300"
+                    >
+                      {isFeedbackGenerating
+                        ? "✨ Generating...."
+                        : "✨ Generate Feedback"}
+                    </button>
+                  )}
+                  <button className="py-2 px-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg shadow-md transition duration-300">
+                    🔄 Start New Discussion
+                  </button>
+                  <button className="py-2 px-4 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg shadow-md transition duration-300">
+                    📖 View Past Discussions
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                {isConclusion ? <div>Conclusion Battle Starts</div> : null}
+                {isConclusion && getConclusionBy()}
+              </div>
+            )}
           </div>
         )}
+      </div>
 
-        {/* Recording Section */}
-        {/* <div className="text-center mb-8">
-          <RecordingButton
-            isListening={isListening}
-            startListening={startListening}
-            stopListening={stopListening}
-          />
-        </div> */}
-      </div>
-      <div className="w-full min-h-screen h-full overflow-scroll bg-gray-900 shadow-lg rounded-lg">
-        <Conversation
-          currentWord={currentWord}
-          transcript={transcript}
-          currentMember={currentMember}
-          isSpeaking={isSpeaking}
-          isListening={isListening}
-          isLoading={isLoading}
-          currentSpeech={currentSpeech}
-          data={{ ...data, discussion: conversation }}
-          discussionLength={data?.discussionLength}
-          conclusionBy={data?.conclusionBy}
-          conclusionPoints={data?.conclusionPoints}
-          isLiveDiscussion
-          events={events}
-          processingPoint={processingPoint}
-        />{" "}
-      </div>
-      <div className="w-full min-h-screen h-full overflow-scroll bg-gray-900 shadow-lg rounded-lg">
-        <DiscussionSettings sessionId={sessionId} socket={socket} />
+      <RenderSpace
+        condition={!!FirstComponent && typeof FirstComponent === "function"}
+      >
+        <FirstComponent />
+      </RenderSpace>
+
+      <RenderSpace
+        condition={!!SecondComponent && typeof SecondComponent === "function"}
+      >
+        <SecondComponent />
+      </RenderSpace>
+
+      <div className="fixed bottom-8  right-8 space-y-4">
+        {sectionData?.map((_) => (
+          <RenderSpace condition={_?.condition}>
+            <IconContainer
+              name={_?.icon}
+              containerClass={`w-10 h-10 place-items-center place-content-center rounded-full cursor-pointer ${
+                _?.color
+              } ${
+                Object.values(componentList)?.includes(_?.id)
+                  ? "border-blue-900 border-2"
+                  : ""
+              }`}
+              onClick={() => handleSection(_?.id)}
+              // disabled={Object.values(componentList)?.includes(_?.id)}
+            />
+          </RenderSpace>
+        ))}
       </div>
     </div>
   );

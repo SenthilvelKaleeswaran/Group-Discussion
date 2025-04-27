@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState } from "react";
 import Icon from "../../icons";
+import { RenderSpace } from "../shared";
 
 const TabsContext = createContext();
 
@@ -34,15 +35,17 @@ function Tabs({ children, defaultTab, onChange }) {
   );
 }
 
-function TabList({ children }) {
+function TabList({ children, className }) {
   return (
-    <div className="flex border-b border-gray-700 bg-gray-900 rounded-t-lg">
+    <div
+      className={`flex border-b border-gray-700 bg-gray-900 rounded-t-lg ${className}`}
+    >
       {children}
     </div>
   );
 }
 
-function Tab({ children, id, icon }) {
+function Tab({ children, id, icon, iconStyle }) {
   const { activeTab, setActiveTab } = useTabs();
 
   return (
@@ -55,7 +58,10 @@ function Tab({ children, id, icon }) {
             : "text-gray-500 hover:text-gray-700"
         } flex items-center gap-2`}
     >
-      {icon && <Icon name={icon} className="w-4 h-4 text-gray-400" />}
+      <RenderSpace condition={icon}>
+        <Icon name={icon} className={`w-4 h-4 text-gray-400 ${iconStyle}`} />
+      </RenderSpace>
+
       <span>{children}</span>
     </button>
   );
@@ -73,28 +79,37 @@ function TabPanel({ children, id }) {
   return <div>{children}</div>;
 }
 
-const TabComposed = ({defaultTab,list = [],onChange}) => {
-    return (
-        <Tabs defaultTab={defaultTab}>
-        <TabList>
-          {list?.map((tab) => (
-            <Tab key={tab.id} id={tab.id} icon={tab.icon} onChange={onChange}>
-              {tab.label}
-            </Tab>
-          ))}
-        </TabList>
-  
-        <TabPanels>
-          {list?.map((tab) => (
-            <TabPanel key={tab.id} id={tab.id} icon={tab.icon}>
-              {tab.component}
-            </TabPanel>
-          ))}
-        </TabPanels>
-      </Tabs>
-    )
-}
+const TabComposed = ({
+  defaultTab,
+  tabListStyle = "",
+  list = [],
+  onChange,
+}) => {
+  return (
+    <Tabs defaultTab={defaultTab}>
+      <TabList className={` flex justify-between gap-1 ${tabListStyle}`}>
+        {list?.map((tab) => (
+          <Tab
+            key={tab.id}
+            id={tab.id}
+            icon={tab.icon}
+            iconStyle={tab.iconStyle}
+            onChange={onChange}
+          >
+            {tab.label}
+          </Tab>
+        ))}
+      </TabList>
 
+      <TabPanels>
+        {list?.map((tab) => (
+          <TabPanel key={tab.id} id={tab.id} icon={tab.icon}>
+            {tab.component}
+          </TabPanel>
+        ))}
+      </TabPanels>
+    </Tabs>
+  );
+};
 
-
-export { Tabs, TabList, Tab, TabPanels, TabPanel,TabComposed };
+export { Tabs, TabList, Tab, TabPanels, TabPanel, TabComposed };

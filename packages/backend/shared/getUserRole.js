@@ -12,6 +12,11 @@ const getUserRole = (participant, userId) => {
   }
 };
 
+const getUserData = (participant, userId) => {
+  const role = getUserRole(participant, userId);
+  return { role: role, user: participant[role].get(userId) };
+};
+
 const getRoleData = (participant, userId, type) => {
   const {
     listener = {},
@@ -39,6 +44,7 @@ const getRoleData = (participant, userId, type) => {
 };
 
 module.exports = {
+  getUserData,
   getUserRole,
   getRoleData,
 };

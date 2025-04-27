@@ -1,30 +1,32 @@
 const mongoose = require("mongoose");
 
 const ConversationSchema = new mongoose.Schema({
-  groupDiscussionId: {
+  sessionId : {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "GroupDiscussion",
+    ref: "Session",
     required: true,
   },
-  participantId: {
+  userId: {
     type: mongoose.Schema.Types.ObjectId,
-    required: true,
+    ref : "User"
   },
-  participantType: {
-    type: String,
-    enum: ["ai", "participant"],
-    required: true,
+  aiId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref : "AIModel"
   },
   discussion: {
     type: String,
-    required: true,
   },
   status: {
     type: String,
-    enum: ["generated", "spoken"],
-    default: "generated",
+    enum: ["GENERATED", "SPOKEN"],
+    default: "GENERATED",
   },
   feedback: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {},
+  },
+  pointAnalysis : {
     type: mongoose.Schema.Types.Mixed,
     default: {},
   },
@@ -38,12 +40,6 @@ const ConversationSchema = new mongoose.Schema({
   },
 });
 
-ConversationSchema.methods.getParticipantDetails = async function () {
-  if (this.participantType === "particiapnt") {
-    return mongoose.model("User").findById(this.participantId);
-  } else if (this.participantType === "AI") {
-    return mongoose.model("AIModels").findById(this.participantId);
-  }
-};
 
-module.exports = mongoose.model("Conversation", ConversationSchema);
+const Conversation = mongoose.model("Conversation", ConversationSchema);
+module.exports = Conversation

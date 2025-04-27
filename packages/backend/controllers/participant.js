@@ -1,7 +1,7 @@
 const Participant = require("../models/participant");
 
 const getParticipants = async (req, res) => {
-  const { sessionId } = req.params;
+  const { sessionId,userId } = req.params;
 
   try {
     const participants = await Participant.findOne({ sessionId })

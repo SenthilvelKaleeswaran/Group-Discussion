@@ -6,10 +6,14 @@ import {
   setMutingList,
 } from "../store";
 
-export const useAudioControls = ({ localStream, socket, sessionId }) => {
+export const useAudioControls = ({
+  localStream,
+  socket,
+  sessionId,
+  switchToNextSpeakerMic,
+}) => {
   const dispatch = useDispatch();
   const userId = localStorage.getItem("userId");
-
   const {
     mutedParticipants = [],
     isMuteLoading,
@@ -19,23 +23,30 @@ export const useAudioControls = ({ localStream, socket, sessionId }) => {
 
   console.log({ mutedParticipants, mutingList });
 
-  useEffect(() => {
-    const handleMuteStatusChange = ({
-      targetUserId,
-      userId: actionDoneBy,
-      isMuted,
-    }) => {
-      console.log({ targetUserId, userId, actionDoneBy, mutedParticipants });
-      dispatch(
-        updateMutedParticipants({
-          mutedParticipants: !mutedParticipants?.includes(targetUserId)
-            ? [...mutedParticipants, targetUserId]
-            : mutedParticipants?.filter((id) => id !== targetUserId),
-          mutedMember: actionDoneBy === userId ? targetUserId : null,
-        })
-      );
-    };
+  const handleMuteStatusChange = async ({
+    targetUserId,
+    userId: actionDoneBy,
+    isMuted,
+  }) => {
+    if (localStream && targetUserId === userId) {
+      localStream.getAudioTracks().forEach((track) => {
+        track.enabled = isMuted;
+      });
+    }
 
+    if (switchToNextSpeakerMic) await switchToNextSpeakerMic();
+
+    dispatch(
+      updateMutedParticipants({
+        mutedParticipants: !mutedParticipants.includes(targetUserId)
+          ? [...mutedParticipants, targetUserId]
+          : mutedParticipants.filter((id) => id !== targetUserId),
+        mutedMember: actionDoneBy === userId ? targetUserId : null,
+      })
+    );
+  };
+
+  useEffect(() => {
     if (socket) socket.on("mute-status-changed", handleMuteStatusChange);
 
     return () => {

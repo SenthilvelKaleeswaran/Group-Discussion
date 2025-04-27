@@ -6,14 +6,28 @@ import { ConversationSection } from "./feedback/ConversationSection";
 import { ConversationSpace } from "./feedback/ConversationSpace";
 import { Section } from "./create-discussion/Section";
 import { DiscussionSettings } from "./group-discussion/DiscussionSettings";
+import { SessionButton } from "./group-discussion/SessionButton";
+import { QueuePopup } from "./group-discussion/QueuePopup";
+import { ConversationCountdown } from "./group-discussion/ConversationCountdown";
+import { AiParticipantPopup } from "./group-discussion/AiParticipantPopup";
+import { DiscussionProgress } from "./group-discussion/DiscussionProgress";
+import { FeedbackTable } from "./group-discussion/FeedbackTable";
+import { DiscussionForm } from "./create-discussion/DiscussionForm";
 
 export {
+  AiParticipantPopup,
   Conversation,
+  ConversationCountdown,
   ConversationSection,
   ConversationSpace,
+  DiscussionForm,
   DiscussionIndicator,
+  DiscussionProgress,
   DiscussionSettings,
+  FeedbackTable,
   MemberCard,
   PerformanceSection,
-  Section
+  QueuePopup,
+  Section,
+  SessionButton,
 };

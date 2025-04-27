@@ -8,6 +8,8 @@ import {
 import { useRecapDiscussion } from "../../../context";
 import { NameCard } from "./ConversationComponent";
 import { getConversationStyle } from "../../../utils";
+import { useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 
 const StatusCard = ({ title, message, additionalText }) => (
   <div className="relative flex items-center justify-center pb-8 pt-4">
@@ -25,13 +27,20 @@ const DiscussionPoints = ({ data, isLiveDiscussion = false, events }) => {
   const discussionLength = data?.discussionLength;
   const conclusionBy = data?.conclusionBy;
   const conclusionPoints = data?.conclusionPoints;
+  const { discussion: latestDiscussion = [] } = useSelector(
+    (state) => state.conversation
+  );
   const conversation =
-    data?.discussion || data?.messages || data?.conversationId?.messages;
+    latestDiscussion ||
+    data?.discussion ||
+    data?.messages ||
+    data?.conversationId?.messages;
   const selectedPointRef = useRef(null);
   const containerRef = useRef(null);
   const [generatingMetrics, setGeneratingMetrics] = useState(false);
   const [currentMessageId, setCurrentMessageId] = useState(null);
 
+  const dispatch =     useDispatch()
 
   useEffect(() => {
     if (events && events.PERFORMANCE_METRICS) {
@@ -53,22 +62,67 @@ const DiscussionPoints = ({ data, isLiveDiscussion = false, events }) => {
     ? useRecapDiscussion()
     : { currentSpeech: null };
 
-  const countUserPoints = (array) => {
-    const userPoints = {};
-    const updatedArray = array?.map((item) => {
-      const userName = item?.name;
-      if (userName) {
-        userPoints[userName] = (userPoints[userName] || 0) + 1;
+    const countUserPoints = (array) => {
+      // Initialize userPoints to store point details for each user
+      const userPoints = {};
+    
+      // Updated array to include a 'point' for each item
+      const updatedArray = array?.map((item) => {
+        // Safely get the user ID (either from aiId or userId)
+        const userId = item?.aiId?._id || item?.userId?._id;
+    
+        if (userId) {
+          // Create the userPoints entry if it doesn't exist
+          if (!userPoints[userId]) {
+            userPoints[userId] = {
+              points: 0,
+              conclusionPoints: 0,
+              feedback: 0,
+              conclusionFeedback: 0,
+            };
+          }
+    
+          // Check if the item is a conclusion
+          const isConclusion = item?.isConclusion || false;
+          const hasFeedback = item?.feedback ? true : false;
+    
+          // Increment point counts based on isConclusion and feedback
+          if (isConclusion) {
+            userPoints[userId].conclusionPoints++;
+            if (hasFeedback) {
+              userPoints[userId].conclusionFeedback++;
+            }
+          } else {
+            userPoints[userId].points++;
+            if (hasFeedback) {
+              userPoints[userId].feedback++;
+            }
+          }
+    
+          // Return updated item with the current point value
+          return {
+            ...item,
+            point: userPoints[userId].points + userPoints[userId].conclusionPoints,
+          };
+        }
+    
+        // If no valid userId, return the item without changes
+        return {
+          ...item,
+          point: 0, // Optional: default value for items without a valid userId
+        };
+      });
+    
+      // Dispatch user points to the Redux store
+      // dispatch(setUserPoints({ ...userPoints }));
+    
+      // Reverse the array if it's a live discussion
+      if (isLiveDiscussion) {
+        updatedArray.reverse();
       }
-      return { ...item, point: userPoints[userName] };
-    });
-
-    if (isLiveDiscussion) {
-      updatedArray.reverse();
-    }
-
-    return { discussion: updatedArray, userPoints };
-  };
+    
+      return { discussion: updatedArray, userPoints };
+    };
 
   const getConversationData = () => {
     if (!conversation?.length) return { updatedArray: [], userPoints: {} };
@@ -194,12 +248,13 @@ const DiscussionPoints = ({ data, isLiveDiscussion = false, events }) => {
       message = "No discussion points";
     }
     return (
-      <div className="place-content-center h-full">
+      <div className="place-content-center h-full bg-gray-900 rounded-md">
         <p className="text-gray-700">{message} </p>
       </div>
     );
   }
 
+  console.log({ aaaaaaa: discussion, recapContext });
   return (
     <div
       className="flex-1 overflow-y-auto bg-gray-900 p-2 rounded-md"
@@ -207,7 +262,7 @@ const DiscussionPoints = ({ data, isLiveDiscussion = false, events }) => {
     >
       <div className="flex flex-col relative gap-2 bg-gray-900 h-full">
         {discussion?.map((item, index) => {
-          const isUser = item?.userId === userId;
+          const isUser = !!item?.userId?._id && item?.userId?._id === userId;
           const isAnotherUser = !!item?.userId && !isUser;
           const isCurrentSpeech =
             recapContext?.currentSpeech?._id === item?._id;
@@ -220,8 +275,9 @@ const DiscussionPoints = ({ data, isLiveDiscussion = false, events }) => {
             isDiscussionCompleted,
           } = getValues(index);
 
-          const userName = item?.name;
-          const userPointCount = userPoints[userName] || 0;
+          const itemOwnerId = item?.aiId?._id || item?.userId?._id;
+
+          const userPointCount = userPoints[itemOwnerId]?.points || 0;
           const metadata = item?.metadata || {};
 
           const conversationStyle = getConversationStyle(
@@ -278,7 +334,7 @@ const DiscussionPoints = ({ data, isLiveDiscussion = false, events }) => {
                   </div>
 
                   <p className={`text-sm p-2 rounded-md ${conversationStyle}`}>
-                    {item?.conversation || "No conversation available"}
+                    {item?.discussion || "No conversation available"}
                   </p>
                   {generatingMetrics && currentMessageId === item?._id ? (
                     <Loader text="Generating Metrics" />

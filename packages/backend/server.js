@@ -5,6 +5,8 @@ const dotenv = require("dotenv");
 const http = require("http");
 const { Server } = require("socket.io");
 const { instrument } = require("@socket.io/admin-ui");
+const fs = require('fs');
+const path = require('path');
 
 dotenv.config();
 
@@ -42,6 +44,28 @@ app.use("/api/generate", generateRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/ai-model", aiModelRoutes);
 app.use("/api/session", sessionRoutes);
+
+app.get('/audio/:filename', (req, res) => {
+  const PROJECT_ROOT = process.cwd();
+  const filename = req.params.filename;
+  const audioPath = path.join(PROJECT_ROOT, "packages", "backend", "audio", filename);
+  console.log({audioPath,filename})
+  if (!fs.existsSync(audioPath)) {
+    res.status(404).send('File not found');
+    return;
+  }
+
+  const stat = fs.statSync(audioPath);
+
+  res.writeHead(200, {
+    'Content-Type': 'audio/mpeg',
+    'Content-Length': stat.size,
+    'Accept-Ranges': 'bytes'
+  });
+
+  const readStream = fs.createReadStream(audioPath);
+  readStream.pipe(res);
+});
 
 // Default route for errors or undefined routes
 
